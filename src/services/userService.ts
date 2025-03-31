@@ -79,10 +79,14 @@ export class UserService implements IuserService {
 
             console.log("safeUser:", safeUser);
 
-            return { message: 'OTP verified successfully, user registered', success: true, status: HTTP_STATUS.CREATED, data: safeUser}
+            return { message: 'OTP verified successfully, user registered', success: true, status: HTTP_STATUS.CREATED, data: safeUser }
         } catch (error) {
             console.log("Error during OTP verification:", error);
             return { success: false, message: "An error occured during the otp verification", status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
         }
+    }
+
+    async forgotPassword() {
+
     }
 }
