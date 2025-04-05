@@ -32,3 +32,17 @@ export interface verifyOtpDataDTO {
     tempUserId: string;
     otp: string;
 }
+
+export interface loginResposnseDTO {
+    success: boolean;
+    status: number;
+    message: string;
+    userId?:string;
+    access_token?: string;
+    refresh_token?: string;
+}
+
+export interface loginDataDTO {
+    email: string;
+    password: string;
+}

@@ -15,7 +15,9 @@ const corsOptions: cors.CorsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-app.use('/', userRoute);
+app.use('/user', userRoute);
+app.use('/admin', userRoute);
+app.use('/technician', userRoute);
 
 
 export default app;

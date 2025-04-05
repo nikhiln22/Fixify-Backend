@@ -33,8 +33,8 @@ const config: Config = {
     EMAIL_PASS: process.env.EMAIL_PASS as string,
     JWT_SECRET: process.env.JWT_SECRET as string,
     JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET as string,
-    JWT_EXPIRATION: process.env.JWT_EXPIRATION as string || "15m",
-    JWT_REFRESH_EXPIRATION: process.env.JWT_REFRESH_EXPIRATION as string || "7d"
+    JWT_EXPIRATION: process.env.JWT_EXPIRATION as string,
+    JWT_REFRESH_EXPIRATION: process.env.JWT_REFRESH_EXPIRATION as string
 }
 
 export default config

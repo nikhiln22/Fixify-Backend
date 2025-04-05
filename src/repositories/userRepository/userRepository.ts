@@ -7,7 +7,6 @@ import mongoose from 'mongoose';
 import tempUser from '../../models/tempUserModel';
 
 export class UserRepository implements IuserRepository {
-
     async createUser(userData: createUserDTO): Promise<Iuser> {
         try {
             const newUser = new user(userData);
