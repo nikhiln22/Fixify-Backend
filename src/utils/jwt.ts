@@ -5,7 +5,6 @@ import config from "../config/env";
 export class JWTService implements IjwtService {
   generateAccessToken(userId: string, role: string): string {
     try {
-      console.log("time:", config.JWT_EXPIRATION);
       const options: SignOptions = {
         expiresIn: config.JWT_EXPIRATION as unknown as number,
       };
@@ -18,7 +17,6 @@ export class JWTService implements IjwtService {
 
   generateRefreshToken(userId: string, role: string): string {
     try {
-      console.log("RefreshToken time:", config.JWT_REFRESH_EXPIRATION);
       const options: SignOptions = {
         expiresIn: config.JWT_REFRESH_EXPIRATION as unknown as number,
       };

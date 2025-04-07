@@ -3,10 +3,12 @@ import {
   loginDataDTO,
   loginResposnseDTO,
   RegisterResponseDTO,
+  ResendOtpResponseDTO,
   SignupUserDataDTO,
   tempUserResponseDTO,
   verifyOtpDataDTO,
 } from "../interfaces/DTO/IServices/userService.dto";
+import { ItempUserRepository } from "../interfaces/Irepositories/ItempUserRepository";
 import { IuserRepository } from "../interfaces/Irepositories/IuserRepository";
 import { IuserService } from "../interfaces/Iservices/IuserService";
 import { ItempUser } from "../interfaces/Models/ItempUser";
@@ -18,6 +20,7 @@ import { PasswordHasher } from "../utils/password";
 
 export class UserService implements IuserService {
   private userRepository: IuserRepository;
+  private tempUserRepository: ItempUserRepository;
   private emailService: EmailService;
   private otpService: OTPService;
   private passwordService: PasswordHasher;
@@ -25,12 +28,14 @@ export class UserService implements IuserService {
 
   constructor(
     userRepo: IuserRepository,
+    tempUserRepo: ItempUserRepository,
     emailService: EmailService,
     otpService: OTPService,
     passwordService: PasswordHasher,
     jwtService: JWTService
   ) {
     this.userRepository = userRepo;
+    this.tempUserRepository = tempUserRepo;
     this.emailService = emailService;
     this.otpService = otpService;
     this.passwordService = passwordService;
@@ -53,14 +58,18 @@ export class UserService implements IuserService {
       const otp = this.otpService.generateOtp();
       console.log("Generated OTP:", otp);
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+      const otpExpiresAt = new Date(Date.now() + 60 * 1000);
       const tempUserData = {
         ...data,
         password: hashedPassword,
         otp,
+        otpExpiresAt,
         expiresAt,
       } as ItempUser;
 
-      const response = await this.userRepository.createTempUser(tempUserData);
+      const response = await this.tempUserRepository.createTempUser(
+        tempUserData
+      );
       await this.emailService.sendOtpEmail(email, otp);
       console.log("response in userService:", response);
       return {
@@ -81,7 +90,7 @@ export class UserService implements IuserService {
       console.log("entering to the verifyotp function in userService");
       console.log("data:", data);
       const { otp, tempUserId } = data;
-      const tempUserResponse = await this.userRepository.findTempUserById(
+      const tempUserResponse = await this.tempUserRepository.findTempUserById(
         tempUserId
       );
       console.log("tempUser:", tempUserResponse);
@@ -93,6 +102,17 @@ export class UserService implements IuserService {
         };
       }
       const tempUser = tempUserResponse.tempUserData;
+
+      const currentTime = new Date();
+
+      if (!tempUser.otpExpiresAt || tempUser.otpExpiresAt < currentTime) {
+        return {
+          success: false,
+          message: "OTP has expired. please request for new One",
+          status: HTTP_STATUS.NOT_FOUND,
+        };
+      }
+
       if (tempUser.otp !== otp) {
         return {
           success: false,
@@ -116,17 +136,79 @@ export class UserService implements IuserService {
 
       console.log("safeUser:", safeUser);
 
+      const userId = String(newUserObj._id);
+      const access_token = this.jwtService.generateAccessToken(
+        userId,
+        Roles.USER
+      );
+      const refresh_token = this.jwtService.generateRefreshToken(
+        userId,
+        Roles.USER
+      );
+
       return {
         message: "OTP verified successfully, user registered",
         success: true,
         status: HTTP_STATUS.CREATED,
-        data: safeUser,
+        userData: safeUser,
+        access_token,
+        refresh_token,
       };
     } catch (error) {
       console.log("Error during OTP verification:", error);
       return {
         success: false,
         message: "An error occured during the otp verification",
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
+    }
+  }
+
+  async resendOtp(data: string): Promise<ResendOtpResponseDTO> {
+    try {
+      console.log("entering resendotp function in the userservice");
+      const tempUser = await this.tempUserRepository.findTempUserByEmail(data);
+      console.log("tempuser in resendotp user service:", tempUser);
+      if (!tempUser.success || !tempUser.tempUserData) {
+        return {
+          success: false,
+          message: "user not found or registration session expired",
+          status: HTTP_STATUS.NOT_FOUND,
+        };
+      }
+
+      const newOtp = this.otpService.generateOtp();
+      console.log("generated new Otp:", newOtp);
+
+      const otpExpiresAt = new Date(Date.now() + 60 * 1000);
+
+      const tempUserId = String(tempUser.tempUserData._id);
+
+      const updatedResult = await this.tempUserRepository.updateTempUser(
+        tempUserId,
+        { otp: newOtp, otpExpiresAt: otpExpiresAt }
+      );
+
+      if (!updatedResult.success) {
+        return {
+          success: false,
+          message: "Failed to update Otp",
+          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        };
+      }
+
+      await this.emailService.sendOtpEmail(data, newOtp);
+
+      return {
+        success: true,
+        message: "OTP sent successfully",
+        status: HTTP_STATUS.OK,
+      };
+    } catch (error) {
+      console.log("error occured while resending the otp", error);
+      return {
+        success: false,
+        message: "Error occured while resending the otp",
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
@@ -179,6 +261,7 @@ export class UserService implements IuserService {
         userId: userId,
         access_token,
         refresh_token,
+        role: Roles.USER,
         status: HTTP_STATUS.OK,
       };
     } catch (error) {

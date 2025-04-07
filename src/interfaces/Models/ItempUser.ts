@@ -8,7 +8,7 @@ export interface ItempUser extends Document {
   status: string;
   image?: string;
   otp: string;
-  expiry: string;
+  otpExpiresAt: Date;
   expiresAt: Date;
   createdAt: Date;
   updatedAt: Date;
