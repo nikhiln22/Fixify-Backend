@@ -34,3 +34,8 @@ export interface updateTempUserDTO {
   success: boolean;
   message: string;
 }
+
+export interface UpdatePasswordResponseDTO {
+  success: boolean;
+  message?: string;
+}

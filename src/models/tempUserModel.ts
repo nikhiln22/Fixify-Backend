@@ -19,10 +19,6 @@ const tempUserSchema: Schema<ItempUser> = new Schema(
       type: Number,
       required: true,
     },
-    otp: {
-      type: String,
-      required: false,
-    },
     otpExpiresAt: {
       type: Date,
       required: false,

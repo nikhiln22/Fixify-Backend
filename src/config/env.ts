@@ -11,10 +11,13 @@ interface Config {
     JWT_REFRESH_SECRET: string;
     JWT_EXPIRATION: string;
     JWT_REFRESH_EXPIRATION: string;
+    REDIS_HOST:string;
+    REDIS_PORT: number;
+    REDIS_PASSWORD: string | null;
 }
 
 function validateEnvVars(): void {
-    const requiredEnvVars = ['PORT', 'CLIENT_URL', 'MONGODB_URL', 'EMAIL_USER', 'EMAIL_PASS', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'JWT_EXPIRATION', 'JWT_REFRESH_EXPIRATION'];
+    const requiredEnvVars = ['PORT', 'CLIENT_URL', 'MONGODB_URL', 'EMAIL_USER', 'EMAIL_PASS', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'JWT_EXPIRATION', 'JWT_REFRESH_EXPIRATION','REDIS_HOST', 'REDIS_PORT'];
 
     requiredEnvVars.forEach((envVar) => {
         if (!process.env[envVar]) {
@@ -34,7 +37,10 @@ const config: Config = {
     JWT_SECRET: process.env.JWT_SECRET as string,
     JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET as string,
     JWT_EXPIRATION: process.env.JWT_EXPIRATION as string,
-    JWT_REFRESH_EXPIRATION: process.env.JWT_REFRESH_EXPIRATION as string
+    JWT_REFRESH_EXPIRATION: process.env.JWT_REFRESH_EXPIRATION as string,
+    REDIS_HOST: process.env.REDIS_HOST as string || '127.0.0.1',
+    REDIS_PORT: Number(process.env.REDIS_PORT) || 6379,
+    REDIS_PASSWORD: process.env.REDIS_PASSWORD as string || null
 }
 
 export default config

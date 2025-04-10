@@ -1,8 +1,12 @@
 import {
+  ForgotPasswordRequestDTO,
+  ForgotPasswordResponseDTO,
   loginDataDTO,
-  loginResposnseDTO,
+  loginResponseDTO,
   RegisterResponseDTO,
   ResendOtpResponseDTO,
+  ResetPasswordDataDTO,
+  ResetPasswordResponseDTO,
   SignupUserDataDTO,
   tempUserResponseDTO,
   verifyOtpDataDTO,
@@ -12,5 +16,7 @@ export interface IuserService {
   userSignUp(data: SignupUserDataDTO): Promise<tempUserResponseDTO>;
   verifyOtp(data: verifyOtpDataDTO): Promise<RegisterResponseDTO>;
   resendOtp(data: string): Promise<ResendOtpResponseDTO>;
-  login(data: loginDataDTO): Promise<loginResposnseDTO>;
+  forgotPassword(data: ForgotPasswordRequestDTO): Promise<ForgotPasswordResponseDTO>
+  resetPassword(data: ResetPasswordDataDTO): Promise<ResetPasswordResponseDTO>;
+  login(data: loginDataDTO): Promise<loginResponseDTO>;
 }

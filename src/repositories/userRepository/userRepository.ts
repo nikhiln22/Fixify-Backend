@@ -4,6 +4,7 @@ import user from "../../models/userModel";
 import {
   findByEmailResponseDTO,
   createUserDTO,
+  UpdatePasswordResponseDTO,
 } from "../../interfaces/DTO/IRepository/userRepositoryDTO";
 import { BaseRepository } from "../base/baseRepository";
 
@@ -38,6 +39,27 @@ export class UserRepository
     } catch (error) {
       console.log("error occured while fetching the user");
       throw new Error("An error occurred while retrieving the user");
+    }
+  }
+
+  async updatePassword(email: string, hashedPassword: string): Promise<UpdatePasswordResponseDTO> {
+    try {
+      const result = await this.updateOne(
+        { email },
+        { password: hashedPassword }
+      );
+      
+      if (result) {
+        return { success: true };
+      } else {
+        return { 
+          success: false, 
+          message: "Failed to update password or user not found" 
+        };
+      }
+    } catch (error) {
+      console.log("Error occurred while updating password:", error);
+      throw new Error("An error occurred while updating the password");
     }
   }
 }

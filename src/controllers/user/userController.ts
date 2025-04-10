@@ -4,10 +4,8 @@ import { Request, Response } from "express";
 import { HTTP_STATUS } from "../../utils/httpStatus";
 
 export class UserController implements IuserController {
-  userService: IuserService;
-  constructor(userService: IuserService) {
-    this.userService = userService;
-  }
+  constructor(private userService: IuserService) {}
+
   async register(req: Request, res: Response): Promise<void> {
     try {
       console.log("entering to the register function in userController");
@@ -106,8 +104,76 @@ export class UserController implements IuserController {
     }
   }
 
-  // async forgotPassword(req: Request, res: Response): Promise<void> {
-  //   const data = req.body;
-  //   const response = await this.userService.forgot
-  // }
+  async forgotPassword(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("Entering forgotPassword function in userController");
+      const { email } = req.body;
+
+      if (!email) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json({ success: false, message: "Email is required" });
+        return;
+      }
+
+      const response = await this.userService.forgotPassword({ email });
+      console.log("Response from forgotPassword service:", response);
+
+      if (response.success) {
+        res.status(HTTP_STATUS.OK).json({
+          success: true,
+          message: response.message,
+          email: response.email,
+        });
+      } else {
+        res
+          .status(response.status || HTTP_STATUS.BAD_REQUEST)
+          .json({ success: false, message: response.message });
+      }
+    } catch (error) {
+      console.log("Error in forgotPassword controller:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: "Internal Server Error" });
+    }
+  }
+
+  async resetPassword(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("Entering resetPassword function in userController");
+      const { email, password } = req.body;
+
+      
+      if (!email && !password) {
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "Email and new password are required",
+        });
+        return;
+      }
+      
+      const response = await this.userService.resetPassword({
+        email,
+        password,
+      });
+      
+      console.log("Response from resetPassword service:", response);
+      
+      if (response.success) {
+        res.status(HTTP_STATUS.OK).json({
+          success: true,
+          message: response.message,
+        });
+      } else {
+        res
+          .status(response.status || HTTP_STATUS.BAD_REQUEST)
+          .json({ success: false, message: response.message });
+      }
+    } catch (error) {
+      console.log("Error in resetPassword controller:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: "Internal Server Error" });
+    }
+  }
 }

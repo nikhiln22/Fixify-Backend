@@ -4,8 +4,6 @@ export interface RegisterResponseDTO {
   success: boolean;
   userData?: Iuser;
   message: string;
-  access_token?: string;
-  refresh_token?: string;
   status: number;
 }
 
@@ -37,11 +35,13 @@ export interface ResendOtpResponseDTO {
 }
 
 export interface verifyOtpDataDTO {
-  tempUserId: string;
+  tempUserId?: string;
   otp: string;
+  email?: string;
+  purpose?: string;
 }
 
-export interface loginResposnseDTO {
+export interface loginResponseDTO {
   success: boolean;
   status: number;
   message: string;
@@ -54,4 +54,26 @@ export interface loginResposnseDTO {
 export interface loginDataDTO {
   email: string;
   password: string;
+}
+
+export interface ForgotPasswordRequestDTO {
+  email: string;
+}
+
+export interface ForgotPasswordResponseDTO {
+  success: boolean;
+  message: string;
+  email?: string;
+  status: number;
+}
+
+export interface ResetPasswordDataDTO {
+  email: string;
+  password: string;
+}
+
+export interface ResetPasswordResponseDTO {
+  success: boolean;
+  message: string;
+  status: number;
 }
