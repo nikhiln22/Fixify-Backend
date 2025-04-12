@@ -13,7 +13,7 @@ const userSchema: Schema<Iuser> = new Schema(
         },
         password: {
             type: String,
-            reuired: true
+            required: true
         },
         phone: {
             type: Number,
