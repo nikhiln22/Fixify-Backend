@@ -31,6 +31,7 @@ export class UserRepository
   async findByEmail(email: string): Promise<findByEmailResponseDTO> {
     try {
       const userData = await this.findOne({ email });
+      console.log("userData from user repository:",userData);
       if (userData) {
         return { success: true, userData };
       } else {

@@ -59,7 +59,6 @@ export class EmailService implements IemailService {
   private async sendEmail(options: EmailTemplate): Promise<void> {
     const { to, subject, type, data } = options;
     
-    // Get email content from the template service
     const emailContent = this.emailTemplateService.generateEmailContent(type, data);
     
     const mailOptions = {
