@@ -1,28 +1,27 @@
-import mongoose, { Schema } from 'mongoose';
-import { Iadmin } from '../interfaces/Models/Iadmin';
+import mongoose, { Schema } from "mongoose";
+import { Iadmin } from "../interfaces/Models/Iadmin";
 
 const adminSchema: Schema<Iadmin> = new Schema(
   {
     email: {
       type: String,
-      required: true
+      required: true,
     },
     password: {
       type: String,
-      required: true // ✅ corrected typo
+      required: true,
     },
     image: {
       type: String,
-      default: ''
-    }
+      default: "",
+    },
   },
   {
     timestamps: true,
-    collection: 'admin' // ✅ optional but safe if you created it manually in Atlas
+    collection: "admin",
   }
 );
 
-const Admin = mongoose.model<Iadmin>('admin', adminSchema);
+const Admin = mongoose.model<Iadmin>("admin", adminSchema);
 
 export default Admin;
-     

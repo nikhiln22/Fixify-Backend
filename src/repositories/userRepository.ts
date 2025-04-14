@@ -1,12 +1,12 @@
-import { IuserRepository } from "../../interfaces/Irepositories/IuserRepository";
-import { Iuser } from "../../interfaces/Models/Iuser";
-import user from "../../models/userModel";
+import { IuserRepository } from "../interfaces/Irepositories/IuserRepository";
+import { Iuser } from "../interfaces/Models/Iuser";
+import user from "../models/userModel";
 import {
   findByEmailResponseDTO,
   createUserDTO,
   UpdatePasswordResponseDTO,
-} from "../../interfaces/DTO/IRepository/userRepositoryDTO";
-import { BaseRepository } from "../base/baseRepository";
+} from "../interfaces/DTO/IRepository/userRepositoryDTO";
+import { BaseRepository } from "./baseRepository";
 
 export class UserRepository
   extends BaseRepository<Iuser>
