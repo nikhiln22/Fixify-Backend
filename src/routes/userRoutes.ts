@@ -1,7 +1,7 @@
 import express from "express";
 import { UserController } from "../controllers/user/userController";
 import { UserAuthService } from "../services/userAuthService";
-import { UserRepository } from "../repositories/userRepository/userRepository";
+import { UserRepository } from "../repositories/userRepository";
 import { EmailTemplateService } from "../utils/emailTemplates";
 import { EmailService } from "../utils/email";
 import { OTPService } from "../utils/otp";
