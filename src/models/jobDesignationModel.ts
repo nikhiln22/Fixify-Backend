@@ -9,8 +9,8 @@ const jobDesignationSchema: Schema<IjobDesignation> = new Schema(
       required: true,
     },
     Status: {
-      type: String,
-      default: "Active",
+      type: Boolean,
+      default: true,
     },
   },
   { timestamps: true }

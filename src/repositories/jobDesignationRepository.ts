@@ -21,6 +21,21 @@ export class JobDesignationRepository
     }
   }
 
+  async getPaginatedDesignations(
+    page: number,
+    limit: number
+  ): Promise<{ data: IjobDesignation[]; total: number }> {
+    try {
+      const skip = (page - 1) * limit;
+      const data = await jobDesignation.find().skip(skip).limit(limit).exec();
+      const total = await jobDesignation.countDocuments();
+      return { data, total };
+    } catch (error) {
+      console.error("Error fetching paginated designations:", error);
+      throw new Error("Failed to fetch paginated designations");
+    }
+  }
+
   async findByName(name: string): Promise<IjobDesignation | null> {
     try {
       return await jobDesignation.findOne({ designation: name });
@@ -40,15 +55,23 @@ export class JobDesignationRepository
   async addDesignation(designation: string): Promise<IjobDesignation> {
     try {
       const newDesignation = await this.create({ designation });
+      console.log(
+        "new Designation in the addDesignation repository:",
+        newDesignation
+      );
       return await newDesignation.save();
     } catch (error) {
       throw new Error("Failed to add designation: " + error);
     }
   }
 
-  async blockDesignation(id: string): Promise<void> {
+  async blockDesignation(id: string, status: boolean): Promise<void> {
     try {
-      await this.updateOne({ _id: id }, { Status: "Inactive" });
+      let response = await this.updateOne({ _id: id }, { Status: status });
+      console.log(
+        "blocking the designation in the jobdesignation repository:",
+        response
+      );
     } catch (error) {
       throw new Error("Failed to block designation: " + error);
     }

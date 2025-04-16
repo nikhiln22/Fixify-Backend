@@ -1,10 +1,10 @@
-import { Roles } from "../config/roles";
+import { Roles } from "../../config/roles";
 import {
   OtpPurpose,
   OTP_EXPIRY_SECONDS,
   OTP_PREFIX,
   TEMP_USER_EXPIRY_SECONDS,
-} from "../config/otpConfig";
+} from "../../config/otpConfig";
 import {
   ForgotPasswordRequestDTO,
   ForgotPasswordResponseDTO,
@@ -17,18 +17,18 @@ import {
   SignupUserDataDTO,
   tempUserResponseDTO,
   verifyOtpDataDTO,
-} from "../interfaces/DTO/IServices/userService.dto";
-import { ItempUserRepository } from "../interfaces/Irepositories/ItempUserRepository";
-import { IuserRepository } from "../interfaces/Irepositories/IuserRepository";
-import { IuserService } from "../interfaces/Iservices/IuserService";
-import { ItempUser } from "../interfaces/Models/ItempUser";
-import { EmailService } from "../utils/email";
-import { HTTP_STATUS } from "../utils/httpStatus";
-import { JWTService } from "../utils/jwt";
-import { OTPService } from "../utils/otp";
-import { PasswordHasher } from "../utils/password";
-import { RedisService } from "../utils/redis";
-import { OtpVerificationResult } from "../interfaces/Iotp/IOTP";
+} from "../../interfaces/DTO/IServices/userService.dto";
+import { ItempUserRepository } from "../../interfaces/Irepositories/ItempUserRepository";
+import { IuserRepository } from "../../interfaces/Irepositories/IuserRepository";
+import { IuserService } from "../../interfaces/Iservices/IuserService";
+import { ItempUser } from "../../interfaces/Models/ItempUser";
+import { EmailService } from "../../utils/email";
+import { HTTP_STATUS } from "../../utils/httpStatus";
+import { JWTService } from "../../utils/jwt";
+import { OTPService } from "../../utils/otp";
+import { PasswordHasher } from "../../utils/password";
+import { RedisService } from "../../utils/redis";
+import { OtpVerificationResult } from "../../interfaces/Iotp/IOTP";
 
 export class UserAuthService implements IuserService {
   constructor(

@@ -32,4 +32,8 @@ export class BaseRepository<T extends Document> {
       .findOneAndUpdate(filter, update, { new: true })
       .exec();
   }
+
+  async countDocument(filter:FilterQuery<T>={}):Promise<number>{
+    return await this.model.countDocuments(filter).exec()
+  }
 }

@@ -1,6 +1,6 @@
 import express from "express";
 import { UserController } from "../controllers/user/userController";
-import { UserAuthService } from "../services/userAuthService";
+import { UserAuthService } from "../services/userService/userAuthService";
 import { UserRepository } from "../repositories/userRepository";
 import { EmailTemplateService } from "../utils/emailTemplates";
 import { EmailService } from "../utils/email";

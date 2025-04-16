@@ -23,13 +23,13 @@ export class AdminRoutes {
     );
 
     this.router.post(
-      "/jobdesignation",
+      "/addjobdesignation",
       jobDesignationController.addDesignation.bind(jobDesignationController)
     );
 
-    this.router.put(
-      "/jobdesignation/block/:id",
-      jobDesignationController.blockDesignation.bind(jobDesignationController)
+    this.router.patch(
+      "/blockjobdesignation/:id",
+      jobDesignationController.toggleDesignationStatus.bind(jobDesignationController)
     );
 
     this.router.get(

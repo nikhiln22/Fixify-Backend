@@ -1,10 +1,10 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
 
-import { AdminAuthService } from "../services/adminAuthService";
+import { AdminAuthService } from "../services/adminService/adminAuthService";
 import { AdminRepository } from "../repositories/adminRepository";
 import { JobDesignationRepository } from "../repositories/jobDesignationRepository";
-import { JobDesignationService } from "../services/jobDesignationService";
+import { JobDesignationService } from "../services/adminService/jobDesignationService";
 import { PasswordHasher } from "../utils/password";
 import { JWTService } from "../utils/jwt";
 
