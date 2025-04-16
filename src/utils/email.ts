@@ -1,19 +1,23 @@
-import nodemailer, { Transporter } from 'nodemailer';
-import config from '../config/env';
-import { EmailType, APP_NAME } from '../config/emailConfig';
-import { OtpPurpose, OTP_EXPIRY_SECONDS } from '../config/otpConfig';
-import { IemailService } from '../interfaces/Iemail/Iemail';
-import { IemailTemplateService } from '../interfaces/Iemail/IemailTemplate';
-import { EmailTemplate } from '../types/email.types';
+import nodemailer, { Transporter } from "nodemailer";
+import config from "../config/env";
+import { EmailType, APP_NAME } from "../config/emailConfig";
+import { OtpPurpose, OTP_EXPIRY_SECONDS } from "../config/otpConfig";
+import { IemailService } from "../interfaces/Iemail/Iemail";
+import { IemailTemplateService } from "../interfaces/Iemail/IemailTemplate";
+import { EmailTemplate } from "../types/email.types";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export class EmailService implements IemailService {
   private transporter: Transporter;
   private appName: string = APP_NAME;
-  private emailTemplateService: IemailTemplateService;
-  
-  constructor(emailTemplateService: IemailTemplateService) {
+
+  constructor(
+    @inject("IemailTemplateService")
+    private emailTemplateService: IemailTemplateService
+  ) {
     this.transporter = nodemailer.createTransport({
-      service: 'gmail',
+      service: "gmail",
       host: "smtp.gmail.com",
       port: 587,
       secure: false,
@@ -22,8 +26,6 @@ export class EmailService implements IemailService {
         pass: config.EMAIL_PASS,
       },
     });
-    
-    this.emailTemplateService = emailTemplateService;
   }
 
   async sendOtpEmail(toEmail: string, otp: string): Promise<void> {
@@ -32,11 +34,13 @@ export class EmailService implements IemailService {
       to: toEmail,
       subject: `Verify Your ${this.appName} Account`,
       type: EmailType.SIGNUP_OTP,
-      data: { 
-        otp, 
-        expiryTime: `${expiryTimeInMinutes} minute${expiryTimeInMinutes > 1 ? 's' : ''}`,
-        purpose: OtpPurpose.REGISTRATION
-      }
+      data: {
+        otp,
+        expiryTime: `${expiryTimeInMinutes} minute${
+          expiryTimeInMinutes > 1 ? "s" : ""
+        }`,
+        purpose: OtpPurpose.REGISTRATION,
+      },
     });
     console.log(`Signup OTP email sent to ${toEmail}`);
   }
@@ -47,20 +51,25 @@ export class EmailService implements IemailService {
       to: toEmail,
       subject: `Reset Your ${this.appName} Password`,
       type: EmailType.PASSWORD_RESET,
-      data: { 
-        otp, 
-        expiryTime: `${expiryTimeInMinutes} minute${expiryTimeInMinutes > 1 ? 's' : ''}`,
-        purpose: OtpPurpose.PASSWORD_RESET
-      }
+      data: {
+        otp,
+        expiryTime: `${expiryTimeInMinutes} minute${
+          expiryTimeInMinutes > 1 ? "s" : ""
+        }`,
+        purpose: OtpPurpose.PASSWORD_RESET,
+      },
     });
     console.log(`Password reset OTP email sent to ${toEmail}`);
   }
 
   private async sendEmail(options: EmailTemplate): Promise<void> {
     const { to, subject, type, data } = options;
-    
-    const emailContent = this.emailTemplateService.generateEmailContent(type, data);
-    
+
+    const emailContent = this.emailTemplateService.generateEmailContent(
+      type,
+      data
+    );
+
     const mailOptions = {
       from: `"${this.appName} Team" <${config.EMAIL_USER}>`,
       to,
@@ -68,7 +77,7 @@ export class EmailService implements IemailService {
       html: emailContent.html,
       text: emailContent.text,
     };
-    
+
     await this.transporter.sendMail(mailOptions);
   }
 }

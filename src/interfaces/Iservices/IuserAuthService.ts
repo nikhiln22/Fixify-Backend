@@ -12,7 +12,7 @@ import {
   verifyOtpDataDTO,
 } from "../DTO/IServices/userService.dto";
 
-export interface IuserService {
+export interface IuserAuthService {
   userSignUp(data: SignupUserDataDTO): Promise<tempUserResponseDTO>;
   verifyOtp(data: verifyOtpDataDTO): Promise<RegisterResponseDTO>;
   resendOtp(data: string): Promise<ResendOtpResponseDTO>;

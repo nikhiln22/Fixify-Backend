@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 
-export interface IuserController {
+export interface IuserAuthController {
   register(req: Request, res: Response): Promise<void>;
   verifyOtp(req: Request, res: Response): Promise<void>;
   resendOtp(req: Request, res: Response): Promise<void>;

@@ -3,6 +3,6 @@ import { container } from "tsyringe";
 
 
 import "./adminModule";
-
+import "./userModule"
 
 export { container };

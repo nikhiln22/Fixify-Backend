@@ -20,25 +20,28 @@ import {
 } from "../../interfaces/DTO/IServices/userService.dto";
 import { ItempUserRepository } from "../../interfaces/Irepositories/ItempUserRepository";
 import { IuserRepository } from "../../interfaces/Irepositories/IuserRepository";
-import { IuserService } from "../../interfaces/Iservices/IuserService";
+import { IuserAuthService } from "../../interfaces/Iservices/IuserAuthService";
 import { ItempUser } from "../../interfaces/Models/ItempUser";
-import { EmailService } from "../../utils/email";
+import { IemailService } from "../../interfaces/Iemail/Iemail";
 import { HTTP_STATUS } from "../../utils/httpStatus";
-import { JWTService } from "../../utils/jwt";
-import { OTPService } from "../../utils/otp";
-import { PasswordHasher } from "../../utils/password";
-import { RedisService } from "../../utils/redis";
+import { IjwtService } from "../../interfaces/Ijwt/Ijwt";
+import { IOTPService } from "../../interfaces/Iotp/IOTP";
+import { IPasswordHasher } from "../../interfaces/IpasswordHasher/IpasswordHasher";
+import { IredisService } from "../../interfaces/Iredis/Iredis";
 import { OtpVerificationResult } from "../../interfaces/Iotp/IOTP";
+import { inject, injectable } from "tsyringe";
 
-export class UserAuthService implements IuserService {
+@injectable()
+export class UserAuthService implements IuserAuthService{
   constructor(
-    private userRepository: IuserRepository,
+    @inject("IuserRepository") private userRepository: IuserRepository,
+    @inject("ItempUserRepository")
     private tempUserRepository: ItempUserRepository,
-    private emailService: EmailService,
-    private otpService: OTPService,
-    private passwordService: PasswordHasher,
-    private jwtService: JWTService,
-    private redisService: RedisService
+    @inject("IemailService") private emailService: IemailService,
+    @inject("IOTPService") private otpService: IOTPService,
+    @inject("IPasswordHasher") private passwordService: IPasswordHasher,
+    @inject("IjwtService") private jwtService: IjwtService,
+    @inject("IredisService") private redisService: IredisService
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -408,6 +411,14 @@ export class UserAuthService implements IuserService {
           success: false,
           message: "invalid password",
           status: HTTP_STATUS.NOT_FOUND,
+        };
+      }
+
+      if (!user.userData.status) {
+        return {
+          success: false,
+          message: "Your account has been blocked. Please contact support.",
+          status: HTTP_STATUS.UNAUTHORIZED,
         };
       }
 

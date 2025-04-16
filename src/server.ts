@@ -1,18 +1,27 @@
-import app from './app'
-import config from './config/env';
-import { database } from './config/database';
+import { App } from "./app";
+import config from "./config/env";
+import { database } from "./config/database";
 
+class Server {
+  private appInstance: App;
 
-async function startServer() {
+  constructor() {
+    this.appInstance = new App();
+  }
+
+  public async start(): Promise<void> {
     try {
-        await database.connect();
-        app.listen(config.PORT, () => {
-            console.log(`server is running on http://localhost:${config.PORT}`);
-        })
+      await database.connect();
+
+      this.appInstance.getServer().listen(config.PORT, () => {
+        console.log(`Server is running at http://localhost:${config.PORT}`);
+      });
     } catch (error) {
-        console.log('server failed to start due to database error:', error);
-        process.exit(1)
+      console.error("Server failed to start due to database error:", error);
+      process.exit(1);
     }
+  }
 }
 
-startServer()
+const server = new Server();
+server.start();

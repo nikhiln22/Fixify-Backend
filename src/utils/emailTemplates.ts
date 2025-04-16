@@ -1,4 +1,5 @@
 
+import { injectable } from 'tsyringe';
 import { EmailType, APP_NAME } from '../config/emailConfig';
 
 export interface EmailContentResult {
@@ -6,6 +7,7 @@ export interface EmailContentResult {
   text: string;
 }
 
+@injectable()
 export class EmailTemplateService {
   private appName: string = APP_NAME;
 

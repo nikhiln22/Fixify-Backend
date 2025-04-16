@@ -7,7 +7,9 @@ import {
   UpdatePasswordResponseDTO,
 } from "../interfaces/DTO/IRepository/userRepositoryDTO";
 import { BaseRepository } from "./baseRepository";
+import { injectable } from "tsyringe";
 
+@injectable()
 export class UserRepository
   extends BaseRepository<Iuser>
   implements IuserRepository
