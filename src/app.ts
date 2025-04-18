@@ -3,6 +3,7 @@ import cors from "cors";
 import config from "./config/env";
 import { UserRoutes } from "./routes/userRoutes";
 import { AdminRoutes } from "./routes/adminRoutes";
+import { TechnicianRoutes } from "./routes/technicianRoutes";
 
 export class App {
   public app: Express;
@@ -28,10 +29,11 @@ export class App {
   private setupRoutes(): void {
     const userRoutes = new UserRoutes();
     const adminRoutes = new AdminRoutes();
+    const technicianRoutes = new TechnicianRoutes()
 
     this.app.use("/user", userRoutes.getRouter());
     this.app.use("/admin", adminRoutes.getRouter());
-    this.app.use("/technician", userRoutes.getRouter());
+    this.app.use("/technician", technicianRoutes.getRouter());
   }
 
   public getServer(): Express {
