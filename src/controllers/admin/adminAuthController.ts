@@ -18,7 +18,7 @@ export class AdminAuthController implements IadminAuthController {
       if (response.success) {
         res
           .status(HTTP_STATUS.OK)
-          .json(response);
+          .json({ success: true, message: response.message, data: response });
       } else {
         res
           .status(HTTP_STATUS.BAD_REQUEST)
