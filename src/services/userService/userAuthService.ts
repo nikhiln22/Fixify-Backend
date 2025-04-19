@@ -404,8 +404,6 @@ export class UserAuthService implements IuserAuthService{
         password
       );
 
-      console.log("isPasswordValid:", isPasswordValid);
-
       if (!isPasswordValid) {
         return {
           success: false,
@@ -428,12 +426,12 @@ export class UserAuthService implements IuserAuthService{
         userId,
         Roles.USER
       );
-      console.log("access_token:", access_token);
+
+      
       const refresh_token = this.jwtService.generateRefreshToken(
         userId,
         Roles.USER
       );
-      console.log("refresh_token:", refresh_token);
 
       return {
         success: true,
