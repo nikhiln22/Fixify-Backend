@@ -13,11 +13,6 @@ export class TechnicianAuthController implements ItechnicianAuthController {
       console.log("entering to the register function in technicianAuthController");
       const data = req.body;
       console.log("data:", data);
-      console.log("Constructor called for TechnicianAuthController");
-      console.log("technicianAuthService injected:", this.technicianAuthService ? "Yes" : "No"); 
-      if (this.technicianAuthService) {
-        console.log("technicianSignUp method exists:", typeof this.technicianAuthService.technicianSignUp === 'function' ? "Yes" : "No");
-      }
       const response = await this.technicianAuthService.technicianSignUp(data);
       console.log("response in technician register:", response);
       if (response.success) {

@@ -5,6 +5,8 @@ import {
   findByEmailResponseDTO,
   createTechnicianDTO,
   UpdatePasswordResponseDTO,
+  TechnicianQualificationDTO,
+  UpdateTechnicianQualificationResponseDTO,
 } from "../interfaces/DTO/IRepository/technicianRepositoryDTO";
 import { BaseRepository } from "./baseRepository";
 import { injectable } from "tsyringe";
@@ -69,6 +71,54 @@ export class TechnicianRepository
     } catch (error) {
       console.log("Error occurred while updating password:", error);
       throw new Error("An error occurred while updating the password");
+    }
+  }
+
+  async updateTechnicianQualification(
+    technicianId: string,
+    qualificationData: TechnicianQualificationDTO
+  ): Promise<UpdateTechnicianQualificationResponseDTO> {
+    try {
+      console.log(
+        "Updating technician qualification in repository for ID:",
+        technicianId
+      );
+      console.log("Qualification data:", qualificationData);
+      
+      const updatedTechnician = await this.updateOne(
+        { _id: technicianId },
+        {
+          $set: {
+            yearsOfExperience: qualificationData.experience,
+            Designation: qualificationData.designation,
+            About: qualificationData.about,
+            image: qualificationData.profilePhoto,
+            certificates: qualificationData.certificates 
+          },
+        }
+      );
+      
+      if (updatedTechnician) {
+        return {
+          success: true,
+          message: "Technician qualification updated successfully",
+          technician: updatedTechnician,
+        };
+      } else {
+        return {
+          success: false,
+          message:
+            "Failed to update technician qualification or technician not found",
+        };
+      }
+    } catch (error) {
+      console.log(
+        "Error occurred while updating technician qualification:",
+        error
+      );
+      throw new Error(
+        "An error occurred while updating the technician qualification"
+      );
     }
   }
 }

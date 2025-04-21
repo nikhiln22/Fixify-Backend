@@ -1,32 +1,40 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
-
 import { TechnicianAuthService } from "../services/technicianService/technicianAuthService";
+import { TechnicianService } from "../services/technicianService/technicianService";
 import { TechnicianRepository } from "../repositories/technicianRepository";
 import { TempTechnicianRepository } from "../repositories/tempRepositories/tempTechnicianRepository";
+import { JobDesignationRepository } from "../repositories/jobDesignationRepository";
 import { PasswordHasher } from "../utils/password";
 import { JWTService } from "../utils/jwt";
 import { EmailService } from "../utils/email";
 import { EmailTemplateService } from "../utils/emailTemplates";
 import { OTPService } from "../utils/otp";
 import { RedisService } from "../utils/redis";
-
 import { ItechnicianAuthService } from "../interfaces/Iservices/ItechnicianAuthService";
+import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
 import { ItechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
 import { ItempTechnicianRepository } from "../interfaces/Irepositories/ItempTechnicianRepository";
+import { IjobDesignationRepository } from "../interfaces/Irepositories/IjobDesignationRepository";
 import { IPasswordHasher } from "../interfaces/IpasswordHasher/IpasswordHasher";
 import { IjwtService } from "../interfaces/Ijwt/Ijwt";
 import { IemailService } from "../interfaces/Iemail/Iemail";
 import { IemailTemplateService } from "../interfaces/Iemail/IemailTemplate";
 import { IOTPService } from "../interfaces/Iotp/IOTP";
 import { IredisService } from "../interfaces/Iredis/Iredis";
+import { CloudinaryUploader } from "../utils/cloudinaryUploader";
+import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
 
-container.register<ItechnicianAuthService>("ItechnicianAuthService",{useClass:TechnicianAuthService});
-container.register<ItechnicianRepository>("ItechnicianRepository",{useClass:TechnicianRepository});
-container.register<ItempTechnicianRepository>("ItempTechnicianRepository",{useClass:TempTechnicianRepository});
-container.register<IPasswordHasher>("IPasswordHasher",{useClass:PasswordHasher});
-container.register<IjwtService>("IjwtService",{useClass:JWTService});
-container.register<IOTPService>("IOTPService",{useClass:OTPService});
-container.register<IredisService>("IredisService",{useClass:RedisService});
-container.register<IemailService>("IemailService",{useClass:EmailService});
-container.register<IemailTemplateService>("IemailTemplateService",{useClass:EmailTemplateService});
+
+container.registerSingleton<ItechnicianAuthService>("ItechnicianAuthService", TechnicianAuthService);
+container.registerSingleton<ItechnicianService>("ItechnicianService", TechnicianService);
+container.registerSingleton<ItechnicianRepository>("ItechnicianRepository", TechnicianRepository);
+container.registerSingleton<ItempTechnicianRepository>("ItempTechnicianRepository", TempTechnicianRepository);
+container.registerSingleton<IjobDesignationRepository>("IjobDesignationRepository", JobDesignationRepository);
+container.registerSingleton<IPasswordHasher>("IPasswordHasher", PasswordHasher);
+container.registerSingleton<IjwtService>("IjwtService", JWTService);
+container.registerSingleton<IOTPService>("IOTPService", OTPService);
+container.registerSingleton<IredisService>("IredisService", RedisService);
+container.registerSingleton<IemailService>("IemailService", EmailService);
+container.registerSingleton<IemailTemplateService>("IemailTemplateService", EmailTemplateService);
+container.registerSingleton<IFileUploader>("IFileUploader", CloudinaryUploader);
