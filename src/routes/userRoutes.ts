@@ -1,12 +1,15 @@
 import express, { Router } from "express";
 import { container } from "../di/container";
 import { UserAuthController } from "../controllers/user/userAuthController";
+import { AuthMiddleware } from "../middlewares/AuthMiddleware";
 
 export class UserRoutes {
   private router: Router;
+  private authMiddleware: AuthMiddleware;
 
   constructor() {
     this.router = express.Router();
+    this.authMiddleware = AuthMiddleware.getInstance();
     this.setupRoutes();
   }
 

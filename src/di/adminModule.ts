@@ -15,6 +15,7 @@ import { IadminService } from "../interfaces/Iservices/IadminService";
 import { IjobDesignationService } from "../interfaces/Iservices/IjobDesignationService";
 import { IjobDesignationRepository } from "../interfaces/Irepositories/IjobDesignationRepository";
 
+
 container.register<IadminService>("IadminService", {
   useClass: AdminAuthService,
 });

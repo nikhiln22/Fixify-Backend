@@ -30,19 +30,24 @@ const technicianSchema: Schema<Itechnician> = new Schema(
     yearsOfExperience: {
       type: Number,
     },
-    jobDesignation: {
-      type: String,
+    Designation: {
+      type: Schema.Types.ObjectId,
+      ref: "jobDesignation",
     },
-    About:{
-        type:String,
+    About: {
+      type: String,
     },
     image: {
       type: String,
     },
+    certificates: [
+      {
+        type: String,
+      },
+    ],
   },
   { timestamps: true }
 );
 
 const technician = mongoose.model<Itechnician>("technician", technicianSchema);
-
 export default technician;
