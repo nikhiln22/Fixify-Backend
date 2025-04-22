@@ -2,6 +2,7 @@ import express, { Router } from "express";
 import { container } from "../di/container";
 import { AdminAuthController } from "../controllers/admin/adminAuthController";
 import { JobDesignationController } from "../controllers/admin/jobDesignationController";
+import { UserManagementController } from "../controllers/admin/userManagementController";
 
 export class AdminRoutes {
   private router: Router;
@@ -17,6 +18,10 @@ export class AdminRoutes {
       JobDesignationController
     );
 
+    const userManagementController = container.resolve(
+      UserManagementController
+    );
+
     this.router.post(
       "/login",
       adminAuthController.login.bind(adminAuthController)
@@ -29,12 +34,28 @@ export class AdminRoutes {
 
     this.router.patch(
       "/blockjobdesignation/:id",
-      jobDesignationController.toggleDesignationStatus.bind(jobDesignationController)
+      jobDesignationController.toggleDesignationStatus.bind(
+        jobDesignationController
+      )
     );
 
     this.router.get(
       "/jobdesignations",
       jobDesignationController.getAllDesignations.bind(jobDesignationController)
+    );
+
+    this.router.get(
+      "/userslist",
+      userManagementController.getAllPaginatedUsers.bind(
+        userManagementController
+      )
+    );
+
+    this.router.patch(
+      "/blockuser/:id",
+      userManagementController.toggleUserStatus.bind(
+        userManagementController
+      )
     );
   }
 
