@@ -1,10 +1,10 @@
-import { Roles } from "../config/roles";
+import { Roles } from "../../config/roles";
 import {
   OtpPurpose,
   OTP_EXPIRY_SECONDS,
   OTP_PREFIX,
   TEMP_USER_EXPIRY_SECONDS,
-} from "../config/otpConfig";
+} from "../../config/otpConfig";
 import {
   ForgotPasswordRequestDTO,
   ForgotPasswordResponseDTO,
@@ -14,31 +14,35 @@ import {
   ResendOtpResponseDTO,
   ResetPasswordDataDTO,
   ResetPasswordResponseDTO,
-  SignupUserDataDTO,
-  tempUserResponseDTO,
+  SignupTechnicianDataDTO,
+  tempTechnicianResponseDTO,
   verifyOtpDataDTO,
-} from "../interfaces/DTO/IServices/userService.dto";
-import { ItempUserRepository } from "../interfaces/Irepositories/ItempUserRepository";
-import { IuserRepository } from "../interfaces/Irepositories/IuserRepository";
-import { IuserService } from "../interfaces/Iservices/IuserService";
-import { ItempUser } from "../interfaces/Models/ItempUser";
-import { EmailService } from "../utils/email";
-import { HTTP_STATUS } from "../utils/httpStatus";
-import { JWTService } from "../utils/jwt";
-import { OTPService } from "../utils/otp";
-import { PasswordHasher } from "../utils/password";
-import { RedisService } from "../utils/redis";
-import { OtpVerificationResult } from "../interfaces/Iotp/IOTP";
+} from "../../interfaces/DTO/IServices/technicianAuthService.dto";
+import { ItempTechnicianRepository } from "../../interfaces/Irepositories/ItempTechnicianRepository";
+import { ItechnicianRepository } from "../../interfaces/Irepositories/ItechnicianRepository";
+import { ItechnicianAuthService } from "../../interfaces/Iservices/ItechnicianAuthService";
+import { ItempTechnician } from "../../interfaces/Models/ItempTechnician";
+import { IemailService } from "../../interfaces/Iemail/Iemail";
+import { HTTP_STATUS } from "../../utils/httpStatus";
+import { IjwtService } from "../../interfaces/Ijwt/Ijwt";
+import { IOTPService } from "../../interfaces/Iotp/IOTP";
+import { IPasswordHasher } from "../../interfaces/IpasswordHasher/IpasswordHasher";
+import { IredisService } from "../../interfaces/Iredis/Iredis";
+import { OtpVerificationResult } from "../../interfaces/Iotp/IOTP";
+import { inject, injectable } from "tsyringe";
 
-export class UserAuthService implements IuserService {
+@injectable()
+export class TechnicianAuthService implements ItechnicianAuthService {
   constructor(
-    private userRepository: IuserRepository,
-    private tempUserRepository: ItempUserRepository,
-    private emailService: EmailService,
-    private otpService: OTPService,
-    private passwordService: PasswordHasher,
-    private jwtService: JWTService,
-    private redisService: RedisService
+    @inject("ItechnicianRepository")
+    private technicianRepository: ItechnicianRepository,
+    @inject("ItempTechnicianRepository")
+    private tempTechnicianRepository: ItempTechnicianRepository,
+    @inject("IemailService") private emailService: IemailService,
+    @inject("IOTPService") private otpService: IOTPService,
+    @inject("IPasswordHasher") private passwordService: IPasswordHasher,
+    @inject("IjwtService") private jwtService: IjwtService,
+    @inject("IredisService") private redisService: IredisService
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -98,17 +102,19 @@ export class UserAuthService implements IuserService {
     };
   }
 
-  async userSignUp(data: SignupUserDataDTO): Promise<tempUserResponseDTO> {
+  async technicianSignUp(
+    data: SignupTechnicianDataDTO
+  ): Promise<tempTechnicianResponseDTO> {
     try {
       console.log(
-        "entering to the usersignup function in the userauth service"
+        "entering to the techniciansignup function in the technicianauth service"
       );
       console.log("data:", data);
       const { email, password } = data;
-      let result = await this.userRepository.findByEmail(email);
+      let result = await this.technicianRepository.findByEmail(email);
       if (result.success) {
         return {
-          message: "user already exists",
+          message: "technician already exists",
           success: false,
           status: HTTP_STATUS.BAD_REQUEST,
         };
@@ -117,59 +123,68 @@ export class UserAuthService implements IuserService {
 
       const otp = await this.generateAndSendOtp(email, OtpPurpose.REGISTRATION);
 
-      console.log("Generated Otp for the user Registration:", otp);
+      console.log("Generated Otp for the Technician Registration:", otp);
 
       const expiresAt = new Date(Date.now() + TEMP_USER_EXPIRY_SECONDS * 1000);
-      const tempUserData = {
+      const tempTechnicianData = {
         ...data,
         password: hashedPassword,
         expiresAt,
-      } as ItempUser;
+      } as ItempTechnician
 
-      const response = await this.tempUserRepository.createTempUser(
-        tempUserData
+      const response = await this.tempTechnicianRepository.createTempTechnician(
+        tempTechnicianData
       );
 
-      console.log("response in userService:", response);
+      console.log("response in technicianService:", response);
       return {
-        message: "User created successfully,OTP sent",
+        message: "Technician created successfully,OTP sent",
         email,
-        tempUserId: response.tempUserId.toString(),
+        tempTechnicianId: response.tempTechnicianId.toString(),
         success: true,
         status: HTTP_STATUS.CREATED,
       };
     } catch (error) {
-      console.log("Error during user signup:", error);
-      throw new Error("An error occured during the user signup");
+      console.log("Error during technician signup:", error);
+      throw new Error("An error occured during the technician signup");
     }
   }
 
   async verifyOtp(data: verifyOtpDataDTO): Promise<RegisterResponseDTO> {
     try {
-      console.log("entering to the verifyotp function in userService");
+      console.log("entering to the verifyotp function in technicianService");
 
-      const { otp, tempUserId, email, purpose } = data;
+      const { otp, tempTechnicianId, email, purpose } = data;
 
-      let userEmail = email;
+      console.log("otp:",otp);
+      console.log("tempTechnicianId:",tempTechnicianId);
+      console.log("email:",email);
+      console.log("purpose:",purpose);
 
-      if (OtpPurpose.REGISTRATION === purpose && tempUserId) {
-        const tempUserResponse = await this.tempUserRepository.findTempUserById(
-          tempUserId
-        );
-        console.log("tempUserResponse:", tempUserResponse);
+      let technicianEmail = email;
 
-        if (!tempUserResponse.success || !tempUserResponse.tempUserData) {
+      if (OtpPurpose.REGISTRATION === purpose && tempTechnicianId) {
+        const tempTechnicianResponse =
+          await this.tempTechnicianRepository.findTempTechnicianById(
+            tempTechnicianId
+          );
+        console.log("tempTechnicianResponse:", tempTechnicianResponse);
+
+        if (
+          !tempTechnicianResponse.success ||
+          !tempTechnicianResponse.tempTechnicianData
+        ) {
           return {
             success: false,
-            message: "Temporary user not found or expired",
+            message: "Temporary Technician not found or expired",
             status: HTTP_STATUS.NOT_FOUND,
           };
         }
-        const tempUser = tempUserResponse.tempUserData;
-        userEmail = tempUser.email;
+        const tempTechnician = tempTechnicianResponse.tempTechnicianData;
+        technicianEmail = tempTechnician.email;
 
         const verificationResult = await this.verifyOtpGeneric(
-          userEmail,
+          technicianEmail,
           otp,
           OtpPurpose.REGISTRATION
         );
@@ -182,50 +197,50 @@ export class UserAuthService implements IuserService {
           };
         }
 
-        const userData = {
-          username: tempUser.username,
-          email: tempUser.email,
-          password: tempUser.password,
-          phone: tempUser.phone,
+        const technicianData = {
+          username: tempTechnician.username,
+          email: tempTechnician.email,
+          password: tempTechnician.password,
+          phone: tempTechnician.phone,
         };
 
-        const newUser = await this.userRepository.createUser(userData);
-        console.log("new created user:", newUser);
+        const newTechnician = await this.technicianRepository.createTechnician(technicianData);
+        console.log("new created technician:", newTechnician);
 
-        const newUserObj = newUser.toObject
-          ? newUser.toObject()
-          : { ...newUser };
-        console.log("newUserObj:", newUserObj);
+        const newTechnicianObj = newTechnician.toObject
+          ? newTechnician.toObject()
+          : { ...newTechnician };
+        console.log("newUserObj:", newTechnicianObj);
 
-        const { password, ...safeUser } = newUserObj;
-        console.log("safeUser:", safeUser);
+        const { password, ...safeTechnician } = newTechnicianObj;
+        console.log("safeTechnician:", safeTechnician);
 
         const redisKey = this.getOtpRedisKey(
-          userEmail,
+          technicianEmail,
           OtpPurpose.REGISTRATION
         );
         await this.redisService.delete(redisKey);
 
         return {
-          message: "OTP verified successfully, user registered",
+          message: "OTP verified successfully, Technician registered",
           success: true,
           status: HTTP_STATUS.CREATED,
-          userData: safeUser,
+          userData: safeTechnician,
         };
-      } else if (OtpPurpose.PASSWORD_RESET === purpose && userEmail) {
+      } else if (OtpPurpose.PASSWORD_RESET === purpose && technicianEmail) {
         console.log("password resetting in the userAuthService");
-        const user = await this.userRepository.findByEmail(userEmail);
-        console.log("user from the password resetting:", user);
-        if (!user.success || !user.userData) {
+        const technician = await this.technicianRepository.findByEmail(technicianEmail );
+        console.log("user from the password resetting:", technician);
+        if (!technician.success || !technician.technicianData) {
           return {
             success: false,
-            message: "User not found with this email",
+            message: "Technician not found with this email",
             status: HTTP_STATUS.NOT_FOUND,
           };
         }
 
         const verificationResult = await this.verifyOtpGeneric(
-          userEmail,
+          technicianEmail,
           otp,
           OtpPurpose.PASSWORD_RESET
         );
@@ -251,22 +266,22 @@ export class UserAuthService implements IuserService {
   async resendOtp(data: string): Promise<ResendOtpResponseDTO> {
     try {
       console.log("entering resendotp function in the userservice");
-      const tempUser = await this.tempUserRepository.findTempUserByEmail(data);
-      console.log("tempuser in resendotp user service:", tempUser);
+      const tempTechnician = await this.tempTechnicianRepository.findTempTechnicianByEmail(data);
+      console.log("temptechnician in resendotp user service:", tempTechnician);
 
-      const user = await this.userRepository.findByEmail(data);
-      console.log("user in the resendOtp in the user service");
+      const technician = await this.technicianRepository.findByEmail(data);
+      console.log("technician in the resendOtp in the user service");
 
       let purpose: OtpPurpose;
 
-      if (tempUser.success && tempUser.tempUserData) {
+      if (tempTechnician.success && tempTechnician.tempTechnicianData) {
         purpose = OtpPurpose.REGISTRATION;
-      } else if (user.success && user.userData) {
+      } else if (technician.success && technician.technicianData) {
         purpose = OtpPurpose.PASSWORD_RESET;
       } else {
         return {
           success: false,
-          message: "User not found",
+          message: "technician not found",
           status: HTTP_STATUS.NOT_FOUND,
         };
       }
@@ -301,11 +316,11 @@ export class UserAuthService implements IuserService {
       console.log("Entering forgotPassword in userService");
       const { email } = data;
 
-      const user = await this.userRepository.findByEmail(email);
-      if (!user.success || !user.userData) {
+      const technician = await this.technicianRepository.findByEmail(email);
+      if (!technician.success || !technician.technicianData) {
         return {
           success: false,
-          message: "User not found with this email",
+          message: "Technician not found with this email",
           status: HTTP_STATUS.NOT_FOUND,
         };
       }
@@ -339,9 +354,9 @@ export class UserAuthService implements IuserService {
       console.log("Entering resetPassword in userService");
       const { email, password } = data;
 
-      const user = await this.userRepository.findByEmail(email);
-      console.log("userData in resetPasssword:", user);
-      if (!user.success || !user.userData) {
+      const technician = await this.technicianRepository.findByEmail(email);
+      console.log("userData in resetPasssword:", technician);
+      if (!technician.success || !technician.technicianData) {
         return {
           success: false,
           message: "User not found with this email",
@@ -351,7 +366,7 @@ export class UserAuthService implements IuserService {
 
       const hashedPassword = await this.passwordService.hash(password);
 
-      const updateResult = await this.userRepository.updatePassword(
+      const updateResult = await this.technicianRepository.updatePassword(
         email,
         hashedPassword
       );
@@ -386,18 +401,18 @@ export class UserAuthService implements IuserService {
     try {
       console.log("entering to the login credentials verifying in service");
       const { email, password } = data;
-      const user = await this.userRepository.findByEmail(email);
-      console.log("user", user);
-      if (!user.success || !user.userData) {
+      const technician = await this.technicianRepository.findByEmail(email);
+      console.log("technician", technician);
+      if (!technician.success || !technician.technicianData) {
         return {
           success: false,
-          message: "user not found",
+          message: "Technician not found",
           status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
       const isPasswordValid = await this.passwordService.verify(
-        user.userData.password,
+        technician.technicianData.password,
         password
       );
 
@@ -411,26 +426,34 @@ export class UserAuthService implements IuserService {
         };
       }
 
-      const userId = String(user.userData._id);
+      if (technician.technicianData.status === "Blocked") {
+        return {
+          success: false,
+          message: "Your account has been blocked. Please contact support.",
+          status: HTTP_STATUS.UNAUTHORIZED,
+        };
+      }
+
+      const technicianId = String(technician.technicianData._id);
 
       const access_token = this.jwtService.generateAccessToken(
-        userId,
-        Roles.USER
+        technicianId,
+        Roles.TECHNICIAN
       );
       console.log("access_token:", access_token);
       const refresh_token = this.jwtService.generateRefreshToken(
-        userId,
-        Roles.USER
+        technicianId,
+        Roles.TECHNICIAN
       );
       console.log("refresh_token:", refresh_token);
 
       return {
         success: true,
         message: "Login Successfull",
-        userId: userId,
+        technicianId: technicianId,
         access_token,
         refresh_token,
-        role: Roles.USER,
+        role: Roles.TECHNICIAN,
         status: HTTP_STATUS.OK,
       };
     } catch (error) {

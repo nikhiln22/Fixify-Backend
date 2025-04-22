@@ -6,7 +6,6 @@ export interface Iuser extends Document {
     password: string;
     phone: number;
     status: string;
-    role: string;
     image?: string;
     createdAt?: Date;
     updatedAt?: Date;

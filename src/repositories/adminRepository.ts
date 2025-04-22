@@ -1,8 +1,8 @@
-import { IadminRepository } from "../../interfaces/Irepositories/IadminRepository";
-import Admin from "../../models/adminModel";
-import { Iadmin } from "../../interfaces/Models/Iadmin";
-import { BaseRepository } from "../base/baseRepository";
-import { findByEmailResponseDTO } from "../../interfaces/DTO/IRepository/adminRepositoryDTO";
+import { IadminRepository } from "../interfaces/Irepositories/IadminRepository";
+import Admin from "../models/adminModel";
+import { Iadmin } from "../interfaces/Models/Iadmin";
+import { BaseRepository } from "./baseRepository";
+import { findByEmailResponseDTO } from "../interfaces/DTO/IRepository/adminRepositoryDTO";
 import { injectable } from "tsyringe";
 
 @injectable()

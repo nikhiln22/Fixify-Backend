@@ -1,24 +1,26 @@
-import { IuserController } from "../../interfaces/Icontrollers/IuserController";
-import { IuserService } from "../../interfaces/Iservices/IuserService";
+import { ItechnicianAuthController } from "../../interfaces/Icontrollers/Itechniciancontrollers/ItechnicianAuthController";
+import { ItechnicianAuthService } from "../../interfaces/Iservices/ItechnicianAuthService";
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../../utils/httpStatus";
+import { inject, injectable } from "tsyringe";
 
-export class UserController implements IuserController {
-  constructor(private userService: IuserService) {}
+@injectable()
+export class TechnicianAuthController implements ItechnicianAuthController {
+  constructor(@inject("ItechnicianAuthService")private technicianAuthService: ItechnicianAuthService ) {}
 
   async register(req: Request, res: Response): Promise<void> {
     try {
-      console.log("entering to the register function in userController");
+      console.log("entering to the register function in technicianAuthController");
       const data = req.body;
       console.log("data:", data);
-      const response = await this.userService.userSignUp(data);
-      console.log("response in register:", response);
+      const response = await this.technicianAuthService.technicianSignUp(data);
+      console.log("response in technician register:", response);
       if (response.success) {
         res.status(HTTP_STATUS.CREATED).json({
           success: true,
           message: response.message,
           email: response.email,
-          tempUserId: response.tempUserId,
+          tempTechnicianId: response.tempTechnicianId,
         });
       } else {
         res
@@ -35,11 +37,11 @@ export class UserController implements IuserController {
 
   async verifyOtp(req: Request, res: Response): Promise<void> {
     try {
-      console.log("entering into the verify otp function in userController");
+      console.log("entering into the verify otp function in technicianAuthController");
       const data = req.body;
-      console.log("userData in verifyOtp controller:", data);
-      const response = await this.userService.verifyOtp(data);
-      console.log("response in verifyOtp controller:", response);
+      console.log("technicianData in verifyOtp controller:", data);
+      const response = await this.technicianAuthService.verifyOtp(data);
+      console.log("response in verifyOtp controller in technician:", response);
       if (response.success) {
         res.status(HTTP_STATUS.CREATED).json(response);
       } else {
@@ -57,16 +59,16 @@ export class UserController implements IuserController {
 
   async resendOtp(req: Request, res: Response): Promise<void> {
     try {
-      console.log("entering into the resend otp functionality in the ");
+      console.log("entering into the resend otp functionality in the technicianAuthController");
       const { email } = req.body;
-      const response = await this.userService.resendOtp(email);
-      console.log("response from the resendotp controller:", response);
+      const response = await this.technicianAuthService.resendOtp(email);
+      console.log("response from the technician resendotp controller:", response);
       if (response.success) {
         res.status(HTTP_STATUS.OK).json({
           success: true,
           message: response.message,
           email: response.email,
-          tempuserId: response.tempUserId,
+          tempTechnicianId: response.tempTechnicianId,
         });
       } else {
         res
@@ -83,10 +85,10 @@ export class UserController implements IuserController {
 
   async login(req: Request, res: Response): Promise<void> {
     try {
-      console.log("entering the user login function in usercontroller");
+      console.log("entering the user login function in technicianAuthController");
       const data = req.body;
-      const response = await this.userService.login(data);
-      console.log("response from the login controller", response);
+      const response = await this.technicianAuthService.login(data);
+      console.log("response from the technician login controller", response);
       if (response.success) {
         res
           .status(HTTP_STATUS.OK)
@@ -106,7 +108,7 @@ export class UserController implements IuserController {
 
   async forgotPassword(req: Request, res: Response): Promise<void> {
     try {
-      console.log("Entering forgotPassword function in userController");
+      console.log("Entering forgotPassword function in technicianAuthController");
       const { email } = req.body;
 
       if (!email) {
@@ -116,8 +118,8 @@ export class UserController implements IuserController {
         return;
       }
 
-      const response = await this.userService.forgotPassword({ email });
-      console.log("Response from forgotPassword service:", response);
+      const response = await this.technicianAuthService.forgotPassword({ email });
+      console.log("Response from forgotPassword service in technician:", response);
 
       if (response.success) {
         res.status(HTTP_STATUS.OK).json({
@@ -140,7 +142,7 @@ export class UserController implements IuserController {
 
   async resetPassword(req: Request, res: Response): Promise<void> {
     try {
-      console.log("Entering resetPassword function in userController");
+      console.log("Entering resetPassword function in technicianAuthController");
       const { email, password } = req.body;
 
       
@@ -152,7 +154,7 @@ export class UserController implements IuserController {
         return;
       }
       
-      const response = await this.userService.resetPassword({
+      const response = await this.technicianAuthService.resetPassword({
         email,
         password,
       });
