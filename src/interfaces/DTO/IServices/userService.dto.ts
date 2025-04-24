@@ -47,6 +47,7 @@ export interface loginResponseDTO {
   message: string;
   role?: string;
   userId?: string;
+  data?:Iuser;
   access_token?: string;
   refresh_token?: string;
 }
