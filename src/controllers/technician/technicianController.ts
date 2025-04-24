@@ -2,7 +2,7 @@ import { ItechnicianController } from "../../interfaces/Icontrollers/Itechnician
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
-import { ItechnicianService } from "../../interfaces/Iservices/ItechnicianService";
+import { ItechnicianService } from "../../interfaces/Iservices/ItechnicianService/ItechnicianService";
 
 @injectable()
 export class TechnicianController implements ItechnicianController {

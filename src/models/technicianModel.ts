@@ -45,9 +45,14 @@ const technicianSchema: Schema<Itechnician> = new Schema(
         type: String,
       },
     ],
+    qualificationSubmitted: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
 
 const technician = mongoose.model<Itechnician>("technician", technicianSchema);
+
 export default technician;

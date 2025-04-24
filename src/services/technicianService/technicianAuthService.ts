@@ -20,7 +20,7 @@ import {
 } from "../../interfaces/DTO/IServices/technicianAuthService.dto";
 import { ItempTechnicianRepository } from "../../interfaces/Irepositories/ItempTechnicianRepository";
 import { ItechnicianRepository } from "../../interfaces/Irepositories/ItechnicianRepository";
-import { ItechnicianAuthService } from "../../interfaces/Iservices/ItechnicianAuthService";
+import { ItechnicianAuthService } from "../../interfaces/Iservices/ItechnicianService/ItechnicianAuthService";
 import { ItempTechnician } from "../../interfaces/Models/ItempTechnician";
 import { IemailService } from "../../interfaces/Iemail/Iemail";
 import { HTTP_STATUS } from "../../utils/httpStatus";

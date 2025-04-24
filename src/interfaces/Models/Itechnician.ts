@@ -1,4 +1,4 @@
-import { Document,Types } from "mongoose";
+import { Document, Types } from "mongoose";
 
 export interface Itechnician extends Document {
   username: string;
@@ -12,6 +12,7 @@ export interface Itechnician extends Document {
   About?: string;
   image?: string;
   certificates?: string[];
+  qualificationSubmitted?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

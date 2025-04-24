@@ -20,7 +20,7 @@ import {
 } from "../../interfaces/DTO/IServices/userService.dto";
 import { ItempUserRepository } from "../../interfaces/Irepositories/ItempUserRepository";
 import { IuserRepository } from "../../interfaces/Irepositories/IuserRepository";
-import { IuserAuthService } from "../../interfaces/Iservices/IuserAuthService";
+import { IuserAuthService } from "../../interfaces/Iservices/IuserService/IuserAuthService";
 import { ItempUser } from "../../interfaces/Models/ItempUser";
 import { IemailService } from "../../interfaces/Iemail/Iemail";
 import { HTTP_STATUS } from "../../utils/httpStatus";

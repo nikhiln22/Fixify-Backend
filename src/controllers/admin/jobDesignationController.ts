@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { injectable, inject } from "tsyringe";
-import { IjobDesignationService } from "../../interfaces/Iservices/IjobDesignationService";
+import { IjobDesignationService } from "../../interfaces/Iservices/IadminService/IjobDesignationService";
 import { AddDesignationResponseDTO } from "../../interfaces/DTO/IServices/jobDesignationService.dto";
 import { IjobDesignationController } from "../../interfaces/Icontrollers/IjobDesignationController";
 import { HTTP_STATUS } from "../../utils/httpStatus";

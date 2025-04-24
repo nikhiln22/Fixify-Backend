@@ -1,5 +1,5 @@
-import { AddDesignationResponseDTO } from "../DTO/IServices/jobDesignationService.dto";
-import { IjobDesignation } from "../Models/IjobDesignation";
+import { AddDesignationResponseDTO } from "../../DTO/IServices/jobDesignationService.dto";
+import { IjobDesignation } from "../../Models/IjobDesignation";
 
 
 export interface IjobDesignationService {

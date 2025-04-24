@@ -1,5 +1,5 @@
 import { ItechnicianAuthController } from "../../interfaces/Icontrollers/Itechniciancontrollers/ItechnicianAuthController";
-import { ItechnicianAuthService } from "../../interfaces/Iservices/ItechnicianAuthService";
+import { ItechnicianAuthService } from "../../interfaces/Iservices/ItechnicianService/ItechnicianAuthService";
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../../utils/httpStatus";
 import { inject, injectable } from "tsyringe";

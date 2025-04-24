@@ -11,8 +11,8 @@ import { JWTService } from "../utils/jwt";
 import { IadminRepository } from "../interfaces/Irepositories/IadminRepository";
 import { IPasswordHasher } from "../interfaces/IpasswordHasher/IpasswordHasher";
 import { IjwtService } from "../interfaces/Ijwt/Ijwt";
-import { IadminService } from "../interfaces/Iservices/IadminService";
-import { IjobDesignationService } from "../interfaces/Iservices/IjobDesignationService";
+import { IadminService } from "../interfaces/Iservices/IadminService/IadminAuthService";
+import { IjobDesignationService } from "../interfaces/Iservices/IadminService/IjobDesignationService";
 import { IjobDesignationRepository } from "../interfaces/Irepositories/IjobDesignationRepository";
 
 

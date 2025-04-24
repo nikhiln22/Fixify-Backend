@@ -1,4 +1,4 @@
-import { ItechnicianService } from "../../interfaces/Iservices/ItechnicianService";
+import { ItechnicianService } from "../../interfaces/Iservices/ItechnicianService/ItechnicianService";
 import { IjobDesignationRepository } from "../../interfaces/Irepositories/IjobDesignationRepository";
 import { HTTP_STATUS } from "../../utils/httpStatus";
 import { inject, injectable } from "tsyringe";

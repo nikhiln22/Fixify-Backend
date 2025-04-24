@@ -12,7 +12,7 @@ import { OTPService } from "../utils/otp";
 import { RedisService } from "../utils/redis";
 
 
-import { IuserAuthService } from "../interfaces/Iservices/IuserAuthService";
+import { IuserAuthService } from "../interfaces/Iservices/IuserService/IuserAuthService";
 import { IuserRepository } from "../interfaces/Irepositories/IuserRepository";
 import { ItempUserRepository } from "../interfaces/Irepositories/ItempUserRepository";
 import { IPasswordHasher } from "../interfaces/IpasswordHasher/IpasswordHasher";

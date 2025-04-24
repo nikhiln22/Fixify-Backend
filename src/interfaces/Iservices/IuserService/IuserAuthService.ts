@@ -7,13 +7,13 @@ import {
   ResendOtpResponseDTO,
   ResetPasswordDataDTO,
   ResetPasswordResponseDTO,
-  SignupTechnicianDataDTO,
-  tempTechnicianResponseDTO,
+  SignupUserDataDTO,
+  tempUserResponseDTO,
   verifyOtpDataDTO,
-} from "../DTO/IServices/technicianAuthService.dto";
+} from "../../DTO/IServices/userService.dto";
 
-export interface ItechnicianAuthService {
-  technicianSignUp(data: SignupTechnicianDataDTO): Promise<tempTechnicianResponseDTO>;
+export interface IuserAuthService {
+  userSignUp(data: SignupUserDataDTO): Promise<tempUserResponseDTO>;
   verifyOtp(data: verifyOtpDataDTO): Promise<RegisterResponseDTO>;
   resendOtp(data: string): Promise<ResendOtpResponseDTO>;
   forgotPassword(data: ForgotPasswordRequestDTO): Promise<ForgotPasswordResponseDTO>

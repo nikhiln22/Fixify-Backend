@@ -5,7 +5,7 @@ import {
   loginResponseDTO,
 } from "../../interfaces/DTO/IServices/adminService.dto";
 import { IadminRepository } from "../../interfaces/Irepositories/IadminRepository";
-import { IadminService } from "../../interfaces/Iservices/IadminService";
+import { IadminService } from "../../interfaces/Iservices/IadminService/IadminAuthService";
 import { HTTP_STATUS } from "../../utils/httpStatus";
 import { IjwtService } from "../../interfaces/Ijwt/Ijwt";
 import { IPasswordHasher } from "../../interfaces/IpasswordHasher/IpasswordHasher";

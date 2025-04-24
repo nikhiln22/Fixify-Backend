@@ -1,5 +1,5 @@
 import {IuserAuthController } from "../../interfaces/Icontrollers/IuserAuthController";
-import { IuserAuthService } from "../../interfaces/Iservices/IuserAuthService";
+import { IuserAuthService } from "../../interfaces/Iservices/IuserService/IuserAuthService";
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
