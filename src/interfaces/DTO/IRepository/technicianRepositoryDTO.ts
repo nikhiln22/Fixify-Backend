@@ -1,6 +1,6 @@
 import { Itechnician } from "../../Models/Itechnician";
 import { ItempTechnician } from "../../Models/ItempTechnician";
-import { Types } from "mongoose";
+
 
 export interface findByEmailResponseDTO {
   success: boolean;
@@ -31,16 +31,14 @@ export interface findTempTechnicianByEmailDTO {
   message?: string;
 }
 
-
 export interface UpdatePasswordResponseDTO {
   success: boolean;
   message?: string;
 }
 
-
 export interface TechnicianQualificationDTO {
   experience: string;
-  designation: Types.ObjectId;
+  designation: string;
   about: string;
   profilePhoto?: string;
   certificates?: string[];

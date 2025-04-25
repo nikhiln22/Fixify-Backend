@@ -2,9 +2,10 @@ import { ItechnicianService } from "../../interfaces/Iservices/ItechnicianServic
 import { IjobDesignationRepository } from "../../interfaces/Irepositories/IjobDesignationRepository";
 import { HTTP_STATUS } from "../../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
-import { getJobDesignationsResponse } from "../../interfaces/DTO/IServices/technicianService.dto";
-import path from "path";
-import fs from "fs";
+import {
+  getJobDesignationsResponse,
+  TechicianQualification,
+} from "../../interfaces/DTO/IServices/technicianService.dto";
 import { ItechnicianRepository } from "../../interfaces/Irepositories/ItechnicianRepository";
 import { IFileUploader } from "../../interfaces/IfileUploader/IfileUploader";
 
@@ -52,36 +53,17 @@ export class TechnicianService implements ItechnicianService {
 
   async submitTechnicianQualifications(
     technicianId: string,
-    qualificationData: {
-      experience: string;
-      designation: string;
-      about: string;
-      profilePhoto?: Express.Multer.File;
-      certificates?: Express.Multer.File[];
-    }
+    qualificationData: TechicianQualification
   ): Promise<any> {
     try {
       console.log(
         "Processing the technician qualification in the service layer"
       );
 
-      const designation = await this.jobDesignationRepository.findByName(
-        qualificationData.designation
-      );
-
-      console.log("fetched designation:", designation);
-
-      if (!designation) {
-        return {
-          message: "Designation not found",
-          success: false,
-          status: HTTP_STATUS.NOT_FOUND,
-        };
-      }
 
       const qualificationDataToSave: any = {
         experience: qualificationData.experience,
-        designation: designation._id,
+        designation: qualificationData.designation,
         about: qualificationData.about,
       };
 

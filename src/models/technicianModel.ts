@@ -31,8 +31,7 @@ const technicianSchema: Schema<Itechnician> = new Schema(
       type: Number,
     },
     Designation: {
-      type: Schema.Types.ObjectId,
-      ref: "jobDesignation",
+      type: String,
     },
     About: {
       type: String,
@@ -45,10 +44,6 @@ const technicianSchema: Schema<Itechnician> = new Schema(
         type: String,
       },
     ],
-    qualificationSubmitted: {
-      type: Boolean,
-      default: false,
-    },
   },
   { timestamps: true }
 );
