@@ -130,7 +130,7 @@ export class TechnicianAuthService implements ItechnicianAuthService {
         ...data,
         password: hashedPassword,
         expiresAt,
-      } as ItempTechnician
+      } as ItempTechnician;
 
       const response = await this.tempTechnicianRepository.createTempTechnician(
         tempTechnicianData
@@ -156,10 +156,10 @@ export class TechnicianAuthService implements ItechnicianAuthService {
 
       const { otp, tempTechnicianId, email, purpose } = data;
 
-      console.log("otp:",otp);
-      console.log("tempTechnicianId:",tempTechnicianId);
-      console.log("email:",email);
-      console.log("purpose:",purpose);
+      console.log("otp:", otp);
+      console.log("tempTechnicianId:", tempTechnicianId);
+      console.log("email:", email);
+      console.log("purpose:", purpose);
 
       let technicianEmail = email;
 
@@ -204,7 +204,9 @@ export class TechnicianAuthService implements ItechnicianAuthService {
           phone: tempTechnician.phone,
         };
 
-        const newTechnician = await this.technicianRepository.createTechnician(technicianData);
+        const newTechnician = await this.technicianRepository.createTechnician(
+          technicianData
+        );
         console.log("new created technician:", newTechnician);
 
         const newTechnicianObj = newTechnician.toObject
@@ -229,7 +231,9 @@ export class TechnicianAuthService implements ItechnicianAuthService {
         };
       } else if (OtpPurpose.PASSWORD_RESET === purpose && technicianEmail) {
         console.log("password resetting in the userAuthService");
-        const technician = await this.technicianRepository.findByEmail(technicianEmail );
+        const technician = await this.technicianRepository.findByEmail(
+          technicianEmail
+        );
         console.log("user from the password resetting:", technician);
         if (!technician.success || !technician.technicianData) {
           return {
@@ -266,7 +270,8 @@ export class TechnicianAuthService implements ItechnicianAuthService {
   async resendOtp(data: string): Promise<ResendOtpResponseDTO> {
     try {
       console.log("entering resendotp function in the userservice");
-      const tempTechnician = await this.tempTechnicianRepository.findTempTechnicianByEmail(data);
+      const tempTechnician =
+        await this.tempTechnicianRepository.findTempTechnicianByEmail(data);
       console.log("temptechnician in resendotp user service:", tempTechnician);
 
       const technician = await this.technicianRepository.findByEmail(data);
@@ -450,11 +455,16 @@ export class TechnicianAuthService implements ItechnicianAuthService {
       return {
         success: true,
         message: "Login Successfull",
-        technicianId: technicianId,
         access_token,
         refresh_token,
         role: Roles.TECHNICIAN,
         status: HTTP_STATUS.OK,
+        technician: {
+          username: technician.technicianData.username,
+          email: technician.technicianData.email,
+          phone: technician.technicianData.phone,
+          is_verified: technician.technicianData.is_verified,
+        },
       };
     } catch (error) {
       console.log("error");

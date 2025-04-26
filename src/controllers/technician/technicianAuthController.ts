@@ -16,16 +16,16 @@ export class TechnicianAuthController implements ItechnicianAuthController {
       const response = await this.technicianAuthService.technicianSignUp(data);
       console.log("response in technician register:", response);
       if (response.success) {
-        res.status(HTTP_STATUS.CREATED).json({
-          success: true,
+        res.status(response.status).json({
+          success: response.success,
           message: response.message,
           email: response.email,
           tempTechnicianId: response.tempTechnicianId,
         });
       } else {
         res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json({ success: false, message: response.message });
+          .status(response.status)
+          .json({ success: response.success, message: response.message });
       }
     } catch (error) {
       console.log("error occured", error);
@@ -43,11 +43,11 @@ export class TechnicianAuthController implements ItechnicianAuthController {
       const response = await this.technicianAuthService.verifyOtp(data);
       console.log("response in verifyOtp controller in technician:", response);
       if (response.success) {
-        res.status(HTTP_STATUS.CREATED).json(response);
+        res.status(response.status).json(response);
       } else {
         res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json({ success: false, message: response.message });
+          .status(response.status)
+          .json({ success: response.success, message: response.message });
       }
     } catch (error) {
       console.log("error occured:", error);
@@ -64,16 +64,16 @@ export class TechnicianAuthController implements ItechnicianAuthController {
       const response = await this.technicianAuthService.resendOtp(email);
       console.log("response from the technician resendotp controller:", response);
       if (response.success) {
-        res.status(HTTP_STATUS.OK).json({
-          success: true,
+        res.status(response.status).json({
+          success: response.success,
           message: response.message,
           email: response.email,
           tempTechnicianId: response.tempTechnicianId,
         });
       } else {
         res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json({ success: false, message: response.message });
+          .status(response.status)
+          .json({ success: response.success, message: response.message });
       }
     } catch (error) {
       console.log("error in the resendOtp controller", error);
@@ -91,12 +91,12 @@ export class TechnicianAuthController implements ItechnicianAuthController {
       console.log("response from the technician login controller", response);
       if (response.success) {
         res
-          .status(HTTP_STATUS.OK)
-          .json({ success: true, message: response.message, data: response });
+          .status(response.status)
+          .json({ success: response.success, message: response.message, data: response });
       } else {
         res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json({ success: false, message: response.message });
+          .status(response.status)
+          .json({ success: response.success, message: response.message });
       }
     } catch (error) {
       console.log("error:", error);
@@ -111,26 +111,19 @@ export class TechnicianAuthController implements ItechnicianAuthController {
       console.log("Entering forgotPassword function in technicianAuthController");
       const { email } = req.body;
 
-      if (!email) {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json({ success: false, message: "Email is required" });
-        return;
-      }
-
       const response = await this.technicianAuthService.forgotPassword({ email });
       console.log("Response from forgotPassword service in technician:", response);
 
       if (response.success) {
-        res.status(HTTP_STATUS.OK).json({
-          success: true,
+        res.status(response.status).json({
+          success: response.success,
           message: response.message,
           email: response.email,
         });
       } else {
         res
-          .status(response.status || HTTP_STATUS.BAD_REQUEST)
-          .json({ success: false, message: response.message });
+          .status(response.status)
+          .json({ success: response.success, message: response.message });
       }
     } catch (error) {
       console.log("Error in forgotPassword controller:", error);
@@ -144,15 +137,6 @@ export class TechnicianAuthController implements ItechnicianAuthController {
     try {
       console.log("Entering resetPassword function in technicianAuthController");
       const { email, password } = req.body;
-
-      
-      if (!email && !password) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json({
-          success: false,
-          message: "Email and new password are required",
-        });
-        return;
-      }
       
       const response = await this.technicianAuthService.resetPassword({
         email,
@@ -162,14 +146,14 @@ export class TechnicianAuthController implements ItechnicianAuthController {
       console.log("Response from resetPassword service:", response);
       
       if (response.success) {
-        res.status(HTTP_STATUS.OK).json({
-          success: true,
+        res.status(response.status).json({
+          success: response.success,
           message: response.message,
         });
       } else {
         res
-          .status(response.status || HTTP_STATUS.BAD_REQUEST)
-          .json({ success: false, message: response.message });
+          .status(response.status)
+          .json({ success: response.success, message: response.message });
       }
     } catch (error) {
       console.log("Error in resetPassword controller:", error);

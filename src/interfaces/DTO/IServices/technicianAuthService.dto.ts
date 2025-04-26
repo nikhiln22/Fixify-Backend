@@ -44,9 +44,12 @@ export interface loginResponseDTO {
   status: number;
   message: string;
   role?: string;
-  technicianId?: string;
   access_token?: string;
   refresh_token?: string;
+  technician?: Pick<
+    Itechnician,
+    "username" | "phone" | "email" | "is_verified"
+  >;
 }
 
 export interface loginDataDTO {
