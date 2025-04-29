@@ -1,4 +1,4 @@
-import { Iuser } from "../../Models/Iuser";
+import { Iuser } from "../../../Models/Iuser";
 
 export interface RegisterResponseDTO {
   success: boolean;
@@ -46,10 +46,8 @@ export interface loginResponseDTO {
   status: number;
   message: string;
   role?: string;
-  userId?: string;
-  data?:Iuser;
+  user?: Pick<Iuser, "username" | "email" | "phone">;
   access_token?: string;
-  refresh_token?: string;
 }
 
 export interface loginDataDTO {

@@ -10,7 +10,7 @@ import {
   SignupUserDataDTO,
   tempUserResponseDTO,
   verifyOtpDataDTO,
-} from "../../DTO/IServices/userService.dto";
+} from "../../DTO/IServices/Iuserservices.dto/userAuthService.dto";
 
 export interface IuserAuthService {
   userSignUp(data: SignupUserDataDTO): Promise<tempUserResponseDTO>;

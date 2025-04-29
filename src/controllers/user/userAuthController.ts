@@ -1,4 +1,4 @@
-import {IuserAuthController } from "../../interfaces/Icontrollers/IuserAuthController";
+import {IuserAuthController } from "../../interfaces/Icontrollers/iusercontrollers/IuserAuthController";
 import { IuserAuthService } from "../../interfaces/Iservices/IuserService/IuserAuthService";
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../../utils/httpStatus";
@@ -16,16 +16,16 @@ export class UserAuthController implements IuserAuthController {
       const response = await this.userAuthService.userSignUp(data);
       console.log("response in register:", response);
       if (response.success) {
-        res.status(HTTP_STATUS.CREATED).json({
-          success: true,
+        res.status(response.status).json({
+          success: response.success,
           message: response.message,
           email: response.email,
           tempUserId: response.tempUserId,
         });
       } else {
         res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json({ success: false, message: response.message });
+          .status(response.status)
+          .json({ success: response.success, message: response.message });
       }
     } catch (error) {
       console.log("error occured", error);
@@ -43,11 +43,11 @@ export class UserAuthController implements IuserAuthController {
       const response = await this.userAuthService.verifyOtp(data);
       console.log("response in verifyOtp controller:", response);
       if (response.success) {
-        res.status(HTTP_STATUS.CREATED).json(response);
+        res.status(response.status).json(response);
       } else {
         res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json({ success: false, message: response.message });
+          .status(response.status)
+          .json({ success: response.success, message: response.message });
       }
     } catch (error) {
       console.log("error occured:", error);
@@ -64,16 +64,16 @@ export class UserAuthController implements IuserAuthController {
       const response = await this.userAuthService.resendOtp(email);
       console.log("response from the resendotp controller:", response);
       if (response.success) {
-        res.status(HTTP_STATUS.OK).json({
-          success: true,
+        res.status(response.status).json({
+          success: response.success,
           message: response.message,
           email: response.email,
           tempuserId: response.tempUserId,
         });
       } else {
         res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json({ success: false, message: response.message });
+          .status(response.status)
+          .json({ success: response.success, message: response.message });
       }
     } catch (error) {
       console.log("error in the resendOtp controller", error);
@@ -91,12 +91,12 @@ export class UserAuthController implements IuserAuthController {
       console.log("response from the login controller", response);
       if (response.success) {
         res
-          .status(HTTP_STATUS.OK)
-          .json({ success: true, message: response.message, data: response });
+          .status(response.status)
+          .json({ success: response.success, message: response.message, data: response });
       } else {
         res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json({ success: false, message: response.message });
+          .status(response.status)
+          .json({ success: response.success, message: response.message });
       }
     } catch (error) {
       console.log("error:", error);
@@ -111,26 +111,19 @@ export class UserAuthController implements IuserAuthController {
       console.log("Entering forgotPassword function in userController");
       const { email } = req.body;
 
-      if (!email) {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json({ success: false, message: "Email is required" });
-        return;
-      }
-
       const response = await this.userAuthService.forgotPassword({ email });
       console.log("Response from forgotPassword service:", response);
 
       if (response.success) {
-        res.status(HTTP_STATUS.OK).json({
-          success: true,
+        res.status(response.status).json({
+          success: response.success,
           message: response.message,
           email: response.email,
         });
       } else {
         res
-          .status(response.status || HTTP_STATUS.BAD_REQUEST)
-          .json({ success: false, message: response.message });
+          .status(response.status)
+          .json({ success: response.success, message: response.message });
       }
     } catch (error) {
       console.log("Error in forgotPassword controller:", error);
@@ -144,15 +137,6 @@ export class UserAuthController implements IuserAuthController {
     try {
       console.log("Entering resetPassword function in userController");
       const { email, password } = req.body;
-
-      
-      if (!email && !password) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json({
-          success: false,
-          message: "Email and new password are required",
-        });
-        return;
-      }
       
       const response = await this.userAuthService.resetPassword({
         email,
@@ -162,14 +146,14 @@ export class UserAuthController implements IuserAuthController {
       console.log("Response from resetPassword service:", response);
       
       if (response.success) {
-        res.status(HTTP_STATUS.OK).json({
-          success: true,
+        res.status(response.status).json({
+          success: response.success,
           message: response.message,
         });
       } else {
         res
-          .status(response.status || HTTP_STATUS.BAD_REQUEST)
-          .json({ success: false, message: response.message });
+          .status(response.status)
+          .json({ success: response.success, message: response.message });
       }
     } catch (error) {
       console.log("Error in resetPassword controller:", error);
