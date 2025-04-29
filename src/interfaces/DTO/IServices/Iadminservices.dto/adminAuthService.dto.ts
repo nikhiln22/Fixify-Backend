@@ -1,4 +1,4 @@
-import { Iadmin } from "../../Models/Iadmin";
+import { Iadmin } from "../../../Models/Iadmin";
 
 export interface loginResponseDTO {
   success: boolean;
@@ -7,7 +7,6 @@ export interface loginResponseDTO {
   data?:Iadmin;
   role?: string;
   access_token?: string;
-  refresh_token?: string;
 }
 
 export interface loginDataDTO {

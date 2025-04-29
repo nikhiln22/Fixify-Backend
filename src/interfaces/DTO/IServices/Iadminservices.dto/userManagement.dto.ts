@@ -1,4 +1,4 @@
-import { Iuser } from "../../Models/Iuser";
+import { Iuser } from "../../../Models/Iuser";
 
 export interface PaginatedUserResponse {
   status: number;

@@ -1,4 +1,4 @@
-import { IjobDesignation } from "../../Models/IjobDesignation"; 
+import { IjobDesignation } from "../../../Models/IjobDesignation"; 
 
 export interface AddDesignationResponseDTO {
     status: number;

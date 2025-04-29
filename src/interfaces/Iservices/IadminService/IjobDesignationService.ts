@@ -1,4 +1,4 @@
-import { AddDesignationResponseDTO } from "../../DTO/IServices/jobDesignationService.dto";
+import { AddDesignationResponseDTO } from "../../DTO/IServices/Iadminservices.dto/jobDesignationService.dto";
 import { IjobDesignation } from "../../Models/IjobDesignation";
 
 

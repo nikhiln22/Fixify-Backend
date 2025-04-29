@@ -17,12 +17,12 @@ export class AdminAuthController implements IadminAuthController {
       console.log("response from the admin login controller:", response);
       if (response.success) {
         res
-          .status(HTTP_STATUS.OK)
-          .json({ success: true, message: response.message, data: response });
+          .status(response.status)
+          .json({ success: response.success, message: response.message, data: response });
       } else {
         res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json({ success: false, message: response.message });
+          .status(response.status)
+          .json({ success: response.success, message: response.message });
       }
     } catch (error) {
       console.log("error occured while logging the admin:", error);

@@ -1,7 +1,7 @@
 import { injectable, inject } from "tsyringe";
 import { IjobDesignationService } from "../../interfaces/Iservices/IadminService/IjobDesignationService";
 import { IjobDesignationRepository } from "../../interfaces/Irepositories/IjobDesignationRepository";
-import { AddDesignationResponseDTO } from "../../interfaces/DTO/IServices/jobDesignationService.dto";
+import { AddDesignationResponseDTO } from "../../interfaces/DTO/IServices/Iadminservices.dto/jobDesignationService.dto";
 import { HTTP_STATUS } from "../../utils/httpStatus";
 
 @injectable()
@@ -41,7 +41,9 @@ export class JobDesignationService implements IjobDesignationService {
     }
   }
 
-  async toggleDesignationStatus(id: string): Promise<AddDesignationResponseDTO> {
+  async toggleDesignationStatus(
+    id: string
+  ): Promise<AddDesignationResponseDTO> {
     try {
       const designation = await this.designationRepository.findById(id);
       console.log(
@@ -57,15 +59,20 @@ export class JobDesignationService implements IjobDesignationService {
 
       const newStatus = !designation.Status;
 
-      let response = await this.designationRepository.blockDesignation(id,newStatus);
+      let response = await this.designationRepository.blockDesignation(
+        id,
+        newStatus
+      );
       console.log(
         "response after blocking the job designation from the designation repository:",
         response
       );
       return {
         status: HTTP_STATUS.OK,
-        message: `Designation successfully ${newStatus ? "unblocked" : "blocked"}`,
-        designation: { ...designation.toObject(), Status: newStatus }
+        message: `Designation successfully ${
+          newStatus ? "unblocked" : "blocked"
+        }`,
+        designation: { ...designation.toObject(), Status: newStatus },
       };
     } catch (error) {
       console.error("Error blocking designation:", error);

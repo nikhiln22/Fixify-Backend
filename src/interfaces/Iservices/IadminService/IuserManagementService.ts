@@ -1,7 +1,7 @@
 import {
   PaginatedUserResponse,
   ToggleUserStatusResponse,
-} from "../DTO/IServices/userManagement.dto";
+} from "../../DTO/IServices/Iadminservices.dto/userManagement.dto";
 
 
 export interface IuserManagementService {
