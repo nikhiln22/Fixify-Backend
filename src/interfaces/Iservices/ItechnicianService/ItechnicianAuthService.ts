@@ -10,7 +10,7 @@ import {
   SignupTechnicianDataDTO,
   tempTechnicianResponseDTO,
   verifyOtpDataDTO,
-} from "../../DTO/IServices/technicianAuthService.dto";
+} from "../../DTO/IServices/Itechnicianservices.dto/technicianAuthService.dto";
 
 export interface ItechnicianAuthService {
   technicianSignUp(data: SignupTechnicianDataDTO): Promise<tempTechnicianResponseDTO>;

@@ -1,4 +1,4 @@
-import { getJobDesignationsResponse } from "../../DTO/IServices/technicianService.dto";
+import { getJobDesignationsResponse } from "../../DTO/IServices/Itechnicianservices.dto/technicianService.dto";
 
 export interface ItechnicianService {
     getJobDesignations(): Promise<getJobDesignationsResponse>;

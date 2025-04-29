@@ -5,7 +5,7 @@ import { inject, injectable } from "tsyringe";
 import {
   getJobDesignationsResponse,
   TechicianQualification,
-} from "../../interfaces/DTO/IServices/technicianService.dto";
+} from "../../interfaces/DTO/IServices/Itechnicianservices.dto/technicianService.dto";
 import { ItechnicianRepository } from "../../interfaces/Irepositories/ItechnicianRepository";
 import { IFileUploader } from "../../interfaces/IfileUploader/IfileUploader";
 

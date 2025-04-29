@@ -17,7 +17,7 @@ import {
   SignupTechnicianDataDTO,
   tempTechnicianResponseDTO,
   verifyOtpDataDTO,
-} from "../../interfaces/DTO/IServices/technicianAuthService.dto";
+} from "../../interfaces/DTO/IServices/Itechnicianservices.dto/technicianAuthService.dto";
 import { ItempTechnicianRepository } from "../../interfaces/Irepositories/ItempTechnicianRepository";
 import { ItechnicianRepository } from "../../interfaces/Irepositories/ItechnicianRepository";
 import { ItechnicianAuthService } from "../../interfaces/Iservices/ItechnicianService/ItechnicianAuthService";
@@ -30,6 +30,7 @@ import { IPasswordHasher } from "../../interfaces/IpasswordHasher/IpasswordHashe
 import { IredisService } from "../../interfaces/Iredis/Iredis";
 import { OtpVerificationResult } from "../../interfaces/Iotp/IOTP";
 import { inject, injectable } from "tsyringe";
+import { response } from "express";
 
 @injectable()
 export class TechnicianAuthService implements ItechnicianAuthService {
@@ -452,11 +453,17 @@ export class TechnicianAuthService implements ItechnicianAuthService {
       );
       console.log("refresh_token:", refresh_token);
 
+      response.cookie("refresh_token", refresh_token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
       return {
         success: true,
         message: "Login Successfull",
         access_token,
-        refresh_token,
         role: Roles.TECHNICIAN,
         status: HTTP_STATUS.OK,
         technician: {
