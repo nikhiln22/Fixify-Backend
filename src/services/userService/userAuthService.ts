@@ -433,17 +433,11 @@ export class UserAuthService implements IuserAuthService {
         Roles.USER
       );
 
-      response.cookie("refresh_token", refresh_token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-
       return {
         success: true,
         message: "Login Successfull",
         access_token,
+        refresh_token,
         role: Roles.USER,
         status: HTTP_STATUS.OK,
         user: {

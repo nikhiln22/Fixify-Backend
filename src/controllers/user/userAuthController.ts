@@ -1,4 +1,4 @@
-import {IuserAuthController } from "../../interfaces/Icontrollers/iusercontrollers/IuserAuthController";
+import { IuserAuthController } from "../../interfaces/Icontrollers/iusercontrollers/IuserAuthController";
 import { IuserAuthService } from "../../interfaces/Iservices/IuserService/IuserAuthService";
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../../utils/httpStatus";
@@ -6,7 +6,9 @@ import { inject, injectable } from "tsyringe";
 
 @injectable()
 export class UserAuthController implements IuserAuthController {
-  constructor(@inject("IuserAuthService")private userAuthService: IuserAuthService) {}
+  constructor(
+    @inject("IuserAuthService") private userAuthService: IuserAuthService
+  ) {}
 
   async register(req: Request, res: Response): Promise<void> {
     try {
@@ -88,11 +90,25 @@ export class UserAuthController implements IuserAuthController {
       console.log("entering the user login function in usercontroller");
       const data = req.body;
       const response = await this.userAuthService.login(data);
+
+      res.cookie(
+        `${response.role?.toLowerCase()}_refresh_token`,
+        response.refresh_token,
+        {
+          httpOnly: true,
+          secure: true,
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        }
+      );
+
       console.log("response from the login controller", response);
       if (response.success) {
-        res
-          .status(response.status)
-          .json({ success: response.success, message: response.message, data: response });
+        res.status(response.status).json({
+          success: response.success,
+          message: response.message,
+          data: response,
+        });
       } else {
         res
           .status(response.status)
@@ -137,14 +153,14 @@ export class UserAuthController implements IuserAuthController {
     try {
       console.log("Entering resetPassword function in userController");
       const { email, password } = req.body;
-      
+
       const response = await this.userAuthService.resetPassword({
         email,
         password,
       });
-      
+
       console.log("Response from resetPassword service:", response);
-      
+
       if (response.success) {
         res.status(response.status).json({
           success: response.success,
@@ -160,6 +176,29 @@ export class UserAuthController implements IuserAuthController {
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: "Internal Server Error" });
+    }
+  }
+
+  async logout(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering the logout function from the user auth controller");
+      const role = (req as any).user?.role;
+      console.log("role in the user auth controller:", role);
+      res.clearCookie(`${role}_refresh_token`, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+      });
+      res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: "Logged out successfully",
+      });
+    } catch (error) {
+      console.log("error occured while user logging out:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: true,
+        message: "Internal server error occured",
+      });
     }
   }
 }

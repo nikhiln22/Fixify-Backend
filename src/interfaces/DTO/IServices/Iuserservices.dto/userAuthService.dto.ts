@@ -48,6 +48,7 @@ export interface loginResponseDTO {
   role?: string;
   user?: Pick<Iuser, "username" | "email" | "phone">;
   access_token?: string;
+  refresh_token?: string;
 }
 
 export interface loginDataDTO {

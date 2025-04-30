@@ -2,6 +2,7 @@ import express, { Router } from "express";
 import { container } from "../di/container";
 import { UserAuthController } from "../controllers/user/userAuthController";
 import { AuthMiddleware } from "../middlewares/AuthMiddleware";
+import { Roles } from "../config/roles";
 
 export class UserRoutes {
   private router: Router;
@@ -44,6 +45,12 @@ export class UserRoutes {
     this.router.post(
       "/resetpassword",
       userAuthController.resetPassword.bind(userAuthController)
+    );
+
+    this.router.get(
+      "/logout",
+      this.authMiddleware.authenticate(Roles.USER),
+      userAuthController.logout.bind(userAuthController)
     );
   }
 
