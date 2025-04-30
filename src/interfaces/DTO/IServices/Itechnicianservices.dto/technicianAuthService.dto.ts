@@ -45,6 +45,7 @@ export interface loginResponseDTO {
   message: string;
   role?: string;
   access_token?: string;
+  refresh_token?: string;
   technician?: Pick<
     Itechnician,
     "username" | "phone" | "email" | "is_verified"
