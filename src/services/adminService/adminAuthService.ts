@@ -9,7 +9,7 @@ import { IadminService } from "../../interfaces/Iservices/IadminService/IadminAu
 import { HTTP_STATUS } from "../../utils/httpStatus";
 import { IjwtService } from "../../interfaces/Ijwt/Ijwt";
 import { IPasswordHasher } from "../../interfaces/IpasswordHasher/IpasswordHasher";
-import { response } from "express";
+
 
 @injectable()
 export class AdminAuthService implements IadminService {
@@ -74,17 +74,11 @@ export class AdminAuthService implements IadminService {
       );
       console.log("admin refresh_token:", refresh_token);
 
-      response.cookie("refresh_token", refresh_token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-
       return {
         success: true,
         message: "Login Successful",
         access_token,
+        refresh_token,
         role: Roles.ADMIN,
         status: HTTP_STATUS.OK,
         data: safeAdminData,

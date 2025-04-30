@@ -4,9 +4,10 @@ export interface loginResponseDTO {
   success: boolean;
   status: number;
   message: string;
-  data?:Iadmin;
+  data?: Iadmin;
   role?: string;
   access_token?: string;
+  refresh_token?: string;
 }
 
 export interface loginDataDTO {
