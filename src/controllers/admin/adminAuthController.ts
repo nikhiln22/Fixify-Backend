@@ -1,5 +1,5 @@
 import { injectable, inject } from "tsyringe";
-import { IadminAuthController } from "../../interfaces/Icontrollers/IadminAuthController";
+import { IadminAuthController } from "../../interfaces/Icontrollers/Iadmincontrollers/IadminAuthController";
 import { Request, Response } from "express";
 import { IadminService } from "../../interfaces/Iservices/IadminService/IadminAuthService";
 import { HTTP_STATUS } from "../../utils/httpStatus";

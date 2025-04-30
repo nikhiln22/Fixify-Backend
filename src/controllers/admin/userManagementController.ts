@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../../utils/httpStatus";
-import { IuserManagemenrController } from "../../interfaces/Icontrollers/IuserManagementController";
+import { IuserManagemenrController } from "../../interfaces/Icontrollers/Iadmincontrollers/IuserManagementController";
 import { inject, injectable } from "tsyringe";
 import { IuserManagementService } from "../../interfaces/Iservices/IadminService/IuserManagementService";
 
