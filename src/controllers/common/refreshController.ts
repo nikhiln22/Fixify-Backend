@@ -2,6 +2,7 @@ import { IcommonController } from "../../interfaces/Icontrollers/Icommoncontroll
 import { inject, injectable } from "tsyringe";
 import { IrefreshService } from "../../interfaces/Iservices/IcommonService/IrefreshService";
 import { Request, Response } from "express";
+import { HTTP_STATUS } from "../../utils/httpStatus";
 
 @injectable()
 export class RefreshController implements IcommonController {
@@ -11,6 +12,7 @@ export class RefreshController implements IcommonController {
 
   async refreshAccessToken(req: Request, res: Response): Promise<void> {
     try {
+      console.log("entering to the access token generating with the existing refresh token");
       const { role } = req.body;
       if (!role) {
         res.status(400).json({ message: "Role is required in the body" });
@@ -18,9 +20,10 @@ export class RefreshController implements IcommonController {
       }
 
       const refreshToken = req.cookies?.[`${role}_refresh_token`];
+      console.log("refresh token from the refresh controller",refreshToken);
 
       if (!refreshToken) {
-        res.status(401).json({ message: "Refresh token not found in cookies" });
+        res.status(HTTP_STATUS.NOT_FOUND).json({ message: "Refresh token not found in cookies" });
         return;
       }
 
@@ -29,13 +32,14 @@ export class RefreshController implements IcommonController {
         role
       );
 
-      res.status(200).json({
+      res.status(HTTP_STATUS.OK).json({
+        success:true,
         message: "Access token refreshed successfully",
-        accessToken: newAccessToken,
+        access_token: newAccessToken,
       });
     } catch (error: any) {
       console.error("Error in refreshAccessToken controller:", error.message);
-      res.status(500).json({ message: "Failed to refresh access token" });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: "Failed to refresh access token" });
     }
   }
 }
