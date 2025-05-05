@@ -17,10 +17,10 @@ import {
   SignupUserDataDTO,
   tempUserResponseDTO,
   verifyOtpDataDTO,
-} from "../../interfaces/DTO/IServices/userService.dto";
+} from "../../interfaces/DTO/IServices/Iuserservices.dto/userAuthService.dto";
 import { ItempUserRepository } from "../../interfaces/Irepositories/ItempUserRepository";
 import { IuserRepository } from "../../interfaces/Irepositories/IuserRepository";
-import { IuserAuthService } from "../../interfaces/Iservices/IuserAuthService";
+import { IuserAuthService } from "../../interfaces/Iservices/IuserService/IuserAuthService";
 import { ItempUser } from "../../interfaces/Models/ItempUser";
 import { IemailService } from "../../interfaces/Iemail/Iemail";
 import { HTTP_STATUS } from "../../utils/httpStatus";
@@ -30,9 +30,10 @@ import { IPasswordHasher } from "../../interfaces/IpasswordHasher/IpasswordHashe
 import { IredisService } from "../../interfaces/Iredis/Iredis";
 import { OtpVerificationResult } from "../../interfaces/Iotp/IOTP";
 import { inject, injectable } from "tsyringe";
+import { response } from "express";
 
 @injectable()
-export class UserAuthService implements IuserAuthService{
+export class UserAuthService implements IuserAuthService {
   constructor(
     @inject("IuserRepository") private userRepository: IuserRepository,
     @inject("ItempUserRepository")
@@ -427,7 +428,6 @@ export class UserAuthService implements IuserAuthService{
         Roles.USER
       );
 
-      
       const refresh_token = this.jwtService.generateRefreshToken(
         userId,
         Roles.USER
@@ -436,11 +436,15 @@ export class UserAuthService implements IuserAuthService{
       return {
         success: true,
         message: "Login Successfull",
-        userId: userId,
         access_token,
         refresh_token,
         role: Roles.USER,
         status: HTTP_STATUS.OK,
+        user: {
+          username: user.userData.username,
+          email: user.userData.email,
+          phone: user.userData.phone,
+        },
       };
     } catch (error) {
       console.log("error");

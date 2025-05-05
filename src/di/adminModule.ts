@@ -11,10 +11,10 @@ import { UserRepository } from "../repositories/userRepository";
 import { IadminRepository } from "../interfaces/Irepositories/IadminRepository";
 import { IPasswordHasher } from "../interfaces/IpasswordHasher/IpasswordHasher";
 import { IjwtService } from "../interfaces/Ijwt/Ijwt";
-import { IadminService } from "../interfaces/Iservices/IadminService";
-import { IjobDesignationService } from "../interfaces/Iservices/IjobDesignationService";
+import { IadminService } from "../interfaces/Iservices/IadminService/IadminAuthService";
+import { IjobDesignationService } from "../interfaces/Iservices/IadminService/IjobDesignationService";
 import { IjobDesignationRepository } from "../interfaces/Irepositories/IjobDesignationRepository";
-import { IuserManagementService } from "../interfaces/Iservices/IuserManagementService";
+import { IuserManagementService } from "../interfaces/Iservices/IadminService/IuserManagementService";
 import { IuserRepository } from "../interfaces/Irepositories/IuserRepository";
 
 container.registerSingleton<IadminService>("IadminService", AdminAuthService);

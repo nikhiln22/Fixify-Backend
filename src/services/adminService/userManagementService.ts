@@ -4,7 +4,7 @@ import { HTTP_STATUS } from "../../utils/httpStatus";
 import {
   PaginatedUserResponse,
   ToggleUserStatusResponse,
-} from "../../interfaces/DTO/IServices/userManagement.dto";
+} from "../../interfaces/DTO/IServices/Iadminservices.dto/userManagement.dto";
 
 @injectable()
 export class UserManagementService {

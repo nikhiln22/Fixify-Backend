@@ -2,7 +2,7 @@ import { ItechnicianController } from "../../interfaces/Icontrollers/Itechnician
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
-import { ItechnicianService } from "../../interfaces/Iservices/ItechnicianService";
+import { ItechnicianService } from "../../interfaces/Iservices/ItechnicianService/ItechnicianService";
 
 @injectable()
 export class TechnicianController implements ItechnicianController {
@@ -21,7 +21,7 @@ export class TechnicianController implements ItechnicianController {
         "respone from the job job designations controller:",
         response
       );
-      res.status(HTTP_STATUS.OK).json(response);
+      res.status(response.status).json(response);
     } catch (error) {
       console.log("error occured:", error);
       res
@@ -38,14 +38,6 @@ export class TechnicianController implements ItechnicianController {
       console.log("Received data:", data);
 
       const technicianId = (req as any).user?.id;
-
-      if (!technicianId) {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json({
-          message: "Unauthorized access",
-          success: false,
-        });
-        return;
-      }
 
       const files = req.files as
         | {

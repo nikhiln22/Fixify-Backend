@@ -31,8 +31,7 @@ const technicianSchema: Schema<Itechnician> = new Schema(
       type: Number,
     },
     Designation: {
-      type: Schema.Types.ObjectId,
-      ref: "jobDesignation",
+      type: String,
     },
     About: {
       type: String,
@@ -50,4 +49,5 @@ const technicianSchema: Schema<Itechnician> = new Schema(
 );
 
 const technician = mongoose.model<Itechnician>("technician", technicianSchema);
+
 export default technician;

@@ -3,12 +3,13 @@ import { Roles } from "../../config/roles";
 import {
   loginDataDTO,
   loginResponseDTO,
-} from "../../interfaces/DTO/IServices/adminService.dto";
+} from "../../interfaces/DTO/IServices/Iadminservices.dto/adminAuthService.dto";
 import { IadminRepository } from "../../interfaces/Irepositories/IadminRepository";
-import { IadminService } from "../../interfaces/Iservices/IadminService";
+import { IadminService } from "../../interfaces/Iservices/IadminService/IadminAuthService";
 import { HTTP_STATUS } from "../../utils/httpStatus";
 import { IjwtService } from "../../interfaces/Ijwt/Ijwt";
 import { IPasswordHasher } from "../../interfaces/IpasswordHasher/IpasswordHasher";
+
 
 @injectable()
 export class AdminAuthService implements IadminService {
@@ -80,7 +81,7 @@ export class AdminAuthService implements IadminService {
         refresh_token,
         role: Roles.ADMIN,
         status: HTTP_STATUS.OK,
-        data: safeAdminData
+        data: safeAdminData,
       };
     } catch (error) {
       console.log("error occured while admin is logging in:", error);

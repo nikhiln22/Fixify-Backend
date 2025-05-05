@@ -84,7 +84,7 @@ export class TechnicianRepository
         technicianId
       );
       console.log("Qualification data:", qualificationData);
-      
+
       const updatedTechnician = await this.updateOne(
         { _id: technicianId },
         {
@@ -93,11 +93,11 @@ export class TechnicianRepository
             Designation: qualificationData.designation,
             About: qualificationData.about,
             image: qualificationData.profilePhoto,
-            certificates: qualificationData.certificates 
+            certificates: qualificationData.certificates,
           },
         }
       );
-      
+
       if (updatedTechnician) {
         return {
           success: true,

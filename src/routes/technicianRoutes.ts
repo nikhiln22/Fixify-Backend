@@ -65,6 +65,12 @@ export class TechnicianRoutes {
       this.localUpload.technicianQualificationUpload,
       technicianController.submitQualifications.bind(technicianController)
     );
+
+    this.router.get(
+      "/logout",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      technicianAuthController.logout.bind(technicianAuthController)
+    );
   }
 
   public getRouter() {
