@@ -47,5 +47,14 @@ export interface TechnicianQualificationDTO {
 export interface UpdateTechnicianQualificationResponseDTO {
   success: boolean;
   message: string;
-  technician?: Itechnician;
+  technician?: Pick<
+  Itechnician,
+  "yearsOfExperience" | "Designation" | "About" | "image" | "certificates"
+>;
+}
+
+export interface findByIdResponseDTO {
+  success: boolean;
+  technicianData?: Itechnician | null;
+  message?: string;
 }

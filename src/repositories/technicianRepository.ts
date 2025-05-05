@@ -7,6 +7,7 @@ import {
   UpdatePasswordResponseDTO,
   TechnicianQualificationDTO,
   UpdateTechnicianQualificationResponseDTO,
+  findByIdResponseDTO,
 } from "../interfaces/DTO/IRepository/technicianRepositoryDTO";
 import { BaseRepository } from "./baseRepository";
 import { injectable } from "tsyringe";
@@ -99,10 +100,17 @@ export class TechnicianRepository
       );
 
       if (updatedTechnician) {
+        const technicianData = {
+          yearsOfExperience: updatedTechnician.yearsOfExperience,
+          Designation: updatedTechnician.Designation,
+          About: updatedTechnician.About,
+          image: updatedTechnician.image,
+          certificates: updatedTechnician.certificates,
+        };
         return {
           success: true,
           message: "Technician qualification updated successfully",
-          technician: updatedTechnician,
+          technician: technicianData,
         };
       } else {
         return {
@@ -119,6 +127,28 @@ export class TechnicianRepository
       throw new Error(
         "An error occurred while updating the technician qualification"
       );
+    }
+  }
+
+  async getTechnicianById(id: string): Promise<findByIdResponseDTO> {
+    try {
+      console.log("Finding technician by ID in repository:", id);
+      const technicianData = await this.findById(id);
+
+      if (technicianData) {
+        return {
+          success: true,
+          technicianData,
+        };
+      } else {
+        return {
+          success: false,
+          message: "Technician not found",
+        };
+      }
+    } catch (error) {
+      console.log("Error occurred while fetching the technician by ID:", error);
+      throw new Error("An error occurred while retrieving the technician");
     }
   }
 }

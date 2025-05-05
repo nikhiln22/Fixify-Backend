@@ -46,10 +46,7 @@ export interface loginResponseDTO {
   role?: string;
   access_token?: string;
   refresh_token?: string;
-  technician?: Pick<
-    Itechnician,
-    "username" | "phone" | "email" | "is_verified"
-  >;
+  technician?: Itechnician;
 }
 
 export interface loginDataDTO {

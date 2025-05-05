@@ -5,6 +5,8 @@ import { inject, injectable } from "tsyringe";
 import {
   getJobDesignationsResponse,
   TechicianQualification,
+  TechnicianProfileResponse,
+  TechnicianQualificationUpdateResponse,
 } from "../../interfaces/DTO/IServices/Itechnicianservices.dto/technicianService.dto";
 import { ItechnicianRepository } from "../../interfaces/Irepositories/ItechnicianRepository";
 import { IFileUploader } from "../../interfaces/IfileUploader/IfileUploader";
@@ -54,12 +56,11 @@ export class TechnicianService implements ItechnicianService {
   async submitTechnicianQualifications(
     technicianId: string,
     qualificationData: TechicianQualification
-  ): Promise<any> {
+  ): Promise<TechnicianQualificationUpdateResponse> {
     try {
       console.log(
         "Processing the technician qualification in the service layer"
       );
-
 
       const qualificationDataToSave: any = {
         experience: qualificationData.experience,
@@ -108,7 +109,7 @@ export class TechnicianService implements ItechnicianService {
         message: "Qualification submitted successfully",
         success: true,
         status: HTTP_STATUS.OK,
-        data: result,
+        technician: result.technician,
       };
     } catch (error) {
       console.error("Error submitting technician qualification:", error);
@@ -116,7 +117,48 @@ export class TechnicianService implements ItechnicianService {
         message: "Failed to submit qualification",
         success: false,
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-        error: error,
+      };
+    }
+  }
+
+  async getTechnicianProfile(
+    technicianId: string
+  ): Promise<TechnicianProfileResponse> {
+    try {
+      console.log("Fetching technician profile in service layer for ID:", technicianId);
+      
+      const result = await this.technicianRepository.getTechnicianById(technicianId);
+      
+      if (!result.success || !result.technicianData) {
+        return {
+          message: result.message || "Technician not found",
+          success: false,
+          status: HTTP_STATUS.NOT_FOUND
+        };
+      }
+      
+      return {
+        message: "Technician profile fetched successfully",
+        success: true,
+        status: HTTP_STATUS.OK,
+        technician: {
+          username: result.technicianData.username,
+          email: result.technicianData.email,
+          phone: result.technicianData.phone,
+          is_verified: result.technicianData.is_verified,
+          yearsOfExperience: result.technicianData.yearsOfExperience,
+          Designation: result.technicianData.Designation,
+          About: result.technicianData.About,
+          image: result.technicianData.image,
+          certificates: result.technicianData.certificates
+        }
+      };
+    } catch (error) {
+      console.error("Error fetching technician profile:", error);
+      return {
+        message: "Failed to fetch technician profile",
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR
       };
     }
   }

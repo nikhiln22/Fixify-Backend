@@ -1,6 +1,7 @@
 import {
   createTechnicianDTO,
   findByEmailResponseDTO,
+  findByIdResponseDTO,
   TechnicianQualificationDTO,
   UpdatePasswordResponseDTO,
   UpdateTechnicianQualificationResponseDTO,
@@ -10,6 +11,7 @@ import { Itechnician } from "../Models/Itechnician";
 export interface ItechnicianRepository {
   createTechnician(technicianData: createTechnicianDTO): Promise<Itechnician>;
   findByEmail(email: string): Promise<findByEmailResponseDTO>;
+  getTechnicianById(id: string): Promise<findByIdResponseDTO>;
   updatePassword(
     email: string,
     hashedPassword: string
