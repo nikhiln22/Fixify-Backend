@@ -2,6 +2,7 @@ import { App } from "./app";
 import config from "./config/env";
 import { database } from "./config/database";
 
+
 class Server {
   private appInstance: App;
 
@@ -12,7 +13,6 @@ class Server {
   public async start(): Promise<void> {
     try {
       await database.connect();
-
       this.appInstance.getServer().listen(config.PORT, () => {
         console.log(`Server is running at http://localhost:${config.PORT}`);
       });

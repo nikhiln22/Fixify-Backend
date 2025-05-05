@@ -460,12 +460,7 @@ export class TechnicianAuthService implements ItechnicianAuthService {
         refresh_token,
         role: Roles.TECHNICIAN,
         status: HTTP_STATUS.OK,
-        technician: {
-          username: technician.technicianData.username,
-          email: technician.technicianData.email,
-          phone: technician.technicianData.phone,
-          is_verified: technician.technicianData.is_verified,
-        },
+        technician: technician.technicianData,
       };
     } catch (error) {
       console.log("error");

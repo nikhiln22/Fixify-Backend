@@ -67,6 +67,12 @@ export class TechnicianRoutes {
     );
 
     this.router.get(
+      "/profile",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      technicianController.getProfile.bind(technicianController)
+    );
+
+    this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.TECHNICIAN),
       technicianAuthController.logout.bind(technicianAuthController)

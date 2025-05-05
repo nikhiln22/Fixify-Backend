@@ -55,22 +55,44 @@ export class TechnicianController implements ItechnicianController {
 
       console.log("Processing qualification data:", qualificationData);
 
-      const result =
+      const response =
         await this.technicianService.submitTechnicianQualifications(
           technicianId,
           qualificationData
         );
 
-      res.status(HTTP_STATUS.OK).json({
-        message: "Submitted qualifications successfully",
-        success: true,
-        result,
-      });
+      res.status(response.status).json(response)
     } catch (error) {
       console.log("Some error occurred:", error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         message: "Internal Server Error",
         success: false,
+      });
+    }
+  }
+
+  async getProfile(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("Entering technician profile fetch");
+      const technicianId = (req as any).user?.id;
+      
+      if (!technicianId) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          message: "Unauthorized access",
+          success: false,
+          status: HTTP_STATUS.UNAUTHORIZED
+        });
+        return;
+      }
+      
+      const response = await this.technicianService.getTechnicianProfile(technicianId);
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("Error fetching technician profile:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server Error",
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR
       });
     }
   }
