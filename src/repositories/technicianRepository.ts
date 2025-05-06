@@ -93,6 +93,8 @@ export class TechnicianRepository
             yearsOfExperience: qualificationData.experience,
             Designation: qualificationData.designation,
             About: qualificationData.about,
+            city: qualificationData.city,
+            preferredWorkLocation: qualificationData.preferredWorkLocation,
             image: qualificationData.profilePhoto,
             certificates: qualificationData.certificates,
           },
@@ -104,6 +106,8 @@ export class TechnicianRepository
           yearsOfExperience: updatedTechnician.yearsOfExperience,
           Designation: updatedTechnician.Designation,
           About: updatedTechnician.About,
+          city: updatedTechnician.city,
+          preferredWorkLocation: updatedTechnician.preferredWorkLocation,
           image: updatedTechnician.image,
           certificates: updatedTechnician.certificates,
         };

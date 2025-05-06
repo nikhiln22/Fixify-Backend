@@ -1,4 +1,4 @@
-import { Document} from "mongoose";
+import { Document } from "mongoose";
 
 export interface Itechnician extends Document {
   username: string;
@@ -9,6 +9,8 @@ export interface Itechnician extends Document {
   is_verified: boolean;
   yearsOfExperience?: number;
   Designation?: string;
+  city?: string;
+  preferredWorkLocation?: string;
   About?: string;
   image?: string;
   certificates?: string[];

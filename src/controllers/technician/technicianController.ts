@@ -30,6 +30,63 @@ export class TechnicianController implements ItechnicianController {
     }
   }
 
+  async getCityLocation(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entering the citylocations controller in the technician side"
+      );
+      let response = await this.technicianService.getCityLocations();
+      console.log(
+        "response from the technician service in the technican controller:",
+        response
+      );
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while fetching the city locations:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ message: "Internal server error occured" });
+    }
+  }
+
+  async getLocationByCity(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entering into the controller fetching the locations based on the city"
+      );
+
+      const city = req.params.city;
+
+      if (!city || typeof city !== "string") {
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "City parameter is required and must be a string",
+          status: HTTP_STATUS.BAD_REQUEST,
+          locations: [],
+        });
+        return;
+      }
+
+      const response = await this.technicianService.getLocationsByCity(city);
+      console.log(
+        "response from the technician service for locations by city:",
+        response
+      );
+
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log(
+        "error occurred while fetching locations for the city:",
+        error
+      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal server error occurred",
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        locations: [],
+      });
+    }
+  }
 
   async submitQualifications(req: Request, res: Response): Promise<void> {
     try {
@@ -48,6 +105,8 @@ export class TechnicianController implements ItechnicianController {
       const qualificationData = {
         experience: req.body.experience,
         designation: req.body.designation,
+        city:req.body.city,
+        preferredWorkLocation:req.body.preferredWorkLocation,
         about: req.body.about,
         profilePhoto: files?.profilePhoto?.[0],
         certificates: files?.certificates,
@@ -61,7 +120,7 @@ export class TechnicianController implements ItechnicianController {
           qualificationData
         );
 
-      res.status(response.status).json(response)
+      res.status(response.status).json(response);
     } catch (error) {
       console.log("Some error occurred:", error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
@@ -75,24 +134,26 @@ export class TechnicianController implements ItechnicianController {
     try {
       console.log("Entering technician profile fetch");
       const technicianId = (req as any).user?.id;
-      
+
       if (!technicianId) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           message: "Unauthorized access",
           success: false,
-          status: HTTP_STATUS.UNAUTHORIZED
+          status: HTTP_STATUS.UNAUTHORIZED,
         });
         return;
       }
-      
-      const response = await this.technicianService.getTechnicianProfile(technicianId);
+
+      const response = await this.technicianService.getTechnicianProfile(
+        technicianId
+      );
       res.status(response.status).json(response);
     } catch (error) {
       console.log("Error fetching technician profile:", error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         message: "Internal Server Error",
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       });
     }
   }

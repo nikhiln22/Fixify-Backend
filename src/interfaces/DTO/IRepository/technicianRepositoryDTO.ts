@@ -1,7 +1,6 @@
 import { Itechnician } from "../../Models/Itechnician";
 import { ItempTechnician } from "../../Models/ItempTechnician";
 
-
 export interface findByEmailResponseDTO {
   success: boolean;
   technicianData?: Itechnician;
@@ -40,6 +39,8 @@ export interface TechnicianQualificationDTO {
   experience: string;
   designation: string;
   about: string;
+  city: string;
+  preferredWorkLocation: string;
   profilePhoto?: string;
   certificates?: string[];
 }
@@ -48,9 +49,15 @@ export interface UpdateTechnicianQualificationResponseDTO {
   success: boolean;
   message: string;
   technician?: Pick<
-  Itechnician,
-  "yearsOfExperience" | "Designation" | "About" | "image" | "certificates"
->;
+    Itechnician,
+    | "yearsOfExperience"
+    | "Designation"
+    | "About"
+    | "image"
+    | "certificates"
+    | "preferredWorkLocation"
+    | "city"
+  >;
 }
 
 export interface findByIdResponseDTO {

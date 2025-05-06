@@ -56,7 +56,20 @@ export class TechnicianRoutes {
 
     this.router.get(
       "/jobdesignations",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
       technicianController.getJobDesignations.bind(technicianController)
+    );
+
+    this.router.get(
+      "/cities",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      technicianController.getCityLocation.bind(technicianController)
+    );
+
+    this.router.get(
+      "/locations/:city",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      technicianController.getLocationByCity.bind(technicianController)
     );
 
     this.router.patch(

@@ -36,6 +36,12 @@ const technicianSchema: Schema<Itechnician> = new Schema(
     About: {
       type: String,
     },
+    city: {
+      type: String,
+    },
+    preferredWorkLocation: {
+      type: String,
+    },
     image: {
       type: String,
     },
