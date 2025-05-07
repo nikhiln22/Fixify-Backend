@@ -5,6 +5,7 @@ import { JobDesignationController } from "../controllers/admin/jobDesignationCon
 import { UserManagementController } from "../controllers/admin/userManagementController";
 import { AuthMiddleware } from "../middlewares/AuthMiddleware";
 import { Roles } from "../config/roles";
+import { ApplicantManagementController } from "../controllers/admin/applicantManagementController";
 
 export class AdminRoutes {
   private router: Router;
@@ -24,6 +25,10 @@ export class AdminRoutes {
 
     const userManagementController = container.resolve(
       UserManagementController
+    );
+
+    const applicantManagementController = container.resolve(
+      ApplicantManagementController
     );
 
     this.router.post(
@@ -63,6 +68,14 @@ export class AdminRoutes {
       "/blockuser/:id",
       this.authMiddleware.authenticate(Roles.ADMIN),
       userManagementController.toggleUserStatus.bind(userManagementController)
+    );
+
+    this.router.get(
+      "/applicantslist",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      applicantManagementController.getAllPaginatedApplicants.bind(
+        applicantManagementController
+      )
     );
 
     this.router.get(

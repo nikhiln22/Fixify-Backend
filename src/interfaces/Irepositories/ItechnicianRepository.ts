@@ -20,4 +20,11 @@ export interface ItechnicianRepository {
     technicianId: string,
     qualificationData: TechnicianQualificationDTO
   ): Promise<UpdateTechnicianQualificationResponseDTO>;
+  getUnverifiedTechnicians(
+    page: number,
+    limit: number
+  ): Promise<{
+    data: Itechnician[];
+    total: number;
+  }>;
 }

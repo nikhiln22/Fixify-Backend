@@ -155,4 +155,28 @@ export class TechnicianRepository
       throw new Error("An error occurred while retrieving the technician");
     }
   }
+
+  async getUnverifiedTechnicians(
+    page: number,
+    limit: number
+  ): Promise<{ data: Itechnician[]; total: number }> {
+    try {
+      console.log(
+        "fetchning the unverified technicians from the technician database"
+      );
+
+      const unVerifiedTechnicians = await this.find(
+        { is_verified: false },
+        {
+          pagination: { page, limit },
+          sort: { createdAt: -1 },
+        }
+      );
+      console.log("unVerifiedTechnicians:", unVerifiedTechnicians);
+      return unVerifiedTechnicians as { data: Itechnician[]; total: number };
+    } catch (error) {
+      console.log("Error occured with the fetchning the unverified technician:",error);
+      throw new Error("An error occurred while retrieving the technician");
+    }
+  }
 }

@@ -17,15 +17,19 @@ export class CityLocationRepository
     try {
       console.log("fetching all the cities from the database");
       const cities = await this.find();
-      console.log(`found ${cities.length} cities`);
-      return cities;
+      console.log('found cities:',cities);
+      if (Array.isArray(cities)) {
+        return cities;
+      } else {
+        return cities.data;
+      }
     } catch (error) {
       console.log("error occured while fetching the cities from the database");
       throw error;
     }
   }
 
-  async getLocationByCity(city: string): Promise<ICityLocation|null> {
+  async getLocationByCity(city: string): Promise<ICityLocation | null> {
     try {
       console.log(`fetching the locations for the city:${city}`);
       const locations = await this.findOne({ city: city });
@@ -36,7 +40,7 @@ export class CityLocationRepository
         "error occured while fetching the locations for the cities:",
         error
       );
-      throw error
+      throw error;
     }
   }
 }
