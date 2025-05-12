@@ -2,7 +2,7 @@ import { ItempUserRepository } from "../../interfaces/Irepositories/ItempUserRep
 import { ItempUser } from "../../interfaces/Models/ItempUser";
 import mongoose from "mongoose";
 import tempUser from "../../models/tempUserModel";
-import { BaseRepository } from "../base/baseRepository";
+import { BaseRepository } from "../baseRepository";
 import {
   createTempUserResponseDTO,
   findTempUserByEmailDTO,

@@ -1,27 +1,33 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
-
-import { AdminAuthService } from "../services/adminAuthService";
-import { AdminRepository } from "../repositories/adminRepository/adminRepository";
+import { AdminAuthService } from "../services/adminService/adminAuthService";
+import { AdminRepository } from "../repositories/adminRepository";
+import { JobDesignationRepository } from "../repositories/jobDesignationRepository";
+import { JobDesignationService } from "../services/adminService/jobDesignationService";
 import { PasswordHasher } from "../utils/password";
 import { JWTService } from "../utils/jwt";
-
+import { UserManagementService } from "../services/adminService/userManagementService";
+import { ApplicantManagementService } from "../services/adminService/applicantManagementService";
+import { UserRepository } from "../repositories/userRepository";
+import { TechnicianRepository } from "../repositories/technicianRepository";
 import { IadminRepository } from "../interfaces/Irepositories/IadminRepository";
 import { IPasswordHasher } from "../interfaces/IpasswordHasher/IpasswordHasher";
 import { IjwtService } from "../interfaces/Ijwt/Ijwt";
-import { IadminService } from "../interfaces/Iservices/IadminService";
+import { IadminService } from "../interfaces/Iservices/IadminService/IadminAuthService";
+import { IjobDesignationService } from "../interfaces/Iservices/IadminService/IjobDesignationService";
+import { IjobDesignationRepository } from "../interfaces/Irepositories/IjobDesignationRepository";
+import { IuserManagementService } from "../interfaces/Iservices/IadminService/IuserManagementService";
+import { IuserRepository } from "../interfaces/Irepositories/IuserRepository";
+import { ItechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
+import { IapplicantManagementService } from "../interfaces/Iservices/IadminService/IapplicantManagementService";
 
-
-container.register<IadminService>("IadminService", {
-  useClass: AdminAuthService,
-});
-
-container.register<IadminRepository>("IadminRepository", {
-  useClass: AdminRepository,
-});
-
-container.register<IPasswordHasher>("IPasswordHasher", {
-  useClass: PasswordHasher,
-});
-
-container.register<IjwtService>("IjwtService", { useClass: JWTService });
+container.registerSingleton<IadminService>("IadminService", AdminAuthService);
+container.registerSingleton<IadminRepository>("IadminRepository", AdminRepository);
+container.registerSingleton<IPasswordHasher>("IPasswordHasher", PasswordHasher);
+container.registerSingleton<IjwtService>("IjwtService", JWTService);
+container.registerSingleton<IjobDesignationService>("IjobDesignationService", JobDesignationService);
+container.registerSingleton<IjobDesignationRepository>("IjobDesignationRepository", JobDesignationRepository);
+container.registerSingleton<IuserRepository>("IuserRepository", UserRepository);
+container.registerSingleton<IuserManagementService>("IuserManagementService", UserManagementService);
+container.registerSingleton<IapplicantManagementService>("IapplicantManagementService",ApplicantManagementService);
+container.registerSingleton<ItechnicianRepository>("ItechnicianRepository",TechnicianRepository);
