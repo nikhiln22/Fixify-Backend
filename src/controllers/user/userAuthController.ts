@@ -122,6 +122,37 @@ export class UserAuthController implements IuserAuthController {
     }
   }
 
+  async checkUserStatus(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering into the user status checking controller");
+      const userId = (req as any).user?.id;
+      console.log("userId:", userId);
+
+      const response = await this.userAuthService.checkUserStatus(userId);
+      console.log(
+        "response from the user status checking status from the auth controller:",
+        response
+      );
+
+      if (response.success) {
+        res.status(response.status).json({
+          success: response.success,
+          message: response.message,
+        });
+      } else {
+        res.status(response.status).json({
+          success: response.success,
+          message: response.message,
+        });
+      }
+    } catch (error) {
+      console.log("error occured while checking the user status");
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: "Internal Server Error" });
+    }
+  }
+
   async forgotPassword(req: Request, res: Response): Promise<void> {
     try {
       console.log("Entering forgotPassword function in userController");

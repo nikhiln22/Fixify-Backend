@@ -19,4 +19,5 @@ export interface IuserAuthService {
   forgotPassword(data: ForgotPasswordRequestDTO): Promise<ForgotPasswordResponseDTO>
   resetPassword(data: ResetPasswordDataDTO): Promise<ResetPasswordResponseDTO>;
   login(data: loginDataDTO): Promise<loginResponseDTO>;
+  checkUserStatus(userId:string):Promise<{success:boolean,message:string,status:number}>
 }

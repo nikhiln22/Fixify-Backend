@@ -22,6 +22,12 @@ export class UserRoutes {
       userAuthController.login.bind(userAuthController)
     );
 
+    this.router.get(
+      "/checkstatus",
+      this.authMiddleware.authenticate(Roles.USER),
+      userAuthController.checkUserStatus.bind(userAuthController)
+    );
+
     this.router.post(
       "/register",
       userAuthController.register.bind(userAuthController)
