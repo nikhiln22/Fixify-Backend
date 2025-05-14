@@ -10,6 +10,10 @@ const categorySchema: Schema<Icategory> = new Schema(
     image: {
       type: String,
     },
+    status: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );
