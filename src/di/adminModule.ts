@@ -7,7 +7,9 @@ import { JobDesignationService } from "../services/adminService/jobDesignationSe
 import { PasswordHasher } from "../utils/password";
 import { JWTService } from "../utils/jwt";
 import { UserManagementService } from "../services/adminService/userManagementService";
+import { ApplicantManagementService } from "../services/adminService/applicantManagementService";
 import { UserRepository } from "../repositories/userRepository";
+import { TechnicianRepository } from "../repositories/technicianRepository";
 import { IadminRepository } from "../interfaces/Irepositories/IadminRepository";
 import { IPasswordHasher } from "../interfaces/IpasswordHasher/IpasswordHasher";
 import { IjwtService } from "../interfaces/Ijwt/Ijwt";
@@ -16,6 +18,8 @@ import { IjobDesignationService } from "../interfaces/Iservices/IadminService/Ij
 import { IjobDesignationRepository } from "../interfaces/Irepositories/IjobDesignationRepository";
 import { IuserManagementService } from "../interfaces/Iservices/IadminService/IuserManagementService";
 import { IuserRepository } from "../interfaces/Irepositories/IuserRepository";
+import { ItechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
+import { IapplicantManagementService } from "../interfaces/Iservices/IadminService/IapplicantManagementService";
 
 container.registerSingleton<IadminService>("IadminService", AdminAuthService);
 container.registerSingleton<IadminRepository>("IadminRepository", AdminRepository);
@@ -25,3 +29,5 @@ container.registerSingleton<IjobDesignationService>("IjobDesignationService", Jo
 container.registerSingleton<IjobDesignationRepository>("IjobDesignationRepository", JobDesignationRepository);
 container.registerSingleton<IuserRepository>("IuserRepository", UserRepository);
 container.registerSingleton<IuserManagementService>("IuserManagementService", UserManagementService);
+container.registerSingleton<IapplicantManagementService>("IapplicantManagementService",ApplicantManagementService);
+container.registerSingleton<ItechnicianRepository>("ItechnicianRepository",TechnicianRepository);

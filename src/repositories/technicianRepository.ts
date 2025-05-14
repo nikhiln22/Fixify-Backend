@@ -93,6 +93,8 @@ export class TechnicianRepository
             yearsOfExperience: qualificationData.experience,
             Designation: qualificationData.designation,
             About: qualificationData.about,
+            city: qualificationData.city,
+            preferredWorkLocation: qualificationData.preferredWorkLocation,
             image: qualificationData.profilePhoto,
             certificates: qualificationData.certificates,
           },
@@ -104,6 +106,8 @@ export class TechnicianRepository
           yearsOfExperience: updatedTechnician.yearsOfExperience,
           Designation: updatedTechnician.Designation,
           About: updatedTechnician.About,
+          city: updatedTechnician.city,
+          preferredWorkLocation: updatedTechnician.preferredWorkLocation,
           image: updatedTechnician.image,
           certificates: updatedTechnician.certificates,
         };
@@ -148,6 +152,30 @@ export class TechnicianRepository
       }
     } catch (error) {
       console.log("Error occurred while fetching the technician by ID:", error);
+      throw new Error("An error occurred while retrieving the technician");
+    }
+  }
+
+  async getUnverifiedTechnicians(
+    page: number,
+    limit: number
+  ): Promise<{ data: Itechnician[]; total: number }> {
+    try {
+      console.log(
+        "fetchning the unverified technicians from the technician database"
+      );
+
+      const unVerifiedTechnicians = await this.find(
+        { is_verified: false },
+        {
+          pagination: { page, limit },
+          sort: { createdAt: -1 },
+        }
+      );
+      console.log("unVerifiedTechnicians:", unVerifiedTechnicians);
+      return unVerifiedTechnicians as { data: Itechnician[]; total: number };
+    } catch (error) {
+      console.log("Error occured with the fetchning the unverified technician:",error);
       throw new Error("An error occurred while retrieving the technician");
     }
   }

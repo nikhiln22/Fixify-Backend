@@ -3,13 +3,17 @@ import { IjobDesignationRepository } from "../../interfaces/Irepositories/IjobDe
 import { HTTP_STATUS } from "../../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
 import {
+  getCityLocationsResponse,
   getJobDesignationsResponse,
-  TechicianQualification,
+  getLocationsByCityResponse,
+  ILocationWithCity,
+  TechnicianQualification,
   TechnicianProfileResponse,
   TechnicianQualificationUpdateResponse,
 } from "../../interfaces/DTO/IServices/Itechnicianservices.dto/technicianService.dto";
 import { ItechnicianRepository } from "../../interfaces/Irepositories/ItechnicianRepository";
 import { IFileUploader } from "../../interfaces/IfileUploader/IfileUploader";
+import { ICityLocationRepository } from "../../interfaces/Irepositories/IcityLocationRepository";
 
 @injectable()
 export class TechnicianService implements ItechnicianService {
@@ -18,7 +22,9 @@ export class TechnicianService implements ItechnicianService {
     private jobDesignationRepository: IjobDesignationRepository,
     @inject("ItechnicianRepository")
     private technicianRepository: ItechnicianRepository,
-    @inject("IFileUploader") private fileUploader: IFileUploader
+    @inject("IFileUploader") private fileUploader: IFileUploader,
+    @inject("ICityLocationRepository")
+    private cityLocationRepository: ICityLocationRepository
   ) {}
 
   async getJobDesignations(): Promise<getJobDesignationsResponse> {
@@ -53,9 +59,86 @@ export class TechnicianService implements ItechnicianService {
     }
   }
 
+  async getCityLocations(): Promise<getCityLocationsResponse> {
+    try {
+      console.log("entering the cities fetching from the technician service");
+      const cityLocations = await this.cityLocationRepository.getAllCities();
+      const cities = cityLocations.map((city) => city.city);
+      return {
+        cities,
+        message: "cities fetched successfully",
+        success: true,
+        status: HTTP_STATUS.OK,
+      };
+    } catch (error) {
+      console.log("error occured while fetching the cities:", error);
+      return {
+        cities: [],
+        success: false,
+        message: "Failed to fetch the cities",
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
+    }
+  }
+
+  async getLocationsByCity(city: string): Promise<getLocationsByCityResponse> {
+    try {
+      console.log(
+        "entering into the locations fetching on the basis of the city"
+      );
+      const locations = await this.cityLocationRepository.getLocationByCity(
+        city
+      );
+
+      if (!locations) {
+        return {
+          success: false,
+          status: HTTP_STATUS.NOT_FOUND,
+          message: `city ${city} not found`,
+          locations: [],
+        };
+      }
+
+      if (!locations.locations || !Array.isArray(locations.locations)) {
+        return {
+          success: true,
+          status: HTTP_STATUS.OK,
+          message: `No locations found for ${city}`,
+          locations: [],
+        };
+      }
+
+      const locationWithCity: ILocationWithCity[] = locations.locations.map(
+        (location) => ({
+          locationName: location.name,
+          pincode: location.pincode,
+          cityName: locations.city,
+        })
+      );
+
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: `Locations fetched for ${city} successfully`,
+        locations: locationWithCity,
+      };
+    } catch (error) {
+      console.log(
+        "Error occurred while fetching the locations for the city:",
+        error
+      );
+      return {
+        success: false,
+        message: "Failed to fetch the locations for the city",
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        locations: [],
+      };
+    }
+  }
+
   async submitTechnicianQualifications(
     technicianId: string,
-    qualificationData: TechicianQualification
+    qualificationData: TechnicianQualification
   ): Promise<TechnicianQualificationUpdateResponse> {
     try {
       console.log(
@@ -65,6 +148,8 @@ export class TechnicianService implements ItechnicianService {
       const qualificationDataToSave: any = {
         experience: qualificationData.experience,
         designation: qualificationData.designation,
+        city: qualificationData.city,
+        preferredWorkLocation: qualificationData.preferredWorkLocation,
         about: qualificationData.about,
       };
 
@@ -125,18 +210,23 @@ export class TechnicianService implements ItechnicianService {
     technicianId: string
   ): Promise<TechnicianProfileResponse> {
     try {
-      console.log("Fetching technician profile in service layer for ID:", technicianId);
-      
-      const result = await this.technicianRepository.getTechnicianById(technicianId);
-      
+      console.log(
+        "Fetching technician profile in service layer for ID:",
+        technicianId
+      );
+
+      const result = await this.technicianRepository.getTechnicianById(
+        technicianId
+      );
+
       if (!result.success || !result.technicianData) {
         return {
           message: result.message || "Technician not found",
           success: false,
-          status: HTTP_STATUS.NOT_FOUND
+          status: HTTP_STATUS.NOT_FOUND,
         };
       }
-      
+
       return {
         message: "Technician profile fetched successfully",
         success: true,
@@ -148,17 +238,19 @@ export class TechnicianService implements ItechnicianService {
           is_verified: result.technicianData.is_verified,
           yearsOfExperience: result.technicianData.yearsOfExperience,
           Designation: result.technicianData.Designation,
+          city: result.technicianData.city,
+          preferredWorkLocation: result.technicianData.preferredWorkLocation,
           About: result.technicianData.About,
           image: result.technicianData.image,
-          certificates: result.technicianData.certificates
-        }
+          certificates: result.technicianData.certificates,
+        },
       };
     } catch (error) {
       console.error("Error fetching technician profile:", error);
       return {
         message: "Failed to fetch technician profile",
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
