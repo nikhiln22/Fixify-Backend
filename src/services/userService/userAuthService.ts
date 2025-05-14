@@ -30,7 +30,7 @@ import { IPasswordHasher } from "../../interfaces/IpasswordHasher/IpasswordHashe
 import { IredisService } from "../../interfaces/Iredis/Iredis";
 import { OtpVerificationResult } from "../../interfaces/Iotp/IOTP";
 import { inject, injectable } from "tsyringe";
-import { response } from "express";
+
 
 @injectable()
 export class UserAuthService implements IuserAuthService {
@@ -413,11 +413,11 @@ export class UserAuthService implements IuserAuthService {
         };
       }
 
-      if (!user.userData.status) {
+      if (user.userData.status === "Blocked") {
         return {
           success: false,
           message: "Your account has been blocked. Please contact support.",
-          status: HTTP_STATUS.UNAUTHORIZED,
+          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -451,6 +451,50 @@ export class UserAuthService implements IuserAuthService {
       return {
         success: false,
         message: "error occured during the login",
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
+    }
+  }
+
+  async checkUserStatus(
+    userId: string
+  ): Promise<{ success: boolean; message: string; status: number }> {
+    try {
+      console.log(
+        "checking whether the user is blocked from the userAuthService"
+      );
+      const userData = await this.userRepository.findById(userId);
+
+      console.log(
+        "userData from the checkuserstatus in user repository:",
+        userData
+      );
+
+      if (!userData) {
+        return {
+          success: false,
+          message: "User not found",
+          status: HTTP_STATUS.NOT_FOUND,
+        };
+      }
+
+      if (userData.status === "Blocked") {
+        return {
+          success: false,
+          message: "Your account has been blocked by an administrator",
+          status: HTTP_STATUS.FORBIDDEN,
+        };
+      }
+      return {
+        success: true,
+        message: "User is active",
+        status: HTTP_STATUS.OK,
+      };
+    } catch (error) {
+      console.log("Error checking user status:", error);
+      return {
+        success: false,
+        message: "Error checking user status",
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }

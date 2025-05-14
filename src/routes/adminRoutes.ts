@@ -6,14 +6,18 @@ import { UserManagementController } from "../controllers/admin/userManagementCon
 import { AuthMiddleware } from "../middlewares/AuthMiddleware";
 import { Roles } from "../config/roles";
 import { ApplicantManagementController } from "../controllers/admin/applicantManagementController";
+import { CategoryManagementController } from "../controllers/admin/categoryManagementController";
+import { LocalUpload } from "../config/multerConfig";
 
 export class AdminRoutes {
   private router: Router;
   private authMiddleware: AuthMiddleware;
+  private localUpload: LocalUpload;
 
   constructor() {
     this.router = express.Router();
     this.authMiddleware = AuthMiddleware.getInstance();
+    this.localUpload = new LocalUpload();
     this.setupRoutes();
   }
 
@@ -29,6 +33,10 @@ export class AdminRoutes {
 
     const applicantManagementController = container.resolve(
       ApplicantManagementController
+    );
+
+    const catagoryManagementController = container.resolve(
+      CategoryManagementController
     );
 
     this.router.post(
@@ -75,6 +83,40 @@ export class AdminRoutes {
       this.authMiddleware.authenticate(Roles.ADMIN),
       applicantManagementController.getAllPaginatedApplicants.bind(
         applicantManagementController
+      )
+    );
+
+    this.router.get(
+      "/categories",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      catagoryManagementController.getAllCategory.bind(
+        catagoryManagementController
+      )
+    );
+
+    this.router.post(
+      "/addcategory",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      this.localUpload.upload.single("image"),
+      catagoryManagementController.addCategory.bind(
+        catagoryManagementController
+      )
+    );
+
+    this.router.patch(
+      "/blockcategory/:categoryId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      catagoryManagementController.toggleCategoryStatus.bind(
+        catagoryManagementController
+      )
+    );
+
+    this.router.put(
+      "/updatecategory/:categoryId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      this.localUpload.upload.single("image"),
+      catagoryManagementController.editCategory.bind(
+        catagoryManagementController
       )
     );
 
