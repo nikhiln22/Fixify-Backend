@@ -29,6 +29,6 @@ const serviceSchema: Schema<IService> = new Schema(
   { timestamps: true }
 );
 
-const service = mongoose.model<IService>("category", serviceSchema);
+const service = mongoose.model<IService>("service", serviceSchema);
 
 export default service;

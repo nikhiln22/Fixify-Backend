@@ -26,6 +26,10 @@ import { CloudinaryUploader } from "../utils/cloudinaryUploader";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
 import { ICategoryRepository } from "../interfaces/Irepositories/IcategoryRepository";
 import { CategoryRepository } from "../repositories/categoryRepository";
+import { IserviceManagementService } from "../interfaces/Iservices/IadminService/IserviceManagementService";
+import { ServiceManagementService } from "../services/adminService/serviceManagementService";
+import { IserviceRepository } from "../interfaces/Irepositories/IserviceRepository";
+import { ServiceRepository } from "../repositories/serviceRepository";
 
 container.registerSingleton<IadminService>("IadminService", AdminAuthService);
 container.registerSingleton<IadminRepository>("IadminRepository", AdminRepository);
@@ -40,3 +44,5 @@ container.registerSingleton<ItechnicianRepository>("ItechnicianRepository",Techn
 container.registerSingleton<ICategoryManagementService>("ICategoryManagementService",CategoryManagementService);
 container.registerSingleton<IFileUploader>("IFileUploader",CloudinaryUploader);
 container.registerSingleton<ICategoryRepository>("ICategoryRepository",CategoryRepository);
+container.registerSingleton<IserviceManagementService>("IserviceManagementService",ServiceManagementService);
+container.registerSingleton<IserviceRepository>("IserviceRepository",ServiceRepository);

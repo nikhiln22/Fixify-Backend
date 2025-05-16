@@ -8,6 +8,7 @@ import { Roles } from "../config/roles";
 import { ApplicantManagementController } from "../controllers/admin/applicantManagementController";
 import { CategoryManagementController } from "../controllers/admin/categoryManagementController";
 import { LocalUpload } from "../config/multerConfig";
+import { ServiceManagementController } from "../controllers/admin/serviceManagementController";
 
 export class AdminRoutes {
   private router: Router;
@@ -37,6 +38,10 @@ export class AdminRoutes {
 
     const catagoryManagementController = container.resolve(
       CategoryManagementController
+    );
+
+    const serviceManagementController = container.resolve(
+      ServiceManagementController
     );
 
     this.router.post(
@@ -118,6 +123,21 @@ export class AdminRoutes {
       catagoryManagementController.editCategory.bind(
         catagoryManagementController
       )
+    );
+
+    this.router.get(
+      "/services",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      serviceManagementController.getAllServices.bind(
+        serviceManagementController
+      )
+    );
+
+    this.router.post(
+      "/addservice",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      this.localUpload.upload.single("image"),
+      serviceManagementController.addService.bind(serviceManagementController)
     );
 
     this.router.get(
