@@ -46,7 +46,7 @@ export class UserManagementService {
         };
       }
 
-      const newStatus = user.status === 'Active' ? 'Blocked' : 'Active';
+      const newStatus = !user.status
       let response = await this.userRepository.blockUser(id, newStatus);
       console.log(
         "Response after toggling user status from the user repository:",

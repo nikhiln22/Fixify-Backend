@@ -84,7 +84,7 @@ export class UserRepository
     }
   }
 
-  async blockUser(id: string, status: string): Promise<void> {
+  async blockUser(id: string, status: boolean): Promise<void> {
     try {
       let response = await this.updateOne({ _id: id }, { status: status });
       console.log(

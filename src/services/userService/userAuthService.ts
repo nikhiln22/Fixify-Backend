@@ -413,7 +413,7 @@ export class UserAuthService implements IuserAuthService {
         };
       }
 
-      if (user.userData.status === "Blocked") {
+      if (!user.userData.status) {
         return {
           success: false,
           message: "Your account has been blocked. Please contact support.",
@@ -478,7 +478,7 @@ export class UserAuthService implements IuserAuthService {
         };
       }
 
-      if (userData.status === "Blocked") {
+      if (!userData.status) {
         return {
           success: false,
           message: "Your account has been blocked by an administrator",

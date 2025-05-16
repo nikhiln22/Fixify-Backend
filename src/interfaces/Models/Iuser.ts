@@ -5,7 +5,7 @@ export interface Iuser extends Document {
     email: string;
     password: string;
     phone: number;
-    status: string;
+    status: boolean;
     image?: string;
     createdAt?: Date;
     updatedAt?: Date;

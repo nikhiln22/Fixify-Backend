@@ -6,6 +6,6 @@ export interface IuserRepository {
     findByEmail(email: string): Promise<findByEmailResponseDTO>
     updatePassword(email: string, hashedPassword: string): Promise<UpdatePasswordResponseDTO>;
     getPaginatedUsers(page: number, limit: number): Promise<{ data: Iuser[], total: number }>;
-    blockUser(id:string,status:string): Promise<void>;
+    blockUser(id:string,status:boolean): Promise<void>;
     findById(id: string): Promise<Iuser | null>;
 }
