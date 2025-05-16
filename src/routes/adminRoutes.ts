@@ -6,14 +6,19 @@ import { UserManagementController } from "../controllers/admin/userManagementCon
 import { AuthMiddleware } from "../middlewares/AuthMiddleware";
 import { Roles } from "../config/roles";
 import { ApplicantManagementController } from "../controllers/admin/applicantManagementController";
+import { CategoryManagementController } from "../controllers/admin/categoryManagementController";
+import { LocalUpload } from "../config/multerConfig";
+import { ServiceManagementController } from "../controllers/admin/serviceManagementController";
 
 export class AdminRoutes {
   private router: Router;
   private authMiddleware: AuthMiddleware;
+  private localUpload: LocalUpload;
 
   constructor() {
     this.router = express.Router();
     this.authMiddleware = AuthMiddleware.getInstance();
+    this.localUpload = new LocalUpload();
     this.setupRoutes();
   }
 
@@ -29,6 +34,14 @@ export class AdminRoutes {
 
     const applicantManagementController = container.resolve(
       ApplicantManagementController
+    );
+
+    const catagoryManagementController = container.resolve(
+      CategoryManagementController
+    );
+
+    const serviceManagementController = container.resolve(
+      ServiceManagementController
     );
 
     this.router.post(
@@ -76,6 +89,55 @@ export class AdminRoutes {
       applicantManagementController.getAllPaginatedApplicants.bind(
         applicantManagementController
       )
+    );
+
+    this.router.get(
+      "/categories",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      catagoryManagementController.getAllCategory.bind(
+        catagoryManagementController
+      )
+    );
+
+    this.router.post(
+      "/addcategory",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      this.localUpload.upload.single("image"),
+      catagoryManagementController.addCategory.bind(
+        catagoryManagementController
+      )
+    );
+
+    this.router.patch(
+      "/blockcategory/:categoryId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      catagoryManagementController.toggleCategoryStatus.bind(
+        catagoryManagementController
+      )
+    );
+
+    this.router.put(
+      "/updatecategory/:categoryId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      this.localUpload.upload.single("image"),
+      catagoryManagementController.editCategory.bind(
+        catagoryManagementController
+      )
+    );
+
+    this.router.get(
+      "/services",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      serviceManagementController.getAllServices.bind(
+        serviceManagementController
+      )
+    );
+
+    this.router.post(
+      "/addservice",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      this.localUpload.upload.single("image"),
+      serviceManagementController.addService.bind(serviceManagementController)
     );
 
     this.router.get(

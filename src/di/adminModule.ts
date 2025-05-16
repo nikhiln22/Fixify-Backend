@@ -20,6 +20,16 @@ import { IuserManagementService } from "../interfaces/Iservices/IadminService/Iu
 import { IuserRepository } from "../interfaces/Irepositories/IuserRepository";
 import { ItechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
 import { IapplicantManagementService } from "../interfaces/Iservices/IadminService/IapplicantManagementService";
+import { CategoryManagementService } from "../services/adminService/categoryManagementService";
+import { ICategoryManagementService } from "../interfaces/Iservices/IadminService/IcategoryManagementService";
+import { CloudinaryUploader } from "../utils/cloudinaryUploader";
+import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
+import { ICategoryRepository } from "../interfaces/Irepositories/IcategoryRepository";
+import { CategoryRepository } from "../repositories/categoryRepository";
+import { IserviceManagementService } from "../interfaces/Iservices/IadminService/IserviceManagementService";
+import { ServiceManagementService } from "../services/adminService/serviceManagementService";
+import { IserviceRepository } from "../interfaces/Irepositories/IserviceRepository";
+import { ServiceRepository } from "../repositories/serviceRepository";
 
 container.registerSingleton<IadminService>("IadminService", AdminAuthService);
 container.registerSingleton<IadminRepository>("IadminRepository", AdminRepository);
@@ -31,3 +41,8 @@ container.registerSingleton<IuserRepository>("IuserRepository", UserRepository);
 container.registerSingleton<IuserManagementService>("IuserManagementService", UserManagementService);
 container.registerSingleton<IapplicantManagementService>("IapplicantManagementService",ApplicantManagementService);
 container.registerSingleton<ItechnicianRepository>("ItechnicianRepository",TechnicianRepository);
+container.registerSingleton<ICategoryManagementService>("ICategoryManagementService",CategoryManagementService);
+container.registerSingleton<IFileUploader>("IFileUploader",CloudinaryUploader);
+container.registerSingleton<ICategoryRepository>("ICategoryRepository",CategoryRepository);
+container.registerSingleton<IserviceManagementService>("IserviceManagementService",ServiceManagementService);
+container.registerSingleton<IserviceRepository>("IserviceRepository",ServiceRepository);
