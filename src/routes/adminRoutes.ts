@@ -72,7 +72,7 @@ export class AdminRoutes {
     this.router.get(
       "/userslist",
       this.authMiddleware.authenticate(Roles.ADMIN),
-      userManagementController.getAllPaginatedUsers.bind(
+      userManagementController.getAllUsers.bind(
         userManagementController
       )
     );

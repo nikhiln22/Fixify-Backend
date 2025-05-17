@@ -1,8 +1,9 @@
 import { injectable, inject } from "tsyringe";
 import { IjobDesignationService } from "../../interfaces/Iservices/IadminService/IjobDesignationService";
 import { IjobDesignationRepository } from "../../interfaces/Irepositories/IjobDesignationRepository";
-import { AddDesignationResponseDTO } from "../../interfaces/DTO/IServices/Iadminservices.dto/jobDesignationService.dto";
+import { DesignationResponseDTO } from "../../interfaces/DTO/IServices/Iadminservices.dto/jobDesignationService.dto";
 import { HTTP_STATUS } from "../../utils/httpStatus";
+import { IjobDesignation } from "../../interfaces/Models/IjobDesignation";
 
 @injectable()
 export class JobDesignationService implements IjobDesignationService {
@@ -11,9 +12,7 @@ export class JobDesignationService implements IjobDesignationService {
     private designationRepository: IjobDesignationRepository
   ) {}
 
-  async addDesignation(
-    designation: string
-  ): Promise<AddDesignationResponseDTO> {
+  async addDesignation(designation: string): Promise<DesignationResponseDTO> {
     try {
       const existing = await this.designationRepository.findByName(designation);
       if (existing) {
@@ -30,7 +29,7 @@ export class JobDesignationService implements IjobDesignationService {
       return {
         status: HTTP_STATUS.CREATED,
         message: "Designation added successfully",
-        designation: newDesignation,
+        data: newDesignation,
       };
     } catch (error) {
       console.error("Error adding designation:", error);
@@ -41,9 +40,7 @@ export class JobDesignationService implements IjobDesignationService {
     }
   }
 
-  async toggleDesignationStatus(
-    id: string
-  ): Promise<AddDesignationResponseDTO> {
+  async toggleDesignationStatus(id: string): Promise<DesignationResponseDTO> {
     try {
       const designation = await this.designationRepository.findById(id);
       console.log(
@@ -59,20 +56,19 @@ export class JobDesignationService implements IjobDesignationService {
 
       const newStatus = !designation.Status;
 
-      let response = await this.designationRepository.blockDesignation(
-        id,
-        newStatus
-      );
+      let updatedDesignation =
+        await this.designationRepository.blockDesignation(id, newStatus);
       console.log(
         "response after blocking the job designation from the designation repository:",
-        response
+        updatedDesignation
       );
+
       return {
         status: HTTP_STATUS.OK,
         message: `Designation successfully ${
           newStatus ? "unblocked" : "blocked"
         }`,
-        designation: { ...designation.toObject(), Status: newStatus },
+        data: updatedDesignation,
       };
     } catch (error) {
       console.error("Error blocking designation:", error);
@@ -83,55 +79,66 @@ export class JobDesignationService implements IjobDesignationService {
     }
   }
 
-  async getAllDesignations(): Promise<AddDesignationResponseDTO> {
+  async getAllDesignations(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      designations: IjobDesignation[];
+      pagination: {
+        total: number;
+        page: number;
+        pages: number;
+        limit: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    };
+  }> {
     try {
-      const designations =
-        await this.designationRepository.getAllDesignations();
+      console.log("Function fetching all designations");
+      const page = options.page || 1;
+      const limit = options.limit || 5;
+
+      const result = await this.designationRepository.getAllDesignations({
+        page,
+        limit,
+        search: options.search,
+      });
+
+      console.log("result from the designation service:", result);
+
       return {
+        success: true,
         status: HTTP_STATUS.OK,
         message: "Designations fetched successfully",
-        designation: designations,
+        data: {
+          designations: result.data,
+          pagination: {
+            total: result.total,
+            page: result.page,
+            pages: result.pages,
+            limit: limit,
+            hasNextPage: result.page < result.pages,
+            hasPrevPage: page > 1,
+          },
+        },
       };
     } catch (error) {
       console.error("Error fetching designations:", error);
       return {
+        success: false,
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-        message: "Failed to fetch designations",
+        message: "Something went wrong while fetching designations",
       };
     }
   }
 
-  async getPaginatedDesignations(
-    page: number
-  ): Promise<AddDesignationResponseDTO> {
-    const limit = 10;
-
-    try {
-      const result = await this.designationRepository.getPaginatedDesignations(
-        page,
-        limit
-      );
-      const totalPages = Math.ceil(result.total / limit);
-
-      return {
-        status: HTTP_STATUS.OK,
-        message: "Designations fetched successfully",
-        designation: result.data,
-        total: result.total,
-        totalPages,
-      };
-    } catch (error) {
-      console.error("Error fetching paginated designations:", error);
-      return {
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-        message: "Failed to fetch paginated designations",
-      };
-    }
-  }
-
-  async findDesignationByName(
-    name: string
-  ): Promise<AddDesignationResponseDTO> {
+  async findDesignationByName(name: string): Promise<DesignationResponseDTO> {
     try {
       const designation = await this.designationRepository.findByName(name);
       if (!designation) {
@@ -144,7 +151,7 @@ export class JobDesignationService implements IjobDesignationService {
       return {
         status: HTTP_STATUS.OK,
         message: "Designation found",
-        designation,
+        data: designation,
       };
     } catch (error) {
       console.error("Error finding designation:", error);

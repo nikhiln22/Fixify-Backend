@@ -5,32 +5,69 @@ import {
   PaginatedUserResponse,
   ToggleUserStatusResponse,
 } from "../../interfaces/DTO/IServices/Iadminservices.dto/userManagement.dto";
+import { IuserManagementService } from "../../interfaces/Iservices/IadminService/IuserManagementService";
+import { Iuser } from "../../interfaces/Models/Iuser";
 
 @injectable()
-export class UserManagementService {
+export class UserManagementService implements IuserManagementService {
   constructor(
     @inject("IuserRepository") private userRepository: IuserRepository
   ) {}
 
-  async getPaginatedUsers(page: number): Promise<PaginatedUserResponse> {
-    const limit = 5;
-
+  async getAllUsers(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      users: Iuser[];
+      pagination: {
+        total: number;
+        page: number;
+        pages: number;
+        limit: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    };
+  }> {
     try {
-      const result = await this.userRepository.getPaginatedUsers(page, limit);
-      const totalPages = Math.ceil(result.total / limit);
+      console.log("Function fetching all the users");
+      const page = options.page || 1;
+      const limit = options.limit || 5;
+      const result = await this.userRepository.getAllUsers({
+        page,
+        limit,
+        search:options.search
+    });
+
+      console.log("result from the usermanagement service:", result);
 
       return {
+        success: true,
         status: HTTP_STATUS.OK,
         message: "Users fetched successfully",
-        users: result.data,
-        total: result.total,
-        totalPages,
+        data: {
+          users: result.data,
+          pagination: {
+            total: result.total,
+            page: result.page,
+            pages: result.pages,
+            limit: limit,
+            hasNextPage: result.page < result.pages,
+            hasPrevPage: page > 1,
+          },
+        },
       };
     } catch (error) {
-      console.error("Error fetching paginated users:", error);
+      console.error("Error fetching users:", error);
       return {
+        success: false,
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-        message: "Failed to fetch paginated users",
+        message: "Something went wrong while fetching users",
       };
     }
   }
@@ -46,7 +83,7 @@ export class UserManagementService {
         };
       }
 
-      const newStatus = !user.status
+      const newStatus = !user.status;
       let response = await this.userRepository.blockUser(id, newStatus);
       console.log(
         "Response after toggling user status from the user repository:",

@@ -8,6 +8,7 @@ import {
 } from "../interfaces/DTO/IRepository/userRepositoryDTO";
 import { BaseRepository } from "./baseRepository";
 import { injectable } from "tsyringe";
+import { FilterQuery } from "mongoose";
 
 @injectable()
 export class UserRepository
@@ -69,28 +70,56 @@ export class UserRepository
     }
   }
 
-  async getPaginatedUsers(
-    page: number,
-    limit: number
-  ): Promise<{ data: Iuser[]; total: number }> {
+  async getAllUsers(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }): Promise<{
+    data: Iuser[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  }> {
     try {
-      const skip = (page - 1) * limit;
-      const data = await user.find().skip(skip).limit(limit).exec();
-      const total = await user.countDocuments();
-      return { data, total };
+      console.log("entering the function which fetches all the users");
+      const page = options.page || 1;
+      const limit = options.limit || 5;
+
+      const filter: FilterQuery<Iuser> = {};
+
+      if (options.search) {
+        filter.$or = [
+          { name: { $regex: options.search, $options: "i" } },
+          { email: { $regex: options.search, $options: "i" } },
+        ];
+      }
+
+      const result = (await this.find(filter, {
+        pagination: { page, limit },
+        sort: { createdAt: -1 },
+      })) as { data: Iuser[]; total: number };
+
+
+      console.log("data fetched from the user repository:", result);
+
+      return {
+        data:result.data,
+        total:result.total,
+        page,
+        limit,
+        pages: Math.ceil(result.total / limit),
+      };
     } catch (error) {
-      console.error("Error fetching paginated users:", error);
-      throw new Error("Failed to fetch paginated users");
+      console.log("error occurred while fetching the users:", error);
+      throw new Error("Failed to fetch the users");
     }
   }
 
   async blockUser(id: string, status: boolean): Promise<void> {
     try {
       let response = await this.updateOne({ _id: id }, { status: status });
-      console.log(
-        "blocking the user in the user repository:",
-        response
-      );
+      console.log("blocking the user in the user repository:", response);
     } catch (error) {
       throw new Error("Failed to block designation: " + error);
     }

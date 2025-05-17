@@ -1,31 +1,37 @@
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../../utils/httpStatus";
-import { IuserManagemenrController } from "../../interfaces/Icontrollers/Iadmincontrollers/IuserManagementController";
+import { IuserManagementController } from "../../interfaces/Icontrollers/Iadmincontrollers/IuserManagementController";
 import { inject, injectable } from "tsyringe";
 import { IuserManagementService } from "../../interfaces/Iservices/IadminService/IuserManagementService";
 
 @injectable()
-export class UserManagementController implements IuserManagemenrController {
+export class UserManagementController implements IuserManagementController {
   constructor(
     @inject("IuserManagementService")
     private userManagementService: IuserManagementService
   ) {}
 
-  async getAllPaginatedUsers(req: Request, res: Response): Promise<void> {
+  async getAllUsers(req: Request, res: Response): Promise<void> {
     try {
-      const page = parseInt(req.query.page as string) || 1;
-      const response = await this.userManagementService.getPaginatedUsers(page);
-      
-      res.status(HTTP_STATUS.OK).json({
-        message: response.message,
-        users: response.users || [],
-        total: response.total || 0,
-        totalPages: response.totalPages || 0,
+      console.log("function fetching all the users");
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+      const search = (req.query.search as string) || undefined;
+
+      const result = await this.userManagementService.getAllUsers({
+        page,
+        limit,
+        search,
       });
+
+      console.log("result from the fetching all users controller:", result);
+      res.status(result.status).json(result);
     } catch (error) {
-      console.error("Error fetching paginated users:", error);
+      console.error("Error in getAllUsers controller:", error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Error fetching paginated users.",
+        success: false,
+        message: "Error fetching users",
+        error: error instanceof Error ? error.message : "Unknown error",
       });
     }
   }

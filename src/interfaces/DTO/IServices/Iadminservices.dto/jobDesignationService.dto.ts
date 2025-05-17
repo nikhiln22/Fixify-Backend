@@ -1,10 +1,8 @@
-import { IjobDesignation } from "../../../Models/IjobDesignation"; 
+import { IjobDesignation } from "../../../Models/IjobDesignation";
 
-export interface AddDesignationResponseDTO {
-    status: number;
-    message: string;
-    designation?: IjobDesignation | IjobDesignation[]; 
-    total?: number; 
-    totalPages?: number;
-  }
-  
+export interface DesignationResponseDTO {
+  success?:boolean,
+  status: number;
+  message: string;
+  data?: IjobDesignation | null;
+}

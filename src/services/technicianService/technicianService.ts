@@ -39,7 +39,7 @@ export class TechnicianService implements ItechnicianService {
         designations
       );
 
-      const designationNames = designations
+      const designationNames = designations.data
         .filter((d) => d.Status === true)
         .map((d) => d.designation);
       console.log("designationNames:", designationNames);
