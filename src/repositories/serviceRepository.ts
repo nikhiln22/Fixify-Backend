@@ -51,7 +51,7 @@ export class ServiceRepository
     page?: number;
     limit?: number;
     search?: string;
-    categoryId: string;
+    categoryId?: string;
   }): Promise<{
     data: IService[];
     total: number;

@@ -47,20 +47,19 @@ export class CategoryManagementController
 
   async getAllCategory(req: Request, res: Response): Promise<void> {
     try {
-      console.log("entering to the applicants listing");
+      console.log("entering to the function fetching all the categories");
 
-      const page = parseInt(req.query.page as string) || 1;
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+      const search = (req.query.search as string) || undefined;
 
-      const response = await this.categoryManagementService.getAllCategories(
-        page
-      );
-
-      res.status(response.status).json({
-        message: response.message,
-        categories: response.categories || [],
-        total: response.total || 0,
-        totalPages: response.totalPages || 0,
+      const result = await this.categoryManagementService.getAllCategories({
+        page,
+        limit,
+        search,
       });
+
+      res.status(result.status).json(result);
     } catch (error) {
       console.error("Error in getAllPaginatedApplicants controller:", error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
@@ -110,7 +109,6 @@ export class CategoryManagementController
       const { name } = req.body;
 
       const updateData: { name?: string; image?: string } = {};
-
 
       if (name !== undefined) {
         updateData.name = name;

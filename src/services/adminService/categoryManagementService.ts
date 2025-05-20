@@ -2,6 +2,7 @@ import { ICategoryManagementService } from "../../interfaces/Iservices/IadminSer
 import { HTTP_STATUS } from "../../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
 import { ICategoryRepository } from "../../interfaces/Irepositories/IcategoryRepository";
+import { Icategory } from "../../interfaces/Models/Icategory";
 import {
   AddCategoryResponseDTO,
   getCategoriesResponse,
@@ -67,32 +68,64 @@ export class CategoryManagementService implements ICategoryManagementService {
     }
   }
 
-  async getAllCategories(page: number): Promise<getCategoriesResponse> {
+  async getAllCategories(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      categories: Icategory[];
+      pagination: {
+        total: number;
+        page: number;
+        pages: number;
+        limit: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    };
+  }> {
     try {
       console.log(
         "fetching all the categories from the category management service"
       );
-      let limit = 5;
-      const result = await this.categoryRepository.getAllCategories(
+
+      const page = options.page;
+      const limit = options.limit;
+
+      const result = await this.categoryRepository.getAllCategories({
         page,
-        limit
-      );
+        limit,
+        search: options.search,
+      });
+
       console.log("result from the categorymanagementservice:", result);
 
-      const totalPages = Math.ceil(result.total / limit);
-
-      return {
+        return {
+        success: true,
         status: HTTP_STATUS.OK,
         message: "categories fetched successfully",
-        categories: result.data,
-        total: result.total,
-        totalPages,
+        data: {
+          categories: result.data,
+          pagination: {
+            total: result.total,
+            page: result.page,
+            pages: result.pages,
+            limit: result.limit,
+            hasNextPage: result.page < result.pages,
+            hasPrevPage: result.page > 1,
+          },
+        },
       };
     } catch (error) {
-      console.log("error fetching the applicants:", error);
+      console.log("error fetching the categories:", error);
       return {
+        success:false,
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-        message: "failed to fetch the applicants",
+        message: "failed to fetch the categories",
       };
     }
   }
@@ -178,7 +211,6 @@ export class CategoryManagementService implements ICategoryManagementService {
         updatedFields.name = updateData.name;
       }
 
-
       if (updateData.image) {
         const newImageUrl = await this.fileUploader.uploadFile(
           updateData.image,
@@ -192,7 +224,6 @@ export class CategoryManagementService implements ICategoryManagementService {
             message: "Failed to upload image to cloud storage",
           };
         }
-
 
         updatedFields.image = newImageUrl;
       }
