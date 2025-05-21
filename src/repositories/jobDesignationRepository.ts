@@ -27,29 +27,58 @@ export class JobDesignationRepository
   }> {
     try {
       console.log("entering the function which fetches all job designations");
-      const page = options.page || 1;
-      const limit = options.limit || 5;
+      const page = options.page;
+      const limit = options.limit;
 
       const filter: FilterQuery<IjobDesignation> = {};
 
       if (options.search) {
         filter.$or = [
-          { designation: { $regex: options.search, $options: "i" } }
+          { designation: { $regex: options.search, $options: "i" } },
         ];
       }
 
-      const result = (await this.find(filter, {
-        pagination: { page, limit },
-        sort: { createdAt: -1 },
-      })) as { data: IjobDesignation[]; total: number };
+      if (page !== undefined && limit !== undefined) {
+        const result = (await this.find(filter, {
+          pagination: { page: page, limit: limit },
+          sort: { createdAt: -1 },
+        })) as { data: IjobDesignation[]; total: number };
 
-      return {
-        data: result.data,
-        total: result.total,
-        page,
-        limit,
-        pages: Math.ceil(result.total / limit),
-      };
+        console.log("job designations with pagination:", result);
+        return {
+          data: result.data,
+          total: result.total,
+          page: page,
+          limit: limit,
+          pages: Math.ceil(result.total / limit),
+        };
+      } else {
+        const allCategories = await this.model
+          .find(filter)
+          .sort({ createdAt: -1 });
+
+        console.log("all categories without pagination:", allCategories);
+        return {
+          data: allCategories,
+          total: allCategories.length,
+          page: 1,
+          limit: allCategories.length,
+          pages: 1,
+        };
+      }
+
+      // const result = (await this.find(filter, {
+      //   pagination: { page, limit },
+      //   sort: { createdAt: -1 },
+      // })) as { data: IjobDesignation[]; total: number };
+
+      // return {
+      //   data: result.data,
+      //   total: result.total,
+      //   page,
+      //   limit,
+      //   pages: Math.ceil(result.total / limit),
+      // };
     } catch (error) {
       console.log("error occurred while fetching job designations:", error);
       throw new Error("Failed to fetch job designations");
@@ -85,18 +114,24 @@ export class JobDesignationRepository
     }
   }
 
-async blockDesignation(id: string, status: boolean): Promise<IjobDesignation | null> {
-  try {
-    const updatedDesignation = await this.updateOne({ _id: id }, { Status: status });
-    
-    console.log(
-      "blocking the designation in the jobdesignation repository:",
-      updatedDesignation
-    );
-    
-    return updatedDesignation;
-  } catch (error) {
-    throw new Error("Failed to block designation: " + error);
+  async blockDesignation(
+    id: string,
+    status: boolean
+  ): Promise<IjobDesignation | null> {
+    try {
+      const updatedDesignation = await this.updateOne(
+        { _id: id },
+        { Status: status }
+      );
+
+      console.log(
+        "blocking the designation in the jobdesignation repository:",
+        updatedDesignation
+      );
+
+      return updatedDesignation;
+    } catch (error) {
+      throw new Error("Failed to block designation: " + error);
+    }
   }
-}
 }

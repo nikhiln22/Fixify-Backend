@@ -33,7 +33,7 @@ export class TechnicianService implements ItechnicianService {
         "entering the get job designation services from the technician service"
       );
       const designations =
-        await this.jobDesignationRepository.getAllDesignations();
+        await this.jobDesignationRepository.getAllDesignations({});
       console.log(
         "designations from the getjobdesignations function in the technician service:",
         designations
