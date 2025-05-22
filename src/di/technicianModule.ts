@@ -1,7 +1,6 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
-import { TechnicianAuthService } from "../services/technicianService/technicianAuthService";
-import { TechnicianService } from "../services/technicianService/technicianService";
+import { TechnicianService } from "../services/technicianService";
 import { TechnicianRepository } from "../repositories/technicianRepository";
 import { TempTechnicianRepository } from "../repositories/tempRepositories/tempTechnicianRepository";
 import { JobDesignationRepository } from "../repositories/jobDesignationRepository";
@@ -11,8 +10,7 @@ import { EmailService } from "../utils/email";
 import { EmailTemplateService } from "../utils/emailTemplates";
 import { OTPService } from "../utils/otp";
 import { RedisService } from "../utils/redis";
-import { ItechnicianAuthService } from "../interfaces/Iservices/ItechnicianService/ItechnicianAuthService";
-import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService/ItechnicianService";
+import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
 import { ItechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
 import { ItempTechnicianRepository } from "../interfaces/Irepositories/ItempTechnicianRepository";
 import { IjobDesignationRepository } from "../interfaces/Irepositories/IjobDesignationRepository";
@@ -26,9 +24,10 @@ import { CloudinaryUploader } from "../utils/cloudinaryUploader";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
 import { ICityLocationRepository } from "../interfaces/Irepositories/IcityLocationRepository";
 import { CityLocationRepository } from "../repositories/cityLocationRepository";
+import { IjobsService } from "../interfaces/Iservices/IjobsService";
+import { JobService } from "../services/jobService";
 
 
-container.registerSingleton<ItechnicianAuthService>("ItechnicianAuthService", TechnicianAuthService);
 container.registerSingleton<ItechnicianService>("ItechnicianService", TechnicianService);
 container.registerSingleton<ItechnicianRepository>("ItechnicianRepository", TechnicianRepository);
 container.registerSingleton<ItempTechnicianRepository>("ItempTechnicianRepository", TempTechnicianRepository);
@@ -41,3 +40,4 @@ container.registerSingleton<IredisService>("IredisService", RedisService);
 container.registerSingleton<IemailService>("IemailService", EmailService);
 container.registerSingleton<IemailTemplateService>("IemailTemplateService", EmailTemplateService);
 container.registerSingleton<IFileUploader>("IFileUploader", CloudinaryUploader);
+container.registerSingleton<IjobsService>("IjobsService",JobService);

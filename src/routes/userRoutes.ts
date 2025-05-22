@@ -1,6 +1,6 @@
 import express, { Router } from "express";
 import { container } from "../di/container";
-import { UserAuthController } from "../controllers/user/userAuthController";
+import { UserController } from "../controllers/userController";
 import { AuthMiddleware } from "../middlewares/AuthMiddleware";
 import { Roles } from "../config/roles";
 
@@ -15,48 +15,48 @@ export class UserRoutes {
   }
 
   private setupRoutes() {
-    const userAuthController = container.resolve(UserAuthController);
+    const userController = container.resolve(UserController);
 
     this.router.post(
       "/login",
-      userAuthController.login.bind(userAuthController)
+      userController.login.bind(userController)
     );
 
     this.router.get(
       "/checkstatus",
       this.authMiddleware.authenticate(Roles.USER),
-      userAuthController.checkUserStatus.bind(userAuthController)
+      userController.checkUserStatus.bind(userController)
     );
 
     this.router.post(
       "/register",
-      userAuthController.register.bind(userAuthController)
+      userController.register.bind(userController)
     );
 
     this.router.post(
       "/verifyOtp",
-      userAuthController.verifyOtp.bind(userAuthController)
+      userController.verifyOtp.bind(userController)
     );
 
     this.router.post(
       "/resendotp",
-      userAuthController.resendOtp.bind(userAuthController)
+      userController.resendOtp.bind(userController)
     );
 
     this.router.post(
       "/forgotpassword",
-      userAuthController.forgotPassword.bind(userAuthController)
+      userController.forgotPassword.bind(userController)
     );
 
     this.router.post(
       "/resetpassword",
-      userAuthController.resetPassword.bind(userAuthController)
+      userController.resetPassword.bind(userController)
     );
 
     this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.USER),
-      userAuthController.logout.bind(userAuthController)
+      userController.logout.bind(userController)
     );
   }
 
