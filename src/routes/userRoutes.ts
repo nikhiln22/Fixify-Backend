@@ -17,10 +17,7 @@ export class UserRoutes {
   private setupRoutes() {
     const userController = container.resolve(UserController);
 
-    this.router.post(
-      "/login",
-      userController.login.bind(userController)
-    );
+    this.router.post("/login", userController.login.bind(userController));
 
     this.router.get(
       "/checkstatus",
@@ -28,10 +25,7 @@ export class UserRoutes {
       userController.checkUserStatus.bind(userController)
     );
 
-    this.router.post(
-      "/register",
-      userController.register.bind(userController)
-    );
+    this.router.post("/register", userController.register.bind(userController));
 
     this.router.post(
       "/verifyOtp",
@@ -51,6 +45,18 @@ export class UserRoutes {
     this.router.post(
       "/resetpassword",
       userController.resetPassword.bind(userController)
+    );
+
+    this.router.get(
+      "/categories",
+      this.authMiddleware.authenticate(Roles.USER),
+      userController.getAllCategories.bind(userController)
+    );
+
+    this.router.get(
+      "/services",
+      this.authMiddleware.authenticate(Roles.USER),
+      userController.getAllServices.bind(userController)
     );
 
     this.router.get(

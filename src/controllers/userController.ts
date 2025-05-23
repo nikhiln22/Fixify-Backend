@@ -234,4 +234,59 @@ export class UserController implements IuserController {
       });
     }
   }
+
+  async getAllCategories(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("function fetching all the categories");
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+      const search = (req.query.search as string) || undefined;
+
+      const result = await this.serviceService.getAllCategories({
+        page,
+        limit,
+        search,
+      });
+
+      console.log(
+        "result from the fetching all categories from the service service:",
+        result
+      );
+      res.status(result.status).json(result);
+    } catch (error) {
+      console.error("Error occured while fetching the categories:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Error fetching users",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  async getAllServices(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("services fetching to be listed in the user side");
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+      const search = (req.query.search as string) || undefined;
+      const categoryId = req.query.category as string;
+
+      const result = await this.serviceService.getAllServices({
+        page,
+        limit,
+        search,
+        categoryId,
+      });
+
+      console.log("result from the services fetching controller:", result);
+      res.status(result.status).json(result);
+    } catch (error) {
+      console.log("error occured while fetching the services:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Error fetching users",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
 }
