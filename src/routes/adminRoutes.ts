@@ -1,13 +1,12 @@
 import express, { Router } from "express";
 import { container } from "../di/container";
-import { AdminAuthController } from "../controllers/admin/adminAuthController";
-import { JobDesignationController } from "../controllers/admin/jobDesignationController";
-import { UserManagementController } from "../controllers/admin/userManagementController";
+import { JobController } from "../controllers/jobController";
 import { AuthMiddleware } from "../middlewares/AuthMiddleware";
 import { Roles } from "../config/roles";
 import { ApplicantManagementController } from "../controllers/admin/applicantManagementController";
-import { CategoryManagementController } from "../controllers/admin/categoryManagementController";
 import { LocalUpload } from "../config/multerConfig";
+import { ServiceController } from "../controllers/serviceController";
+import { AdminController } from "../controllers/adminController";
 
 export class AdminRoutes {
   private router: Router;
@@ -22,60 +21,56 @@ export class AdminRoutes {
   }
 
   private setupRoutes() {
-    const adminAuthController = container.resolve(AdminAuthController);
-    const jobDesignationController = container.resolve(
-      JobDesignationController
-    );
 
-    const userManagementController = container.resolve(
-      UserManagementController
+    const jobController = container.resolve(
+      JobController
     );
 
     const applicantManagementController = container.resolve(
       ApplicantManagementController
     );
 
-    const catagoryManagementController = container.resolve(
-      CategoryManagementController
-    );
+    const serviceController = container.resolve(ServiceController)
+
+    const adminController = container.resolve(AdminController)
 
     this.router.post(
       "/login",
-      adminAuthController.login.bind(adminAuthController)
+      adminController.login.bind(adminController)
     );
 
     this.router.post(
       "/addjobdesignation",
       this.authMiddleware.authenticate(Roles.ADMIN),
-      jobDesignationController.addDesignation.bind(jobDesignationController)
+      jobController.addDesignation.bind(jobController)
     );
 
     this.router.patch(
       "/blockjobdesignation/:id",
       this.authMiddleware.authenticate(Roles.ADMIN),
-      jobDesignationController.toggleDesignationStatus.bind(
-        jobDesignationController
+      jobController.toggleDesignationStatus.bind(
+        jobController
       )
     );
 
     this.router.get(
       "/jobdesignations",
       this.authMiddleware.authenticate(Roles.ADMIN),
-      jobDesignationController.getAllDesignations.bind(jobDesignationController)
+      jobController.getAllDesignations.bind(jobController)
     );
 
     this.router.get(
       "/userslist",
       this.authMiddleware.authenticate(Roles.ADMIN),
-      userManagementController.getAllPaginatedUsers.bind(
-        userManagementController
+      adminController.getAllUsers.bind(
+        adminController
       )
     );
 
     this.router.patch(
       "/blockuser/:id",
       this.authMiddleware.authenticate(Roles.ADMIN),
-      userManagementController.toggleUserStatus.bind(userManagementController)
+      adminController.toggleUserStatus.bind(adminController)
     );
 
     this.router.get(
@@ -89,8 +84,8 @@ export class AdminRoutes {
     this.router.get(
       "/categories",
       this.authMiddleware.authenticate(Roles.ADMIN),
-      catagoryManagementController.getAllCategory.bind(
-        catagoryManagementController
+      serviceController.getAllCategory.bind(
+        serviceController
       )
     );
 
@@ -98,16 +93,16 @@ export class AdminRoutes {
       "/addcategory",
       this.authMiddleware.authenticate(Roles.ADMIN),
       this.localUpload.upload.single("image"),
-      catagoryManagementController.addCategory.bind(
-        catagoryManagementController
+      serviceController.addCategory.bind(
+        serviceController
       )
     );
 
     this.router.patch(
       "/blockcategory/:categoryId",
       this.authMiddleware.authenticate(Roles.ADMIN),
-      catagoryManagementController.toggleCategoryStatus.bind(
-        catagoryManagementController
+      serviceController.toggleCategoryStatus.bind(
+        serviceController
       )
     );
 
@@ -115,15 +110,30 @@ export class AdminRoutes {
       "/updatecategory/:categoryId",
       this.authMiddleware.authenticate(Roles.ADMIN),
       this.localUpload.upload.single("image"),
-      catagoryManagementController.editCategory.bind(
-        catagoryManagementController
+      serviceController.editCategory.bind(
+        serviceController
       )
+    );
+
+    this.router.get(
+      "/services",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      serviceController.getAllServices.bind(
+        serviceController
+      )
+    );
+
+    this.router.post(
+      "/addservice",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      this.localUpload.upload.single("image"),
+      serviceController.addService.bind(serviceController)
     );
 
     this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.ADMIN),
-      adminAuthController.logout.bind(adminAuthController)
+      adminController.logout.bind(adminController)
     );
   }
 

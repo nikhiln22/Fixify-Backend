@@ -1,5 +1,5 @@
 import express, { Router } from "express";
-import { RefreshController } from "../controllers/common/refreshController";
+import { AuthController } from "../controllers/authController";
 import { container } from "tsyringe";
 
 export class CommonRoutes {
@@ -11,11 +11,11 @@ export class CommonRoutes {
   }
 
   private setupRoutes() {
-    const refreshController = container.resolve(RefreshController);
+    const authController = container.resolve(AuthController);
 
     this.router.post(
       "/refreshtoken",
-      refreshController.refreshAccessToken.bind(refreshController)
+      authController.refreshAccessToken.bind(authController)
     );
   }
 

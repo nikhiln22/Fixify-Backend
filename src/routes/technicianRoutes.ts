@@ -1,7 +1,6 @@
 import express, { Router } from "express";
 import { container } from "../di/container";
-import { TechnicianAuthController } from "../controllers/technician/technicianAuthController";
-import { TechnicianController } from "../controllers/technician/technicianController";
+import { TechnicianController } from "../controllers/technicianController";
 import { AuthMiddleware } from "../middlewares/AuthMiddleware";
 import { Roles } from "../config/roles";
 import { LocalUpload } from "../config/multerConfig";
@@ -19,39 +18,37 @@ export class TechnicianRoutes {
   }
 
   private setupRoutes() {
-    const technicianAuthController = container.resolve(
-      TechnicianAuthController
-    );
+ 
     const technicianController = container.resolve(TechnicianController);
 
     this.router.post(
       "/login",
-      technicianAuthController.login.bind(technicianAuthController)
+      technicianController.login.bind(technicianController)
     );
 
     this.router.post(
       "/register",
-      technicianAuthController.register.bind(technicianAuthController)
+      technicianController.register.bind(technicianController)
     );
 
     this.router.post(
       "/verifyOtp",
-      technicianAuthController.verifyOtp.bind(technicianAuthController)
+      technicianController.verifyOtp.bind(technicianController)
     );
 
     this.router.post(
       "/resendotp",
-      technicianAuthController.resendOtp.bind(technicianAuthController)
+      technicianController.resendOtp.bind(technicianController)
     );
 
     this.router.post(
       "/forgotpassword",
-      technicianAuthController.forgotPassword.bind(technicianAuthController)
+      technicianController.forgotPassword.bind(technicianController)
     );
 
     this.router.post(
       "/resetpassword",
-      technicianAuthController.resetPassword.bind(technicianAuthController)
+      technicianController.resetPassword.bind(technicianController)
     );
 
     this.router.get(
@@ -60,17 +57,6 @@ export class TechnicianRoutes {
       technicianController.getJobDesignations.bind(technicianController)
     );
 
-    this.router.get(
-      "/cities",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
-      technicianController.getCityLocation.bind(technicianController)
-    );
-
-    this.router.get(
-      "/locations/:city",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
-      technicianController.getLocationByCity.bind(technicianController)
-    );
 
     this.router.patch(
       "/qualifications",
@@ -88,7 +74,7 @@ export class TechnicianRoutes {
     this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.TECHNICIAN),
-      technicianAuthController.logout.bind(technicianAuthController)
+      technicianController.logout.bind(technicianController)
     );
   }
 

@@ -3,6 +3,7 @@ import { BaseRepository } from "./baseRepository";
 import { injectable } from "tsyringe";
 import category from "../models/categoryModel";
 import { ICategoryRepository } from "../interfaces/Irepositories/IcategoryRepository";
+import { FilterQuery } from "mongoose";
 
 @injectable()
 export class CategoryRepository
@@ -34,23 +35,57 @@ export class CategoryRepository
     }
   }
 
-  async getAllCategories(
-    page: number,
-    limit: number
-  ): Promise<{ data: Icategory[]; total: number }> {
+  async getAllCategories(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    categoryId?: string;
+  }): Promise<{
+    data: Icategory[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  }> {
     try {
-      console.log("getting all the categories from the data base");
+      console.log("getting all the categories from the database");
+      const page = options.page;
+      const limit = options.limit;
 
-      const categories = await this.find(
-        {},
-        {
-          pagination: { page, limit },
+      const filter: FilterQuery<Icategory> = {};
+
+      if (options.search) {
+        filter.$or = [{ name: { $regex: options.search, $options: "i" } }];
+      }
+
+      if (page !== undefined && limit !== undefined) {
+        const result = (await this.find(filter, {
+          pagination: { page: page, limit: limit },
           sort: { createdAt: -1 },
-        }
-      );
+        })) as { data: Icategory[]; total: number };
 
-      console.log("categories:", categories);
-      return categories as { data: Icategory[]; total: number };
+        console.log("categories with pagination:", result);
+        return {
+          data: result.data,
+          total: result.total,
+          page: page,
+          limit: limit,
+          pages: Math.ceil(result.total / limit),
+        };
+      } else {
+        const allCategories = await this.model
+          .find(filter)
+          .sort({ createdAt: -1 });
+
+        console.log("all categories without pagination:", allCategories);
+        return {
+          data: allCategories,
+          total: allCategories.length,
+          page: 1,
+          limit: allCategories.length,
+          pages: 1,
+        };
+      }
     } catch (error) {
       console.log("Error occured with the fetchning the categories:", error);
       throw new Error("An error occurred while retrieving the categories");
