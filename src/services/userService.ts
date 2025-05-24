@@ -506,6 +506,7 @@ export class UserService implements IuserService {
       page?: number;
       limit?: number;
       search?: string;
+      status?: string;
     }): Promise<{
       success: boolean;
       status: number;
@@ -529,7 +530,8 @@ export class UserService implements IuserService {
         const result = await this.userRepository.getAllUsers({
           page,
           limit,
-          search:options.search
+          search:options.search,
+          status:options.status
       });
   
         console.log("result from the usermanagement service:", result);

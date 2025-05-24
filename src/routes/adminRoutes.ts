@@ -3,7 +3,6 @@ import { container } from "../di/container";
 import { JobController } from "../controllers/jobController";
 import { AuthMiddleware } from "../middlewares/AuthMiddleware";
 import { Roles } from "../config/roles";
-import { ApplicantManagementController } from "../controllers/admin/applicantManagementController";
 import { LocalUpload } from "../config/multerConfig";
 import { ServiceController } from "../controllers/serviceController";
 import { AdminController } from "../controllers/adminController";
@@ -24,10 +23,6 @@ export class AdminRoutes {
 
     const jobController = container.resolve(
       JobController
-    );
-
-    const applicantManagementController = container.resolve(
-      ApplicantManagementController
     );
 
     const serviceController = container.resolve(ServiceController)
@@ -71,14 +66,6 @@ export class AdminRoutes {
       "/blockuser/:id",
       this.authMiddleware.authenticate(Roles.ADMIN),
       adminController.toggleUserStatus.bind(adminController)
-    );
-
-    this.router.get(
-      "/applicantslist",
-      this.authMiddleware.authenticate(Roles.ADMIN),
-      applicantManagementController.getAllPaginatedApplicants.bind(
-        applicantManagementController
-      )
     );
 
     this.router.get(
