@@ -26,7 +26,7 @@ export interface IuserService {
       page?: number;
       limit?: number;
       search?: string;
-      categoryId?: string;
+      status?: string;
     }): Promise<{
       success: boolean;
       status: number;

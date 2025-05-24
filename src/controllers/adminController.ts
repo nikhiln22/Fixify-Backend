@@ -60,11 +60,13 @@ export class AdminController implements IadminController {
       const page = parseInt(req.query.page as string) || undefined;
       const limit = parseInt(req.query.limit as string) || undefined;
       const search = (req.query.search as string) || undefined;
+      const status = (req.query.status as string) || undefined;
 
       const result = await this.userService.getAllUsers({
         page,
         limit,
         search,
+        status
       });
 
       console.log("result from the fetching all users controller:", result);

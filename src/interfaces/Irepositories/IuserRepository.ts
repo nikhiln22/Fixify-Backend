@@ -17,6 +17,7 @@ export interface IuserRepository {
     page?: number;
     limit?: number;
     search?: string;
+    status?:string;
   }): Promise<{
     data: Iuser[];
     total: number;

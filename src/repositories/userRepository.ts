@@ -74,6 +74,7 @@ export class UserRepository
     page?: number;
     limit?: number;
     search?: string;
+    status?:string;
   }): Promise<{
     data: Iuser[];
     total: number;
@@ -90,9 +91,17 @@ export class UserRepository
 
       if (options.search) {
         filter.$or = [
-          { name: { $regex: options.search, $options: "i" } },
+          { username: { $regex: options.search, $options: "i" } },
           { email: { $regex: options.search, $options: "i" } },
         ];
+      }
+
+      if(options.status){
+        if(options.status === "active"){
+          filter.status = true;
+        }else if(options.status === "blocked"){
+          filter.status = false
+        }
       }
 
       const result = (await this.find(filter, {
