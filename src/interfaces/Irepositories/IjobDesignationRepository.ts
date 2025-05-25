@@ -6,6 +6,7 @@ export interface IjobDesignationRepository {
     page?: number;
     limit?: number;
     search?: string;
+    status?:string;
   }): Promise<{
     data: IjobDesignation[];
     total: number;

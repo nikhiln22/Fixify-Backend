@@ -54,7 +54,7 @@ export class JobService implements IjobsService {
         };
       }
 
-      const newStatus = !designation.Status;
+      const newStatus = !designation.status;
 
       let updatedDesignation =
         await this.designationRepository.blockDesignation(id, newStatus);
@@ -83,6 +83,7 @@ export class JobService implements IjobsService {
     page?: number;
     limit?: number;
     search?: string;
+    status?:string;
   }): Promise<{
     success: boolean;
     status: number;
@@ -108,6 +109,7 @@ export class JobService implements IjobsService {
         page,
         limit,
         search: options.search,
+        status:options.status
       });
 
       console.log("result from the designation service:", result);

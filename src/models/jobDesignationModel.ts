@@ -8,7 +8,7 @@ const jobDesignationSchema: Schema<IjobDesignation> = new Schema(
       unique: true,
       required: true,
     },
-    Status: {
+    status: {
       type: Boolean,
       default: true,
     },

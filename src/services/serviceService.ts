@@ -1,12 +1,14 @@
-import { IServiceService} from "../interfaces/Iservices/IserviceService";
+import { IServiceService } from "../interfaces/Iservices/IserviceService";
 import { inject, injectable } from "tsyringe";
 import { HTTP_STATUS } from "../utils/httpStatus";
 import {
   ServiceData,
   AddServiceResponse,
-  AddCategoryResponseDTO,
-  ToggleCategoryStatusResponseDTO,
-  UpdatedCategoryResponseDTO,
+  AddCategoryResponse,
+  ToggleCategoryStatusResponse,
+  UpdatedCategoryResponse,
+  ToggleServiceStatusResponse,
+  UpdatedServiceResponse,
 } from "../interfaces/DTO/IServices/IservicesService";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
 import { IserviceRepository } from "../interfaces/Irepositories/IserviceRepository";
@@ -18,7 +20,8 @@ import { ICategoryRepository } from "../interfaces/Irepositories/IcategoryReposi
 export class ServiceServices implements IServiceService {
   constructor(
     @inject("IserviceRepository") private serviceRepository: IserviceRepository,
-    @inject("ICategoryRepository") private categoryRepository: ICategoryRepository,
+    @inject("ICategoryRepository")
+    private categoryRepository: ICategoryRepository,
     @inject("IFileUploader") private fileUploader: IFileUploader
   ) {}
 
@@ -90,6 +93,7 @@ export class ServiceServices implements IServiceService {
     limit?: number;
     search?: string;
     categoryId?: string;
+    status?: string;
   }): Promise<{
     success: boolean;
     status: number;
@@ -117,6 +121,7 @@ export class ServiceServices implements IServiceService {
         limit,
         search: options.search,
         categoryId: options.categoryId,
+        status: options.status,
       });
 
       console.log("result from the servicemanagement service:", result);
@@ -147,249 +152,404 @@ export class ServiceServices implements IServiceService {
     }
   }
 
-  async addCategory(
-      name: string,
-      imageFile: string
-    ): Promise<AddCategoryResponseDTO> {
-      try {
-        const existingCategory = await this.categoryRepository.findCategoryByName(
-          name
-        );
-        if (existingCategory) {
-          return {
-            success: false,
-            status: HTTP_STATUS.OK,
-            message: "Category already exists",
-          };
-        }
-  
-        const imageUrl = await this.fileUploader.uploadFile(imageFile, {
-          folder: "fixify/categories",
-        });
-  
-        if (!imageUrl) {
-          return {
-            success: false,
-            status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-            message: "Failed to upload image",
-          };
-        }
-  
-        const newCategory = await this.categoryRepository.addCategory(
-          name,
-          imageUrl
-        );
-        console.log("response from the category adding service:", newCategory);
+  async toggleServiceStatus(
+    serviceId: string
+  ): Promise<ToggleServiceStatusResponse> {
+    try {
+      console.log("toggling the status of the category");
+      const service = await this.serviceRepository.findServiceById(serviceId);
+
+      if (!service) {
         return {
-          status: HTTP_STATUS.CREATED,
-          success: true,
-          message: "Category addedd successfully",
-          data: newCategory,
-        };
-      } catch (error) {
-        console.log("error occured while adding the category");
-        return {
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           success: false,
-          message: "something went wrong while adding the category",
+          status: HTTP_STATUS.OK,
+          message: "Service not found",
         };
       }
-    }
-  
-    async getAllCategories(options: {
-      page?: number;
-      limit?: number;
-      search?: string;
-    }): Promise<{
-      success: boolean;
-      status: number;
-      message: string;
-      data?: {
-        categories: Icategory[];
-        pagination: {
-          total: number;
-          page: number;
-          pages: number;
-          limit: number;
-          hasNextPage: boolean;
-          hasPrevPage: boolean;
+
+      const newStatus = !service.status;
+
+      const updatedService = await this.serviceRepository.updateServiceStatus(
+        serviceId,
+        newStatus
+      );
+
+      if (!updatedService) {
+        return {
+          success: false,
+          status: HTTP_STATUS.OK,
+          message: "Failed to update service",
         };
+      }
+
+      console.log(
+        "Response after toggling service status from the service repository:",
+        updatedService
+      );
+
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: `Service successfully ${
+          newStatus ? "activated" : "deactivated"
+        }`,
+        data: updatedService,
       };
-    }> {
-      try {
-        console.log(
-          "fetching all the categories from the category management service"
-        );
-  
-        const page = options.page;
-        const limit = options.limit;
-  
-        const result = await this.categoryRepository.getAllCategories({
-          page,
-          limit,
-          search: options.search,
-        });
-  
-        console.log("result from the categorymanagementservice:", result);
-  
-          return {
-          success: true,
-          status: HTTP_STATUS.OK,
-          message: "categories fetched successfully",
-          data: {
-            categories: result.data,
-            pagination: {
-              total: result.total,
-              page: result.page,
-              pages: result.pages,
-              limit: result.limit,
-              hasNextPage: result.page < result.pages,
-              hasPrevPage: result.page > 1,
-            },
-          },
-        };
-      } catch (error) {
-        console.log("error fetching the categories:", error);
-        return {
-          success:false,
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          message: "failed to fetch the categories",
-        };
-      }
+    } catch (error) {
+      console.error("Error toggling service status:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Failed to toggle service status",
+      };
     }
-  
-    async toggleCategoryStatus(
-      categoryId: string
-    ): Promise<ToggleCategoryStatusResponseDTO> {
-      try {
-        console.log("toggling the status of the category");
-        const category = await this.categoryRepository.findCategoryById(
-          categoryId
-        );
-  
-        if (!category) {
-          return {
-            success: false,
-            status: HTTP_STATUS.NOT_FOUND,
-            message: "Category not found",
-          };
-        }
-  
-        const newStatus = !category.status;
-  
-        const updatedCategory =
-          await this.categoryRepository.updateCategoryStatus(
-            categoryId,
-            newStatus
-          );
-  
-        if (!updatedCategory) {
-          return {
-            success: false,
-            status: HTTP_STATUS.NOT_FOUND,
-            message: "Failed to update category",
-          };
-        }
-  
-        console.log(
-          "Response after toggling category status from the category repository:",
-          updatedCategory
-        );
-  
-        return {
-          success: true,
-          status: HTTP_STATUS.OK,
-          message: `Category successfully ${
-            newStatus ? "activated" : "deactivated"
-          }`,
-          data: updatedCategory,
-        };
-      } catch (error) {
-        console.error("Error toggling category status:", error);
+  }
+
+ async updateService(
+    serviceId: string,
+    updateData: {
+      name?: string;
+      image?: string;
+      description?: string;
+      price?: number;
+      categoryId?: string;
+    }
+  ): Promise<UpdatedServiceResponse> {
+    try {
+      console.log("Updating service details");
+
+      const service = await this.serviceRepository.findServiceById(serviceId);
+
+      if (!service) {
         return {
           success: false,
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          message: "Failed to toggle category status",
+          status: HTTP_STATUS.NOT_FOUND,
+          message: "Service not found",
         };
       }
-    }
-  
-    async updateCategory(
-      categoryId: string,
-      updateData: { name?: string; image?: string }
-    ): Promise<UpdatedCategoryResponseDTO> {
-      try {
-        console.log("Updating category details");
-  
-        const category = await this.categoryRepository.findCategoryById(
-          categoryId
+
+      const updatedFields: {
+        name?: string;
+        image?: string;
+        description?: string;
+        price?: number;
+        categoryId?: string;
+      } = {};
+
+      if (updateData.name !== undefined) {
+        updatedFields.name = updateData.name;
+      }
+
+      if (updateData.description !== undefined) {
+        updatedFields.description = updateData.description;
+      }
+
+      if (updateData.price !== undefined) {
+        updatedFields.price = updateData.price;
+      }
+
+      if (updateData.categoryId !== undefined) {
+        updatedFields.categoryId = updateData.categoryId;
+      }
+
+
+      if (updateData.image) {
+        const newImageUrl = await this.fileUploader.uploadFile(
+          updateData.image,
+          { folder: "services" }
         );
-  
-        if (!category) {
-          return {
-            success: false,
-            status: HTTP_STATUS.NOT_FOUND,
-            message: "Category not found",
-          };
-        }
-  
-        const updatedFields: { name?: string; image?: string } = {};
-  
-        if (updateData.name !== undefined) {
-          updatedFields.name = updateData.name;
-        }
-  
-        if (updateData.image) {
-          const newImageUrl = await this.fileUploader.uploadFile(
-            updateData.image,
-            { folder: "categories" }
-          );
-  
-          if (!newImageUrl) {
-            return {
-              success: false,
-              status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-              message: "Failed to upload image to cloud storage",
-            };
-          }
-  
-          updatedFields.image = newImageUrl;
-        }
-  
-        if (Object.keys(updatedFields).length === 0) {
-          return {
-            success: false,
-            status: HTTP_STATUS.BAD_REQUEST,
-            message: "No update data provided",
-          };
-        }
-  
-        const updatedCategory = await this.categoryRepository.updateCategory(
-          categoryId,
-          updatedFields
-        );
-  
-        if (!updatedCategory) {
+
+        if (!newImageUrl) {
           return {
             success: false,
             status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-            message: "Failed to update category",
+            message: "Failed to upload image to cloud storage",
           };
         }
-  
+
+        updatedFields.image = newImageUrl;
+      }
+
+      if (Object.keys(updatedFields).length === 0) {
         return {
-          success: true,
-          status: HTTP_STATUS.OK,
-          message: "Category updated successfully",
-          data: updatedCategory,
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "No update data provided",
         };
-      } catch (error) {
-        console.error("Error updating category:", error);
+      }
+
+      const updatedService = await this.serviceRepository.updateService(
+        serviceId,
+        updatedFields
+      );
+
+      if (!updatedService) {
+        return {
+          success: false,
+          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          message: "Failed to update Service",
+        };
+      }
+
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: "Service updated successfully",
+        data: updatedService,
+      };
+    } catch (error) {
+      console.error("Error updating service:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Failed to update service",
+      };
+    }
+  }
+
+  async addCategory(
+    name: string,
+    imageFile: string
+  ): Promise<AddCategoryResponse> {
+    try {
+      const existingCategory = await this.categoryRepository.findCategoryByName(
+        name
+      );
+      if (existingCategory) {
+        return {
+          success: false,
+          status: HTTP_STATUS.OK,
+          message: "Category already exists",
+        };
+      }
+
+      const imageUrl = await this.fileUploader.uploadFile(imageFile, {
+        folder: "fixify/categories",
+      });
+
+      if (!imageUrl) {
+        return {
+          success: false,
+          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          message: "Failed to upload image",
+        };
+      }
+
+      const newCategory = await this.categoryRepository.addCategory(
+        name,
+        imageUrl
+      );
+      console.log("response from the category adding service:", newCategory);
+      return {
+        status: HTTP_STATUS.CREATED,
+        success: true,
+        message: "Category addedd successfully",
+        data: newCategory,
+      };
+    } catch (error) {
+      console.log("error occured while adding the category");
+      return {
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        success: false,
+        message: "something went wrong while adding the category",
+      };
+    }
+  }
+
+  async getAllCategories(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+  }): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      categories: Icategory[];
+      pagination: {
+        total: number;
+        page: number;
+        pages: number;
+        limit: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    };
+  }> {
+    try {
+      console.log("fetching all the categories from the service services");
+
+      const page = options.page;
+      const limit = options.limit;
+
+      const result = await this.categoryRepository.getAllCategories({
+        page,
+        limit,
+        search: options.search,
+        status: options.status,
+      });
+
+      console.log("result from the categorymanagementservice:", result);
+
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: "categories fetched successfully",
+        data: {
+          categories: result.data,
+          pagination: {
+            total: result.total,
+            page: result.page,
+            pages: result.pages,
+            limit: result.limit,
+            hasNextPage: result.page < result.pages,
+            hasPrevPage: result.page > 1,
+          },
+        },
+      };
+    } catch (error) {
+      console.log("error fetching the categories:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "failed to fetch the categories",
+      };
+    }
+  }
+
+  async toggleCategoryStatus(
+    categoryId: string
+  ): Promise<ToggleCategoryStatusResponse> {
+    try {
+      console.log("toggling the status of the category");
+      const category = await this.categoryRepository.findCategoryById(
+        categoryId
+      );
+
+      if (!category) {
+        return {
+          success: false,
+          status: HTTP_STATUS.NOT_FOUND,
+          message: "Category not found",
+        };
+      }
+
+      const newStatus = !category.status;
+
+      const updatedCategory =
+        await this.categoryRepository.updateCategoryStatus(
+          categoryId,
+          newStatus
+        );
+
+      if (!updatedCategory) {
+        return {
+          success: false,
+          status: HTTP_STATUS.NOT_FOUND,
+          message: "Failed to update category",
+        };
+      }
+
+      console.log(
+        "Response after toggling category status from the category repository:",
+        updatedCategory
+      );
+
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: `Category successfully ${
+          newStatus ? "activated" : "deactivated"
+        }`,
+        data: updatedCategory,
+      };
+    } catch (error) {
+      console.error("Error toggling category status:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Failed to toggle category status",
+      };
+    }
+  }
+
+  async updateCategory(
+    categoryId: string,
+    updateData: { name?: string; image?: string }
+  ): Promise<UpdatedCategoryResponse> {
+    try {
+      console.log("Updating category details");
+
+      const category = await this.categoryRepository.findCategoryById(
+        categoryId
+      );
+
+      if (!category) {
+        return {
+          success: false,
+          status: HTTP_STATUS.NOT_FOUND,
+          message: "Category not found",
+        };
+      }
+
+      const updatedFields: { name?: string; image?: string } = {};
+
+      if (updateData.name !== undefined) {
+        updatedFields.name = updateData.name;
+      }
+
+      if (updateData.image) {
+        const newImageUrl = await this.fileUploader.uploadFile(
+          updateData.image,
+          { folder: "categories" }
+        );
+
+        if (!newImageUrl) {
+          return {
+            success: false,
+            status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+            message: "Failed to upload image to cloud storage",
+          };
+        }
+
+        updatedFields.image = newImageUrl;
+      }
+
+      if (Object.keys(updatedFields).length === 0) {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "No update data provided",
+        };
+      }
+
+      const updatedCategory = await this.categoryRepository.updateCategory(
+        categoryId,
+        updatedFields
+      );
+
+      if (!updatedCategory) {
         return {
           success: false,
           status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           message: "Failed to update category",
         };
       }
+
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: "Category updated successfully",
+        data: updatedCategory,
+      };
+    } catch (error) {
+      console.error("Error updating category:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Failed to update category",
+      };
     }
+  }
 }

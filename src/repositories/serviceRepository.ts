@@ -52,6 +52,7 @@ export class ServiceRepository
     limit?: number;
     search?: string;
     categoryId?: string;
+    status?: string;
   }): Promise<{
     data: IService[];
     total: number;
@@ -75,6 +76,14 @@ export class ServiceRepository
           { name: { $regex: options.search, $options: "i" } },
           { description: { $regex: options.search, $options: "i" } },
         ];
+      }
+
+      if (options.status) {
+        if (options.status === "active") {
+          filter.status = true;
+        } else if (options.status === "blocked") {
+          filter.status = false;
+        }
       }
 
       const result = (await this.find(filter, {
@@ -103,6 +112,92 @@ export class ServiceRepository
     } catch (error) {
       console.log("error occured while fetching the data:", error);
       throw new Error("Failed to fetch the services");
+    }
+  }
+
+  async findServiceById(id: string): Promise<IService | null> {
+    try {
+      return await this.findById(id);
+    } catch (error) {
+      throw new Error("Error finding service by ID: " + error);
+    }
+  }
+
+  async updateServiceStatus(
+    serviceId: string,
+    newStatus: boolean
+  ): Promise<IService | null> {
+    try {
+      console.log(
+        `Updating service status to ${newStatus} for service ${serviceId}`
+      );
+
+      const updatedService = await this.updateOne(
+        { _id: serviceId },
+        { status: newStatus }
+      );
+
+      console.log(`Service status update operation completed:`, updatedService);
+      return updatedService;
+    } catch (error) {
+      console.error(
+        `Error in repository while updating service status:`,
+        error
+      );
+      throw new Error(
+        "Error occured while updating the service status:" + error
+      );
+    }
+  }
+
+
+async updateService(
+    id: string,
+    updateData: {
+      name?: string;
+      image?: string;
+      price?: number;
+      description?: string;
+      categoryId?: string;
+    }
+  ): Promise<IService | null> {
+    try {
+      console.log(`Updating service with ID: ${id}`, updateData);
+
+      const updateObject: any = {};
+      
+      if (updateData.name !== undefined) {
+        updateObject.name = updateData.name;
+      }
+      
+      if (updateData.image !== undefined) {
+        updateObject.image = updateData.image;
+      }
+      
+      if (updateData.price !== undefined) {
+        updateObject.price = updateData.price;
+      }
+      
+      if (updateData.description !== undefined) {
+        updateObject.description = updateData.description;
+      }
+      
+      if (updateData.categoryId !== undefined) {
+        updateObject.category = updateData.categoryId;
+      }
+
+      await this.updateOne(
+        { _id: id },
+        { $set: updateObject }
+      );
+
+      const updatedService = await this.model.findById(id).populate('category', 'name _id');
+
+      console.log(`Service updated successfully:`, updatedService);
+      return updatedService;
+    } catch (error) {
+      console.error(`Error updating service:`, error);
+      throw new Error(`Failed to update service: ${error}`);
     }
   }
 }

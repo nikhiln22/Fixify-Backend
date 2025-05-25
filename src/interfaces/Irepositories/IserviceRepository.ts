@@ -17,6 +17,7 @@ export interface IserviceRepository {
     limit?: number;
     search?: string;
     categoryId?: string;
+    status?: string;
   }): Promise<{
     data: IService[];
     total: number;
@@ -24,4 +25,19 @@ export interface IserviceRepository {
     limit: number;
     pages: number;
   }>;
+  findServiceById(id: string): Promise<IService | null>;
+  updateServiceStatus(
+    serviceId: string,
+    newStatus: boolean
+  ): Promise<IService | null>;
+  updateService(
+    id: string,
+    updateData: {
+      name?: string;
+      image?: string;
+      price?: number;
+      description?: string;
+      categoryId?: string;
+    }
+  ): Promise<IService | null>;
 }

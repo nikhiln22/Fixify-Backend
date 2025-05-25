@@ -18,6 +18,7 @@ export class JobDesignationRepository
     page?: number;
     limit?: number;
     search?: string;
+    status?:string;
   }): Promise<{
     data: IjobDesignation[];
     total: number;
@@ -38,6 +39,14 @@ export class JobDesignationRepository
         ];
       }
 
+      if(options.status){
+        if(options.status === "active"){
+          filter.status = true;
+        }else if(options.status === "blocked"){
+          filter.status = false
+        }
+      }
+
       if (page !== undefined && limit !== undefined) {
         const result = (await this.find(filter, {
           pagination: { page: page, limit: limit },
@@ -53,32 +62,20 @@ export class JobDesignationRepository
           pages: Math.ceil(result.total / limit),
         };
       } else {
-        const allCategories = await this.model
+        const allDesignations = await this.model
           .find(filter)
           .sort({ createdAt: -1 });
 
-        console.log("all categories without pagination:", allCategories);
+        console.log("all designations without pagination:", allDesignations);
         return {
-          data: allCategories,
-          total: allCategories.length,
+          data: allDesignations,
+          total: allDesignations.length,
           page: 1,
-          limit: allCategories.length,
+          limit: allDesignations.length,
           pages: 1,
         };
       }
 
-      // const result = (await this.find(filter, {
-      //   pagination: { page, limit },
-      //   sort: { createdAt: -1 },
-      // })) as { data: IjobDesignation[]; total: number };
-
-      // return {
-      //   data: result.data,
-      //   total: result.total,
-      //   page,
-      //   limit,
-      //   pages: Math.ceil(result.total / limit),
-      // };
     } catch (error) {
       console.log("error occurred while fetching job designations:", error);
       throw new Error("Failed to fetch job designations");
@@ -121,7 +118,7 @@ export class JobDesignationRepository
     try {
       const updatedDesignation = await this.updateOne(
         { _id: id },
-        { Status: status }
+        { status: status }
       );
 
       console.log(

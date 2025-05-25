@@ -40,6 +40,7 @@ export class CategoryRepository
     limit?: number;
     search?: string;
     categoryId?: string;
+    status:string;
   }): Promise<{
     data: Icategory[];
     total: number;
@@ -56,6 +57,14 @@ export class CategoryRepository
 
       if (options.search) {
         filter.$or = [{ name: { $regex: options.search, $options: "i" } }];
+      }
+
+        if(options.status){
+        if(options.status === "active"){
+          filter.status = true;
+        }else if(options.status === "blocked"){
+          filter.status = false
+        }
       }
 
       if (page !== undefined && limit !== undefined) {

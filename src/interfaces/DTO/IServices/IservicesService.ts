@@ -17,7 +17,21 @@ export interface AddServiceResponse {
   data?: IService;
 }
 
-export interface AddCategoryResponseDTO {
+export interface ToggleServiceStatusResponse {
+  status: number;
+  success: boolean;
+  message: string;
+  data?: IService;
+}
+
+export interface UpdatedServiceResponse {
+  status: number;
+  success: boolean;
+  message: string;
+  data?: IService;
+}
+
+export interface AddCategoryResponse {
   success: boolean;
   status: number;
   message: string;
@@ -32,14 +46,14 @@ export interface getCategoriesResponse {
   totalPages?: number;
 }
 
-export interface ToggleCategoryStatusResponseDTO {
+export interface ToggleCategoryStatusResponse {
   status: number;
   success: boolean;
   message: string;
   data?: Icategory;
 }
 
-export interface UpdatedCategoryResponseDTO {
+export interface UpdatedCategoryResponse {
   status: number;
   success: boolean;
   message: string;

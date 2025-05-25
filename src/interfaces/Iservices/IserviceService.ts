@@ -3,7 +3,9 @@ import {
   AddServiceResponse,
   ServiceData,
   ToggleCategoryStatusResponseDTO,
+  ToggleServiceStatusResponseDTO,
   UpdatedCategoryResponseDTO,
+  UpdatedServiceResponseDTO,
 } from "../DTO/IServices/IservicesService";
 import { IService } from "../Models/Iservice";
 import { Icategory } from "../Models/Icategory";
@@ -15,6 +17,7 @@ export interface IServiceService {
     limit?: number;
     search?: string;
     categoryId?: string;
+    status?: string;
   }): Promise<{
     success: boolean;
     status: number;
@@ -31,11 +34,25 @@ export interface IServiceService {
       };
     };
   }>;
+  toggleServiceStatus(
+    categoryId: String
+  ): Promise<ToggleServiceStatusResponseDTO>;
+  updateService(
+    serviceId: string,
+    updateData: {
+      name?: string;
+      image?: string;
+      description?: string;
+      price?: number;
+      categoryId?: string;
+    }
+  ): Promise<UpdatedServiceResponseDTO>;
   addCategory(name: string, imageFile: string): Promise<AddCategoryResponseDTO>;
   getAllCategories(options: {
     page?: number;
     limit?: number;
     search?: string;
+    status?: string;
   }): Promise<{
     success: boolean;
     status: number;

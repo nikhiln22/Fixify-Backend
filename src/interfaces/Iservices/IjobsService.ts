@@ -7,6 +7,7 @@ export interface IjobsService {
     page?: number;
     limit?: number;
     search?: string;
+    status?:string;
   }): Promise<{
     success: boolean;
     status: number;

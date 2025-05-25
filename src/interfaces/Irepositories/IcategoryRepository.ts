@@ -8,6 +8,7 @@ export interface ICategoryRepository {
     limit?: number;
     search?: string;
     categoryId?: string;
+    status?:string;
   }): Promise<{
     data: Icategory[];
     total: number;

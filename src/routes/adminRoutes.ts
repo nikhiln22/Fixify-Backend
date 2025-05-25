@@ -20,19 +20,13 @@ export class AdminRoutes {
   }
 
   private setupRoutes() {
+    const jobController = container.resolve(JobController);
 
-    const jobController = container.resolve(
-      JobController
-    );
+    const serviceController = container.resolve(ServiceController);
 
-    const serviceController = container.resolve(ServiceController)
+    const adminController = container.resolve(AdminController);
 
-    const adminController = container.resolve(AdminController)
-
-    this.router.post(
-      "/login",
-      adminController.login.bind(adminController)
-    );
+    this.router.post("/login", adminController.login.bind(adminController));
 
     this.router.post(
       "/addjobdesignation",
@@ -43,9 +37,7 @@ export class AdminRoutes {
     this.router.patch(
       "/blockjobdesignation/:id",
       this.authMiddleware.authenticate(Roles.ADMIN),
-      jobController.toggleDesignationStatus.bind(
-        jobController
-      )
+      jobController.toggleDesignationStatus.bind(jobController)
     );
 
     this.router.get(
@@ -57,9 +49,7 @@ export class AdminRoutes {
     this.router.get(
       "/userslist",
       this.authMiddleware.authenticate(Roles.ADMIN),
-      adminController.getAllUsers.bind(
-        adminController
-      )
+      adminController.getAllUsers.bind(adminController)
     );
 
     this.router.patch(
@@ -71,43 +61,33 @@ export class AdminRoutes {
     this.router.get(
       "/categories",
       this.authMiddleware.authenticate(Roles.ADMIN),
-      serviceController.getAllCategory.bind(
-        serviceController
-      )
+      serviceController.getAllCategory.bind(serviceController)
     );
 
     this.router.post(
       "/addcategory",
       this.authMiddleware.authenticate(Roles.ADMIN),
       this.localUpload.upload.single("image"),
-      serviceController.addCategory.bind(
-        serviceController
-      )
+      serviceController.addCategory.bind(serviceController)
     );
 
     this.router.patch(
       "/blockcategory/:categoryId",
       this.authMiddleware.authenticate(Roles.ADMIN),
-      serviceController.toggleCategoryStatus.bind(
-        serviceController
-      )
+      serviceController.toggleCategoryStatus.bind(serviceController)
     );
 
     this.router.put(
       "/updatecategory/:categoryId",
       this.authMiddleware.authenticate(Roles.ADMIN),
       this.localUpload.upload.single("image"),
-      serviceController.editCategory.bind(
-        serviceController
-      )
+      serviceController.editCategory.bind(serviceController)
     );
 
     this.router.get(
       "/services",
       this.authMiddleware.authenticate(Roles.ADMIN),
-      serviceController.getAllServices.bind(
-        serviceController
-      )
+      serviceController.getAllServices.bind(serviceController)
     );
 
     this.router.post(
@@ -115,6 +95,19 @@ export class AdminRoutes {
       this.authMiddleware.authenticate(Roles.ADMIN),
       this.localUpload.upload.single("image"),
       serviceController.addService.bind(serviceController)
+    );
+
+    this.router.patch(
+      "/blockservice/:serviceId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      serviceController.toggleServiceStatus.bind(serviceController)
+    );
+
+    this.router.put(
+      "/updateservice/:serviceId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      this.localUpload.upload.single("image"),
+      serviceController.editService.bind(serviceController)
     );
 
     this.router.get(
