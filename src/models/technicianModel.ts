@@ -21,7 +21,7 @@ const technicianSchema: Schema<Itechnician> = new Schema(
     },
     status: {
       type: String,
-      enum: ["Active", "Blocked"],
+      enum:["Active","InActive"]
     },
     is_verified: {
       type: Boolean,
@@ -36,10 +36,13 @@ const technicianSchema: Schema<Itechnician> = new Schema(
     About: {
       type: String,
     },
-    city: {
-      type: String,
+    longitude: {
+      type: Number,
     },
-    preferredWorkLocation: {
+    latitude: {
+      type: Number,
+    },
+    address: {
       type: String,
     },
     image: {
@@ -53,6 +56,8 @@ const technicianSchema: Schema<Itechnician> = new Schema(
   },
   { timestamps: true }
 );
+
+technicianSchema.index({ longitude: 1, latitude: 1 });
 
 const technician = mongoose.model<Itechnician>("technician", technicianSchema);
 

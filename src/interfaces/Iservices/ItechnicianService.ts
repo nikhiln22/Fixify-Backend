@@ -21,13 +21,14 @@ export interface ItechnicianService {
   resetPassword(data: ResetPasswordData): Promise<ResetPasswordResponse>;
   login(data: loginData): Promise<loginResponse>;
   submitTechnicianQualifications(
-    technicianId: String,
+    technicianId: string,
     qualificationData: {
       experience: string;
       designation: string;
       about: string;
-      city: string;
-      preferredWorkLocation: string;
+      address: string;
+      latitude: number | undefined;
+      longitude: number | undefined;
       profilePhoto?: Express.Multer.File;
       certificates?: Express.Multer.File[];
     }

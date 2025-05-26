@@ -1,25 +1,25 @@
 import {
-  createTechnicianDTO,
-  findByEmailResponseDTO,
-  findByIdResponseDTO,
-  TechnicianQualificationDTO,
-  UpdatePasswordResponseDTO,
-  UpdateTechnicianQualificationResponseDTO,
-} from "../DTO/IRepository/technicianRepositoryDTO";
+  createTechnician,
+  findByEmailResponse,
+  findByIdResponse,
+  TechnicianQualification,
+  UpdatePasswordResponse,
+  UpdateTechnicianQualificationResponse,
+} from "../DTO/IRepository/ItechnicianRepository";
 import { Itechnician } from "../Models/Itechnician";
 
 export interface ItechnicianRepository {
-  createTechnician(technicianData: createTechnicianDTO): Promise<Itechnician>;
-  findByEmail(email: string): Promise<findByEmailResponseDTO>;
-  getTechnicianById(id: string): Promise<findByIdResponseDTO>;
+  createTechnician(technicianData: createTechnician): Promise<Itechnician>;
+  findByEmail(email: string): Promise<findByEmailResponse>;
+  getTechnicianById(id: string): Promise<findByIdResponse>;
   updatePassword(
     email: string,
     hashedPassword: string
-  ): Promise<UpdatePasswordResponseDTO>;
+  ): Promise<UpdatePasswordResponse>;
   updateTechnicianQualification(
     technicianId: string,
-    qualificationData: TechnicianQualificationDTO
-  ): Promise<UpdateTechnicianQualificationResponseDTO>;
+    qualificationData: TechnicianQualification
+  ): Promise<UpdateTechnicianQualificationResponse>;
   getUnverifiedTechnicians(
     page: number,
     limit: number

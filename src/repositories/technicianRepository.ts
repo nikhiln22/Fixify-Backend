@@ -2,13 +2,13 @@ import { ItechnicianRepository } from "../interfaces/Irepositories/ItechnicianRe
 import { Itechnician } from "../interfaces/Models/Itechnician";
 import technician from "../models/technicianModel";
 import {
-  findByEmailResponseDTO,
-  createTechnicianDTO,
-  UpdatePasswordResponseDTO,
-  TechnicianQualificationDTO,
-  UpdateTechnicianQualificationResponseDTO,
-  findByIdResponseDTO,
-} from "../interfaces/DTO/IRepository/technicianRepositoryDTO";
+  findByEmailResponse,
+  createTechnician,
+  UpdatePasswordResponse,
+  TechnicianQualification,
+  UpdateTechnicianQualificationResponse,
+  findByIdResponse,
+} from "../interfaces/DTO/IRepository/ItechnicianRepository";
 import { BaseRepository } from "./baseRepository";
 import { injectable } from "tsyringe";
 
@@ -21,7 +21,7 @@ export class TechnicianRepository
     super(technician);
   }
   async createTechnician(
-    technicianData: createTechnicianDTO
+    technicianData: createTechnician
   ): Promise<Itechnician> {
     try {
       const newTechnician = await this.create(technicianData);
@@ -35,7 +35,7 @@ export class TechnicianRepository
     }
   }
 
-  async findByEmail(email: string): Promise<findByEmailResponseDTO> {
+  async findByEmail(email: string): Promise<findByEmailResponse> {
     try {
       console.log("email in the findbymail technician Repository:", email);
       const technicianData = await this.findOne({ email });
@@ -54,7 +54,7 @@ export class TechnicianRepository
   async updatePassword(
     email: string,
     hashedPassword: string
-  ): Promise<UpdatePasswordResponseDTO> {
+  ): Promise<UpdatePasswordResponse> {
     try {
       const result = await this.updateOne(
         { email },
@@ -77,8 +77,8 @@ export class TechnicianRepository
 
   async updateTechnicianQualification(
     technicianId: string,
-    qualificationData: TechnicianQualificationDTO
-  ): Promise<UpdateTechnicianQualificationResponseDTO> {
+    qualificationData: TechnicianQualification
+  ): Promise<UpdateTechnicianQualificationResponse> {
     try {
       console.log(
         "Updating technician qualification in repository for ID:",
@@ -93,8 +93,9 @@ export class TechnicianRepository
             yearsOfExperience: qualificationData.experience,
             Designation: qualificationData.designation,
             About: qualificationData.about,
-            city: qualificationData.city,
-            preferredWorkLocation: qualificationData.preferredWorkLocation,
+            latitude:qualificationData.latitude,
+            longitude:qualificationData.longitude,
+            address: qualificationData.address,
             image: qualificationData.profilePhoto,
             certificates: qualificationData.certificates,
           },
@@ -106,8 +107,7 @@ export class TechnicianRepository
           yearsOfExperience: updatedTechnician.yearsOfExperience,
           Designation: updatedTechnician.Designation,
           About: updatedTechnician.About,
-          city: updatedTechnician.city,
-          preferredWorkLocation: updatedTechnician.preferredWorkLocation,
+          address: updatedTechnician.address,
           image: updatedTechnician.image,
           certificates: updatedTechnician.certificates,
         };
@@ -134,7 +134,7 @@ export class TechnicianRepository
     }
   }
 
-  async getTechnicianById(id: string): Promise<findByIdResponseDTO> {
+  async getTechnicianById(id: string): Promise<findByIdResponse> {
     try {
       console.log("Finding technician by ID in repository:", id);
       const technicianData = await this.findById(id);

@@ -47,7 +47,7 @@ export class TechnicianService implements ItechnicianService {
     @inject("IPasswordHasher") private passwordService: IPasswordHasher,
     @inject("IjwtService") private jwtService: IjwtService,
     @inject("IredisService") private redisService: IredisService,
-    @inject("IFileUploader") private fileUploader: IFileUploader,
+    @inject("IFileUploader") private fileUploader: IFileUploader
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -166,7 +166,7 @@ export class TechnicianService implements ItechnicianService {
       console.log("email:", email);
       console.log("purpose:", purpose);
 
-      let technicianEmail = email;
+      let technicianEmail: string;
 
       if (OtpPurpose.REGISTRATION === purpose && tempTechnicianId) {
         const tempTechnicianResponse =
@@ -234,8 +234,10 @@ export class TechnicianService implements ItechnicianService {
           status: HTTP_STATUS.CREATED,
           userData: safeTechnician,
         };
-      } else if (OtpPurpose.PASSWORD_RESET === purpose && technicianEmail) {
-        console.log("password resetting in the userAuthService");
+      } else if (OtpPurpose.PASSWORD_RESET === purpose && email) {
+        console.log("password resetting in the technican Service");
+        technicianEmail = email;
+
         const technician = await this.technicianRepository.findByEmail(
           technicianEmail
         );
@@ -274,13 +276,13 @@ export class TechnicianService implements ItechnicianService {
 
   async resendOtp(data: string): Promise<ResendOtpResponse> {
     try {
-      console.log("entering resendotp function in the userservice");
+      console.log("entering resendotp function in the technician service");
       const tempTechnician =
         await this.tempTechnicianRepository.findTempTechnicianByEmail(data);
-      console.log("temptechnician in resendotp user service:", tempTechnician);
+      console.log("temptechnician in resendotp technician service:", tempTechnician);
 
       const technician = await this.technicianRepository.findByEmail(data);
-      console.log("technician in the resendOtp in the user service");
+      console.log("technician in the resendOtp in the technician service");
 
       let purpose: OtpPurpose;
 
@@ -323,7 +325,7 @@ export class TechnicianService implements ItechnicianService {
     data: ForgotPasswordRequest
   ): Promise<ForgotPasswordResponse> {
     try {
-      console.log("Entering forgotPassword in userService");
+      console.log("Entering forgotPassword in technician Service");
       const { email } = data;
 
       const technician = await this.technicianRepository.findByEmail(email);
@@ -359,7 +361,7 @@ export class TechnicianService implements ItechnicianService {
 
   async resetPassword(data: ResetPasswordData): Promise<ResetPasswordResponse> {
     try {
-      console.log("Entering resetPassword in userService");
+      console.log("Entering resetPassword in technician Service");
       const { email, password } = data;
 
       const technician = await this.technicianRepository.findByEmail(email);
@@ -367,7 +369,7 @@ export class TechnicianService implements ItechnicianService {
       if (!technician.success || !technician.technicianData) {
         return {
           success: false,
-          message: "User not found with this email",
+          message: "technician not found with this email",
           status: HTTP_STATUS.NOT_FOUND,
         };
       }
@@ -434,7 +436,7 @@ export class TechnicianService implements ItechnicianService {
         };
       }
 
-      if (technician.technicianData.status === "Blocked") {
+      if (technician.technicianData.status === "InActive") {
         return {
           success: false,
           message: "Your account has been blocked. Please contact support.",
@@ -483,11 +485,14 @@ export class TechnicianService implements ItechnicianService {
         "Processing the technician qualification in the service layer"
       );
 
+      console.log("technician Id in the service layer for qualification updating:",technicianId);
+
       const qualificationDataToSave: any = {
         experience: qualificationData.experience,
         designation: qualificationData.designation,
-        city: qualificationData.city,
-        preferredWorkLocation: qualificationData.preferredWorkLocation,
+        longitude: qualificationData.longitude,
+        latitude: qualificationData.latitude,
+        address: qualificationData.address,
         about: qualificationData.about,
       };
 
@@ -544,52 +549,51 @@ export class TechnicianService implements ItechnicianService {
     }
   }
 
-   async getTechnicianProfile(
-      technicianId: string
-    ): Promise<TechnicianProfileResponse> {
-      try {
-        console.log(
-          "Fetching technician profile in service layer for ID:",
-          technicianId
-        );
-  
-        const result = await this.technicianRepository.getTechnicianById(
-          technicianId
-        );
-  
-        if (!result.success || !result.technicianData) {
-          return {
-            message: result.message || "Technician not found",
-            success: false,
-            status: HTTP_STATUS.NOT_FOUND,
-          };
-        }
-  
+  async getTechnicianProfile(
+    technicianId: string
+  ): Promise<TechnicianProfileResponse> {
+    try {
+      console.log(
+        "Fetching technician profile in technician service for ID:",
+        technicianId
+      );
+
+      const result = await this.technicianRepository.getTechnicianById(
+        technicianId
+      );
+
+      if (!result.success || !result.technicianData) {
         return {
-          message: "Technician profile fetched successfully",
-          success: true,
-          status: HTTP_STATUS.OK,
-          technician: {
-            username: result.technicianData.username,
-            email: result.technicianData.email,
-            phone: result.technicianData.phone,
-            is_verified: result.technicianData.is_verified,
-            yearsOfExperience: result.technicianData.yearsOfExperience,
-            Designation: result.technicianData.Designation,
-            city: result.technicianData.city,
-            preferredWorkLocation: result.technicianData.preferredWorkLocation,
-            About: result.technicianData.About,
-            image: result.technicianData.image,
-            certificates: result.technicianData.certificates,
-          },
-        };
-      } catch (error) {
-        console.error("Error fetching technician profile:", error);
-        return {
-          message: "Failed to fetch technician profile",
+          message: result.message || "Technician not found",
           success: false,
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          status: HTTP_STATUS.NOT_FOUND,
         };
       }
+
+      return {
+        message: "Technician profile fetched successfully",
+        success: true,
+        status: HTTP_STATUS.OK,
+        technician: {
+          username: result.technicianData.username,
+          email: result.technicianData.email,
+          phone: result.technicianData.phone,
+          is_verified: result.technicianData.is_verified,
+          yearsOfExperience: result.technicianData.yearsOfExperience,
+          Designation: result.technicianData.Designation,
+          address: result.technicianData.address,
+          About: result.technicianData.About,
+          image: result.technicianData.image,
+          certificates: result.technicianData.certificates,
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching technician profile:", error);
+      return {
+        message: "Failed to fetch technician profile",
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
     }
+  }
 }
