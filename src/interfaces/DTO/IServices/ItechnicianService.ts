@@ -82,8 +82,8 @@ export interface TechnicianQualification {
   about: string;
   city: string;
   address: string;
-  latitude:number;
-  longitude:number
+  latitude: number;
+  longitude: number;
   profilePhoto: Express.Multer.File;
   certificates?: Express.Multer.File[];
 }
@@ -120,4 +120,23 @@ export interface TechnicianProfileResponse {
     image?: string;
     certificates?: string[];
   };
+}
+
+export interface VerifyTechnicianServiceResponse {
+  success: boolean;
+  message: string;
+  status: number;
+}
+
+export interface RejectTechnicianServiceResponse {
+  success: boolean;
+  message: string;
+  status: number;
+}
+
+export interface ToggleTechnicianStatusResponse {
+  message: string;
+  success: boolean;
+  status: number;
+  technician?: Itechnician;
 }

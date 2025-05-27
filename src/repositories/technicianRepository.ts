@@ -8,9 +8,12 @@ import {
   TechnicianQualification,
   UpdateTechnicianQualificationResponse,
   findByIdResponse,
+  VerifyTechnicianResponse,
+  RejectTechnicianResponse,
 } from "../interfaces/DTO/IRepository/ItechnicianRepository";
 import { BaseRepository } from "./baseRepository";
 import { injectable } from "tsyringe";
+import { FilterQuery } from "mongoose";
 
 @injectable()
 export class TechnicianRepository
@@ -93,8 +96,8 @@ export class TechnicianRepository
             yearsOfExperience: qualificationData.experience,
             Designation: qualificationData.designation,
             About: qualificationData.about,
-            latitude:qualificationData.latitude,
-            longitude:qualificationData.longitude,
+            latitude: qualificationData.latitude,
+            longitude: qualificationData.longitude,
             address: qualificationData.address,
             image: qualificationData.profilePhoto,
             certificates: qualificationData.certificates,
@@ -156,27 +159,196 @@ export class TechnicianRepository
     }
   }
 
-  async getUnverifiedTechnicians(
-    page: number,
-    limit: number
-  ): Promise<{ data: Itechnician[]; total: number }> {
+  async getAllApplicants(options: { page?: number; limit?: number }): Promise<{
+    data: Itechnician[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  }> {
     try {
-      console.log(
-        "fetchning the unverified technicians from the technician database"
-      );
+      console.log("entering the function which fetches all the applicants");
+      const page = options.page || 1;
+      const limit = options.limit || 5;
 
-      const unVerifiedTechnicians = await this.find(
-        { is_verified: false },
+      const filter = { is_verified: false };
+
+      const result = (await this.find(filter, {
+        pagination: { page, limit },
+        sort: { createdAt: -1 },
+      })) as { data: Itechnician[]; total: number };
+
+      console.log("data fetched from the technician repository:", result);
+
+      return {
+        data: result.data,
+        total: result.total,
+        page,
+        limit,
+        pages: Math.ceil(result.total / limit),
+      };
+    } catch (error) {
+      console.log("error occurred while fetching the applicants:", error);
+      throw new Error("Failed to fetch the applicants");
+    }
+  }
+
+  async verifyTechnician(
+    technicianId: string
+  ): Promise<VerifyTechnicianResponse> {
+    try {
+      console.log("Verifying technician with ID:", technicianId);
+
+      const updatedTechnician = await this.updateOne(
+        { _id: technicianId },
         {
-          pagination: { page, limit },
-          sort: { createdAt: -1 },
+          $set: {
+            is_verified: true,
+            status: "Active",
+          },
         }
       );
-      console.log("unVerifiedTechnicians:", unVerifiedTechnicians);
-      return unVerifiedTechnicians as { data: Itechnician[]; total: number };
+
+      if (updatedTechnician) {
+        return {
+          success: true,
+          message: "Technician verified successfully",
+          technicianData: updatedTechnician,
+        };
+      } else {
+        return {
+          success: false,
+          message: "Technician not found or already verified",
+        };
+      }
     } catch (error) {
-      console.log("Error occured with the fetchning the unverified technician:",error);
-      throw new Error("An error occurred while retrieving the technician");
+      console.log("Error occurred while verifying technician:", error);
+      throw new Error("An error occurred while verifying the technician");
+    }
+  }
+
+  async rejectTechnician(
+    technicianId: string
+  ): Promise<RejectTechnicianResponse> {
+    try {
+      console.log("Rejecting technician with ID:", technicianId);
+
+      const deletedTechnician = await this.deleteOne({ _id: technicianId });
+
+      if (deletedTechnician) {
+        return {
+          success: true,
+          message: "Technician application rejected and removed successfully",
+        };
+      } else {
+        return {
+          success: false,
+          message: "Technician not found",
+        };
+      }
+    } catch (error) {
+      console.log("Error occurred while rejecting technician:", error);
+      throw new Error("An error occurred while rejecting the technician");
+    }
+  }
+
+  async getAllTechnicians(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    designation?: string;
+  }): Promise<{
+    data: Itechnician[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  }> {
+    try {
+      console.log("entering the function which fetches all the technicians");
+      const page = options.page || 1;
+      const limit = options.limit || 5;
+
+      const filter: FilterQuery<Itechnician> = {
+        is_verified: true,
+      };
+
+      if (options.search) {
+        filter.$or = [
+          { username: { $regex: options.search, $options: "i" } },
+          { email: { $regex: options.search, $options: "i" } },
+        ];
+      }
+
+      if (options.status) {
+        filter.status = options.status;
+      }
+
+      if (options.designation) {
+        filter.Designation = options.designation;
+      }
+
+      const result = (await this.find(filter, {
+        pagination: { page, limit },
+        sort: { createdAt: -1 },
+      })) as { data: Itechnician[]; total: number };
+
+      console.log("data fetched from the technician repository:", result);
+
+      return {
+        data: result.data,
+        total: result.total,
+        page,
+        limit,
+        pages: Math.ceil(result.total / limit),
+      };
+    } catch (error) {
+      console.log("error occurred while fetching the technicians:", error);
+      throw new Error("Failed to fetch the technicians");
+    }
+  }
+
+  async toggleTechnicianStatus(
+    technicianId: string,
+    newStatus: "Active" | "Blocked"
+  ): Promise<{
+    success: boolean;
+    message?: string;
+    technicianData?: Itechnician;
+  }> {
+    try {
+      console.log(
+        `Toggling technician status to ${newStatus} for ID:`,
+        technicianId
+      );
+
+      const updatedTechnician = await this.updateOne(
+        { _id: technicianId },
+        {
+          $set: {
+            status: newStatus,
+          },
+        }
+      );
+
+      console.log("updatedTechnician:", updatedTechnician);
+
+      if (updatedTechnician) {
+        return {
+          success: true,
+          message: `Technician status updated to ${newStatus} successfully`,
+          technicianData: updatedTechnician,
+        };
+      } else {
+        return {
+          success: false,
+          message: "Technician not found or status update failed",
+        };
+      }
+    } catch (error) {
+      console.log("Error occurred while toggling technician status:", error);
+      throw new Error("An error occurred while updating the technician status");
     }
   }
 }

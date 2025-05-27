@@ -4,6 +4,7 @@ import { IadminController } from "../interfaces/Icontrollers/IadminController";
 import { inject, injectable } from "tsyringe";
 import { IuserService } from "../interfaces/Iservices/IuserService";
 import { IadminService } from "../interfaces/Iservices/IadminService";
+import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
 
 @injectable()
 export class AdminController implements IadminController {
@@ -12,9 +13,11 @@ export class AdminController implements IadminController {
     private userService: IuserService,
     @inject("IadminService")
     private adminService: IadminService,
+    @inject("ItechnicianService")
+    private technicianService: ItechnicianService
   ) {}
 
-   async login(req: Request, res: Response): Promise<void> {
+  async login(req: Request, res: Response): Promise<void> {
     try {
       console.log("entering to the admin controller function fro admin login");
       const data = req.body;
@@ -34,13 +37,11 @@ export class AdminController implements IadminController {
       );
 
       if (response.success) {
-        res
-          .status(response.status)
-          .json({
-            success: response.success,
-            message: response.message,
-            data: response,
-          });
+        res.status(response.status).json({
+          success: response.success,
+          message: response.message,
+          data: response,
+        });
       } else {
         res
           .status(response.status)
@@ -66,7 +67,7 @@ export class AdminController implements IadminController {
         page,
         limit,
         search,
-        status
+        status,
       });
 
       console.log("result from the fetching all users controller:", result);
@@ -96,9 +97,162 @@ export class AdminController implements IadminController {
     }
   }
 
+  async getAllApplicants(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("function fetching all the applicants");
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+
+      const result = await this.technicianService.getAllApplicants({
+        page,
+        limit,
+      });
+
+      console.log(
+        "result from the fetching all applicants from admin controller:",
+        result
+      );
+      res.status(result.status).json(result);
+    } catch (error) {
+      console.error(
+        "Error in fetching all applicants in admin controller:",
+        error
+      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Error fetching Applicants",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  async verifyApplicant(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("Entered verify applicant function in admin controller");
+      const applicantId = req.params.applicantId;
+      console.log(
+        "Applicant ID from verify applicant controller:",
+        applicantId
+      );
+
+      const response = await this.technicianService.verifyTechnician(
+        applicantId
+      );
+      console.log("Response from verifying the applicant:", response);
+
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("Error occurred while verifying the applicant:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
+  async rejectApplicant(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("Entered reject applicant function in admin controller");
+      const applicantId = req.params.applicantId;
+      const { reason } = req.body;
+
+      console.log(
+        "Applicant ID from reject applicant controller:",
+        applicantId
+      );
+      console.log("Rejection reason:", reason);
+
+      const response = await this.technicianService.rejectTechnician(
+        applicantId,
+        reason
+      );
+      console.log("Response from rejecting the applicant:", response);
+
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("Error occurred while rejecting the applicant:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
+  async getTechnicianProfile(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("fetching the technician profile from the admin controller");
+      const technicianId = req.params.technicianId;
+      console.log("technicianId from the admin controller:", technicianId);
+      const response = await this.technicianService.getTechnicianProfile(
+        technicianId
+      );
+      console.log("response from the technician profile:", response);
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("Error fetching technician profile:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server Error",
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      });
+    }
+  }
+
+  async getAllTechnicians(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("fetching all the technicians from the admin controller");
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+      const search = (req.query.search as string) || undefined;
+      const status = (req.query.status as string) || undefined;
+      const designation = (req.query.designation as string) || undefined;
+
+      const result = await this.technicianService.getAllTechnicians({
+        page,
+        limit,
+        search,
+        status,
+        designation,
+      });
+
+      console.log(
+        "result from the fetching all technicians from admin controller:",
+        result
+      );
+      res.status(result.status).json(result);
+    } catch (error) {
+      console.error(
+        "Error in getting all technician from admin controller:",
+        error
+      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Error fetching users",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  async toggleTechnicianStatus(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const response = await this.technicianService.toggleTechnicianStatus(id);
+
+      res.status(HTTP_STATUS.OK).json(response);
+    } catch (error) {
+      console.error("Error in toggleTechnicianStatus controller:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal server error",
+      });
+    }
+  }
+
   async logout(req: Request, res: Response): Promise<void> {
     try {
-      console.log("entering the logout function from the admin auth controller");
+      console.log(
+        "entering the logout function from the admin auth controller"
+      );
       const role = (req as any).user?.role;
       console.log("role in the admin auth controller:", role);
       res.clearCookie(`${role}_refresh_token`, {

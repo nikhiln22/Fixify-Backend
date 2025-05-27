@@ -534,7 +534,7 @@ export class UserService implements IuserService {
           status:options.status
       });
   
-        console.log("result from the usermanagement service:", result);
+        console.log("result from the user service:", result);
   
         return {
           success: true,

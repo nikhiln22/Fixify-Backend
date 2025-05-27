@@ -19,7 +19,6 @@ export class EmailTemplateService {
   }
 
   private getHtmlContent(type: EmailType, data: any): string {
-    const { otp, expiryTime } = data;
     const year = new Date().getFullYear();
     
     const styles = {
@@ -28,9 +27,108 @@ export class EmailTemplateService {
       title: 'color:#333333; font-size:24px; margin:0;',
       content: 'padding:30px 20px; color:#555555;',
       footer: 'text-align:center; padding-top:20px; color:#999999; font-size:14px;',
-      expiryNote: 'color:#e74c3c; font-size:14px; margin-top:10px;'
+      successBox: 'background-color:#f0f9ff; border:1px solid #22c55e; border-radius:6px; padding:20px; margin:20px 0; text-align:center;',
+      rejectBox: 'background-color:#fef2f2; border:1px solid #ef4444; border-radius:6px; padding:20px; margin:20px 0; text-align:center;'
     };
 
+    // Handle verification and rejection emails
+    if (type === EmailType.VERIFICATION_SUCCESS) {
+      const { technicianName } = data;
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Application Approved - ${this.appName}</title>
+        </head>
+        <body style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; margin:0; padding:0; background-color:#f9f9f9;">
+          <div style="${styles.container}">
+            <div style="${styles.header}">
+              <h1 style="${styles.title}">🎉 Application Approved!</h1>
+            </div>
+            <div style="${styles.content}">
+              <p>Dear ${technicianName || 'Technician'},</p>
+              
+              <div style="${styles.successBox}">
+                <h2 style="color:#22c55e; margin:0 0 15px 0;">Congratulations!</h2>
+                <p style="font-size:16px; margin:0;">Your technician application has been successfully approved by our team.</p>
+              </div>
+              
+              <p>You can now:</p>
+              <ul style="color:#555555; line-height:1.6;">
+                <li>Access your full technician dashboard</li>
+                <li>Start receiving service requests</li>
+                <li>Update your profile and services</li>
+                <li>Begin earning with ${this.appName}</li>
+              </ul>
+              
+              <p>Thank you for joining our community of skilled technicians. We're excited to have you on board!</p>
+              
+              <div style="text-align:center; margin:30px 0;">
+                <a href="#" style="background-color:#0066cc; color:white; padding:12px 24px; text-decoration:none; border-radius:6px; display:inline-block;">Access Dashboard</a>
+              </div>
+              
+              <p>Best Regards,<br>The ${this.appName} Team</p>
+            </div>
+            <div style="${styles.footer}">
+              <p>&copy; ${year} ${this.appName}. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+    }
+
+    if (type === EmailType.APPLICATION_REJECTED) {
+      const { technicianName, reason } = data;
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Application Update - ${this.appName}</title>
+        </head>
+        <body style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; margin:0; padding:0; background-color:#f9f9f9;">
+          <div style="${styles.container}">
+            <div style="${styles.header}">
+              <h1 style="${styles.title}">Application Update</h1>
+            </div>
+            <div style="${styles.content}">
+              <p>Dear ${technicianName || 'Applicant'},</p>
+              
+              <div style="${styles.rejectBox}">
+                <h2 style="color:#ef4444; margin:0 0 15px 0;">Application Status</h2>
+                <p style="font-size:16px; margin:0;">We regret to inform you that your technician application has not been approved at this time.</p>
+              </div>
+              
+              ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+              
+              <p>We encourage you to:</p>
+              <ul style="color:#555555; line-height:1.6;">
+                <li>Review your application details</li>
+                <li>Ensure all required documents are properly submitted</li>
+                <li>Consider reapplying after addressing any issues</li>
+                <li>Contact our support team if you have questions</li>
+              </ul>
+              
+              <p>Thank you for your interest in joining ${this.appName}. We appreciate the time you took to apply.</p>
+              
+              <p>Best Regards,<br>The ${this.appName} Team</p>
+            </div>
+            <div style="${styles.footer}">
+              <p>&copy; ${year} ${this.appName}. All rights reserved.</p>
+              <p>If you have questions, please contact our support team.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+    }
+
+    // Original OTP email logic for other types
+    const { otp, expiryTime } = data;
     let otpBoxStyle, otpCodeStyle, mainTitle, additionalContent = '';
     
     if (type === EmailType.SIGNUP_OTP) {
@@ -74,7 +172,7 @@ export class EmailTemplateService {
               <div style="${otpCodeStyle}">${otp}</div>
             </div>
             
-            <p style="${styles.expiryNote}">This code will expire in ${expiryTime}</p>
+            <p style="color:#e74c3c; font-size:14px; margin-top:10px;">This code will expire in ${expiryTime}</p>
             
             <p>If you didn't request this code, please ignore this email or contact our support team if you have any concerns.</p>
             
@@ -91,6 +189,52 @@ export class EmailTemplateService {
   }
 
   private getTextContent(type: EmailType, data: any): string {
+    if (type === EmailType.VERIFICATION_SUCCESS) {
+      const { technicianName } = data;
+      return `
+        ${this.appName} - Application Approved!
+        
+        Dear ${technicianName || 'Technician'},
+        
+        Congratulations! Your technician application has been successfully approved by our team.
+        
+        You can now:
+        - Access your full technician dashboard
+        - Start receiving service requests
+        - Update your profile and services
+        - Begin earning with ${this.appName}
+        
+        Thank you for joining our community of skilled technicians. We're excited to have you on board!
+        
+        Best Regards,
+        The ${this.appName} Team
+      `;
+    }
+
+    if (type === EmailType.APPLICATION_REJECTED) {
+      const { technicianName, reason } = data;
+      return `
+        ${this.appName} - Application Update
+        
+        Dear ${technicianName || 'Applicant'},
+        
+        We regret to inform you that your technician application has not been approved at this time.
+        
+        ${reason ? `Reason: ${reason}` : ''}
+        
+        We encourage you to:
+        - Review your application details
+        - Ensure all required documents are properly submitted
+        - Consider reapplying after addressing any issues
+        - Contact our support team if you have questions
+        
+        Thank you for your interest in joining ${this.appName}.
+        
+        Best Regards,
+        The ${this.appName} Team
+      `;
+    }
+
     const { otp, expiryTime } = data;
     
     if (type === EmailType.SIGNUP_OTP) {

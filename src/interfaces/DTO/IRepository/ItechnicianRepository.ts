@@ -39,8 +39,8 @@ export interface TechnicianQualification {
   experience: string;
   designation: string;
   about: string;
-  latitude:number,
-  longitude:number,
+  latitude: number;
+  longitude: number;
   address: string;
   profilePhoto?: string;
   certificates?: string[];
@@ -64,4 +64,15 @@ export interface findByIdResponse {
   success: boolean;
   technicianData?: Itechnician | null;
   message?: string;
+}
+
+export interface VerifyTechnicianResponse {
+  success: boolean;
+  message: string;
+  technicianData?: Itechnician;
+}
+
+export interface RejectTechnicianResponse {
+  success: boolean;
+  message: string;
 }

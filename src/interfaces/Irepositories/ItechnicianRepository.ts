@@ -2,9 +2,11 @@ import {
   createTechnician,
   findByEmailResponse,
   findByIdResponse,
+  RejectTechnicianResponse,
   TechnicianQualification,
   UpdatePasswordResponse,
   UpdateTechnicianQualificationResponse,
+  VerifyTechnicianResponse,
 } from "../DTO/IRepository/ItechnicianRepository";
 import { Itechnician } from "../Models/Itechnician";
 
@@ -20,11 +22,34 @@ export interface ItechnicianRepository {
     technicianId: string,
     qualificationData: TechnicianQualification
   ): Promise<UpdateTechnicianQualificationResponse>;
-  getUnverifiedTechnicians(
-    page: number,
-    limit: number
-  ): Promise<{
+  getAllApplicants(options: { page?: number; limit?: number }): Promise<{
     data: Itechnician[];
     total: number;
+    page: number;
+    limit: number;
+    pages: number;
   }>;
+  verifyTechnician(technicianId: string): Promise<VerifyTechnicianResponse>;
+  rejectTechnician(technicianId: string): Promise<RejectTechnicianResponse>;
+  getAllTechnicians(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    designation?:string;
+  }): Promise<{
+    data: Itechnician[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  }>;
+  toggleTechnicianStatus(
+    technicianId: string,
+    newStatus: "Active" | "Blocked"
+  ): Promise<{
+    success: boolean;
+    message?: string;
+    technicianData?: Itechnician;
+  }> 
 }

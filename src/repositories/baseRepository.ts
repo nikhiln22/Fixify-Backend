@@ -43,7 +43,6 @@ export class BaseRepository<T extends Document> {
     return await query.exec();
   }
 
-
   async findOne(filter: FilterQuery<T>): Promise<T | null> {
     return await this.model.findOne(filter).exec();
   }
@@ -59,6 +58,10 @@ export class BaseRepository<T extends Document> {
     return await this.model
       .findOneAndUpdate(filter, update, { new: true })
       .exec();
+  }
+
+  async deleteOne(filter: FilterQuery<T>): Promise<T | null> {
+    return await this.model.findOneAndDelete(filter).exec();
   }
 
   async countDocument(filter: FilterQuery<T> = {}): Promise<number> {

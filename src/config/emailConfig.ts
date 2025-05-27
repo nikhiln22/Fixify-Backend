@@ -1,7 +1,9 @@
 
 export enum EmailType {
-  SIGNUP_OTP = "signup_otp",
-  PASSWORD_RESET = "password_reset",
+  SIGNUP_OTP = 'SIGNUP_OTP',
+  PASSWORD_RESET_OTP = 'PASSWORD_RESET_OTP',
+  VERIFICATION_SUCCESS = 'VERIFICATION_SUCCESS',
+  APPLICATION_REJECTED = 'APPLICATION_REJECTED'
 }
 
 export const APP_NAME = "Fixify";

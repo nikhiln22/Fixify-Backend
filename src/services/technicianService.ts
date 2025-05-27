@@ -5,12 +5,14 @@ import {
   OTP_PREFIX,
   TEMP_USER_EXPIRY_SECONDS,
 } from "../config/otpConfig";
+import { EmailType, APP_NAME } from "../config/emailConfig";
 import {
   ForgotPasswordRequest,
   ForgotPasswordResponse,
   loginData,
   loginResponse,
   RegisterResponse,
+  RejectTechnicianServiceResponse,
   ResendOtpResponse,
   ResetPasswordData,
   ResetPasswordResponse,
@@ -19,7 +21,9 @@ import {
   TechnicianQualification,
   TechnicianQualificationUpdateResponse,
   tempTechnicianResponse,
+  ToggleTechnicianStatusResponse,
   verifyOtpData,
+  VerifyTechnicianServiceResponse,
 } from "../interfaces/DTO/IServices/ItechnicianService";
 import { ItempTechnicianRepository } from "../interfaces/Irepositories/ItempTechnicianRepository";
 import { ItechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
@@ -34,6 +38,7 @@ import { IredisService } from "../interfaces/Iredis/Iredis";
 import { OtpVerificationResult } from "../interfaces/Iotp/IOTP";
 import { inject, injectable } from "tsyringe";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
+import { Itechnician } from "../interfaces/Models/Itechnician";
 
 @injectable()
 export class TechnicianService implements ItechnicianService {
@@ -279,7 +284,10 @@ export class TechnicianService implements ItechnicianService {
       console.log("entering resendotp function in the technician service");
       const tempTechnician =
         await this.tempTechnicianRepository.findTempTechnicianByEmail(data);
-      console.log("temptechnician in resendotp technician service:", tempTechnician);
+      console.log(
+        "temptechnician in resendotp technician service:",
+        tempTechnician
+      );
 
       const technician = await this.technicianRepository.findByEmail(data);
       console.log("technician in the resendOtp in the technician service");
@@ -389,7 +397,7 @@ export class TechnicianService implements ItechnicianService {
         };
       }
 
-      const redisKey = `forgotPassword:${email}`;
+      const redisKey = this.getOtpRedisKey(email, OtpPurpose.PASSWORD_RESET);
       await this.redisService.delete(redisKey);
 
       return {
@@ -485,7 +493,10 @@ export class TechnicianService implements ItechnicianService {
         "Processing the technician qualification in the service layer"
       );
 
-      console.log("technician Id in the service layer for qualification updating:",technicianId);
+      console.log(
+        "technician Id in the service layer for qualification updating:",
+        technicianId
+      );
 
       const qualificationDataToSave: any = {
         experience: qualificationData.experience,
@@ -549,6 +560,59 @@ export class TechnicianService implements ItechnicianService {
     }
   }
 
+  async getAllApplicants(options: { page?: number; limit?: number }): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      applicants: Itechnician[];
+      pagination: {
+        total: number;
+        page: number;
+        pages: number;
+        limit: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    };
+  }> {
+    try {
+      console.log("Function fetching all the applcants");
+      const page = options.page || 1;
+      const limit = options.limit || 5;
+      const result = await this.technicianRepository.getAllApplicants({
+        page,
+        limit,
+      });
+
+      console.log("result from the technician service:", result);
+
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: "technicians fetched successfully",
+        data: {
+          applicants: result.data,
+          pagination: {
+            total: result.total,
+            page: result.page,
+            pages: result.pages,
+            limit: limit,
+            hasNextPage: result.page < result.pages,
+            hasPrevPage: page > 1,
+          },
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching applicants:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Something went wrong while fetching applicants",
+      };
+    }
+  }
+
   async getTechnicianProfile(
     technicianId: string
   ): Promise<TechnicianProfileResponse> {
@@ -592,6 +656,252 @@ export class TechnicianService implements ItechnicianService {
       return {
         message: "Failed to fetch technician profile",
         success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
+    }
+  }
+
+  async verifyTechnician(
+    technicianId: string
+  ): Promise<VerifyTechnicianServiceResponse> {
+    try {
+      console.log("Verifying technician in service layer:", technicianId);
+
+      const technicianResult =
+        await this.technicianRepository.getTechnicianById(technicianId);
+
+      if (!technicianResult.success || !technicianResult.technicianData) {
+        return {
+          success: false,
+          message: "Technician not found",
+          status: HTTP_STATUS.NOT_FOUND,
+        };
+      }
+
+      const technician = technicianResult.technicianData;
+
+      const verificationResult =
+        await this.technicianRepository.verifyTechnician(technicianId);
+
+      if (!verificationResult.success) {
+        return {
+          success: false,
+          message: verificationResult.message,
+          status: HTTP_STATUS.BAD_REQUEST,
+        };
+      }
+
+      try {
+        const emailData = {
+          technicianName: technician.username,
+        };
+
+        const emailContent = this.emailService.generateEmailContent(
+          EmailType.VERIFICATION_SUCCESS,
+          emailData
+        );
+
+        await this.emailService.sendEmail({
+          to: technician.email,
+          subject: `Welcome to ${APP_NAME} - Application Approved!`,
+          html: emailContent.html,
+          text: emailContent.text,
+        });
+
+        console.log("Verification success email sent to:", technician.email);
+      } catch (emailError) {
+        console.log("Error sending verification email:", emailError);
+      }
+
+      return {
+        success: true,
+        message: "Technician verified successfully and notification email sent",
+        status: HTTP_STATUS.OK,
+      };
+    } catch (error) {
+      console.log("Error during technician verification:", error);
+      return {
+        success: false,
+        message: "An error occurred during technician verification",
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
+    }
+  }
+
+  async rejectTechnician(
+    technicianId: string,
+    reason?: string
+  ): Promise<RejectTechnicianServiceResponse> {
+    try {
+      console.log("Rejecting technician in service layer:", technicianId);
+
+      const technicianResult =
+        await this.technicianRepository.getTechnicianById(technicianId);
+
+      if (!technicianResult.success || !technicianResult.technicianData) {
+        return {
+          success: false,
+          message: "Technician not found",
+          status: HTTP_STATUS.NOT_FOUND,
+        };
+      }
+
+      const technician = technicianResult.technicianData;
+
+      const rejectionResult = await this.technicianRepository.rejectTechnician(
+        technicianId
+      );
+
+      if (!rejectionResult.success) {
+        return {
+          success: false,
+          message: rejectionResult.message,
+          status: HTTP_STATUS.BAD_REQUEST,
+        };
+      }
+
+      try {
+        const emailData = {
+          technicianName: technician.username,
+          reason: reason || "Application did not meet our current requirements",
+        };
+
+        const emailContent = this.emailService.generateEmailContent(
+          EmailType.APPLICATION_REJECTED,
+          emailData
+        );
+
+        await this.emailService.sendEmail({
+          to: technician.email,
+          subject: `${APP_NAME} - Application Update`,
+          html: emailContent.html,
+          text: emailContent.text,
+        });
+
+        console.log("Rejection email sent to:", technician.email);
+      } catch (emailError) {
+        console.log("Error sending rejection email:", emailError);
+      }
+
+      return {
+        success: true,
+        message:
+          "Technician application rejected successfully and notification email sent",
+        status: HTTP_STATUS.OK,
+      };
+    } catch (error) {
+      console.log("Error during technician rejection:", error);
+      return {
+        success: false,
+        message: "An error occurred during technician rejection",
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
+    }
+  }
+
+  async getAllTechnicians(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    designation?: string;
+  }): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      technicians: Itechnician[];
+      pagination: {
+        total: number;
+        page: number;
+        pages: number;
+        limit: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    };
+  }> {
+    try {
+      console.log("Function fetching all the technicians");
+      const page = options.page || 1;
+      const limit = options.limit || 5;
+      const result = await this.technicianRepository.getAllTechnicians({
+        page,
+        limit,
+        search: options.search,
+        status: options.status,
+        designation: options.designation,
+      });
+
+      console.log("result from the technician service:", result);
+
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: "Technicians fetched successfully",
+        data: {
+          technicians: result.data,
+          pagination: {
+            total: result.total,
+            page: result.page,
+            pages: result.pages,
+            limit: limit,
+            hasNextPage: result.page < result.pages,
+            hasPrevPage: page > 1,
+          },
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching technicians:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Something went wrong while fetching users",
+      };
+    }
+  }
+
+  async toggleTechnicianStatus(
+    id: string
+  ): Promise<ToggleTechnicianStatusResponse> {
+    try {
+      console.log("toogling hte technician status in the service layer:", id);
+      const technicianResult =
+        await this.technicianRepository.getTechnicianById(id);
+      if (!technicianResult.success || !technicianResult.technicianData) {
+        return {
+          success: false,
+          message: "TeChnician not found",
+          status: HTTP_STATUS.OK,
+        };
+      }
+      const currentTechnician = technicianResult.technicianData;
+
+      if (!currentTechnician.is_verified) {
+        return {
+          success: false,
+          message: "Cannot toggle status of unverified technician",
+          status: HTTP_STATUS.BAD_REQUEST,
+        };
+      }
+
+      const newStatus =
+        currentTechnician.status === "Active" ? "Blocked" : "Active";
+
+      const toggleResult =
+        await this.technicianRepository.toggleTechnicianStatus(id, newStatus);
+
+      return {
+        success: true,
+        message: `Technician ${newStatus.toLowerCase()} successfully`,
+        status: HTTP_STATUS.OK,
+        technician: toggleResult.technicianData,
+      };
+    } catch (error) {
+      console.log("Error during technician status toggle:", error);
+      return {
+        success: false,
+        message: "An error occurred while toggling technician status",
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }

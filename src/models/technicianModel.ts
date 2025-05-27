@@ -21,7 +21,7 @@ const technicianSchema: Schema<Itechnician> = new Schema(
     },
     status: {
       type: String,
-      enum:["Active","InActive"]
+      enum:["Active","Blocked"]
     },
     is_verified: {
       type: Boolean,
