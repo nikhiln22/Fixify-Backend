@@ -17,7 +17,8 @@ import {
   SignupUserData,
   tempUserResponse,
   verifyOtpData,
-  ToggleUserStatusResponse
+  ToggleUserStatusResponse,
+  UserProfileResponse,
 } from "../interfaces/DTO/IServices/IuserService";
 import { ItempUserRepository } from "../interfaces/Irepositories/ItempUserRepository";
 import { IuserRepository } from "../interfaces/Irepositories/IuserRepository";
@@ -32,7 +33,6 @@ import { IredisService } from "../interfaces/Iredis/Iredis";
 import { OtpVerificationResult } from "../interfaces/Iotp/IOTP";
 import { inject, injectable } from "tsyringe";
 import { Iuser } from "../interfaces/Models/Iuser";
-
 
 @injectable()
 export class UserService implements IuserService {
@@ -338,9 +338,7 @@ export class UserService implements IuserService {
     }
   }
 
-  async resetPassword(
-    data: ResetPasswordData
-  ): Promise<ResetPasswordResponse> {
+  async resetPassword(data: ResetPasswordData): Promise<ResetPasswordResponse> {
     try {
       console.log("Entering resetPassword in userService");
       const { email, password } = data;
@@ -503,92 +501,122 @@ export class UserService implements IuserService {
   }
 
   async getAllUsers(options: {
-      page?: number;
-      limit?: number;
-      search?: string;
-      status?: string;
-    }): Promise<{
-      success: boolean;
-      status: number;
-      message: string;
-      data?: {
-        users: Iuser[];
-        pagination: {
-          total: number;
-          page: number;
-          pages: number;
-          limit: number;
-          hasNextPage: boolean;
-          hasPrevPage: boolean;
-        };
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+  }): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      users: Iuser[];
+      pagination: {
+        total: number;
+        page: number;
+        pages: number;
+        limit: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
       };
-    }> {
-      try {
-        console.log("Function fetching all the users");
-        const page = options.page || 1;
-        const limit = options.limit || 5;
-        const result = await this.userRepository.getAllUsers({
-          page,
-          limit,
-          search:options.search,
-          status:options.status
+    };
+  }> {
+    try {
+      console.log("Function fetching all the users");
+      const page = options.page || 1;
+      const limit = options.limit || 5;
+      const result = await this.userRepository.getAllUsers({
+        page,
+        limit,
+        search: options.search,
+        status: options.status,
       });
-  
-        console.log("result from the user service:", result);
-  
-        return {
-          success: true,
-          status: HTTP_STATUS.OK,
-          message: "Users fetched successfully",
-          data: {
-            users: result.data,
-            pagination: {
-              total: result.total,
-              page: result.page,
-              pages: result.pages,
-              limit: limit,
-              hasNextPage: result.page < result.pages,
-              hasPrevPage: page > 1,
-            },
+
+      console.log("result from the user service:", result);
+
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: "Users fetched successfully",
+        data: {
+          users: result.data,
+          pagination: {
+            total: result.total,
+            page: result.page,
+            pages: result.pages,
+            limit: limit,
+            hasNextPage: result.page < result.pages,
+            hasPrevPage: page > 1,
           },
-        };
-      } catch (error) {
-        console.error("Error fetching users:", error);
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Something went wrong while fetching users",
+      };
+    }
+  }
+
+  async toggleUserStatus(id: string): Promise<ToggleUserStatusResponse> {
+    try {
+      const user = await this.userRepository.findById(id);
+      console.log("User fetched from repository:", user);
+
+      if (!user) {
         return {
+          message: "User not found",
+        };
+      }
+
+      const newStatus = !user.status;
+      let response = await this.userRepository.blockUser(id, newStatus);
+      console.log(
+        "Response after toggling user status from the user repository:",
+        response
+      );
+
+      return {
+        message: `User successfully ${newStatus ? "unblocked" : "blocked"}`,
+        user: { ...user.toObject(), status: newStatus },
+      };
+    } catch (error) {
+      console.error("Error toggling user status:", error);
+      return {
+        message: "Failed to toggle user status",
+      };
+    }
+  }
+
+  async getUserProfile(userId: string): Promise<UserProfileResponse> {
+    try {
+      console.log("Fetching user profile in user service for ID:", userId);
+
+      const userData = await this.userRepository.findById(userId);
+
+      if (!userData) {
+        return {
+          message: "User not found",
           success: false,
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          message: "Something went wrong while fetching users",
+          status: HTTP_STATUS.NOT_FOUND,
         };
       }
+
+      return {
+        message: "User profile fetched successfully",
+        success: true,
+        status: HTTP_STATUS.OK,
+        user: userData,
+      };
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      return {
+        message: "Failed to fetch user profile",
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
     }
-  
-    async toggleUserStatus(id: string): Promise<ToggleUserStatusResponse> {
-      try {
-        const user = await this.userRepository.findById(id);
-        console.log("User fetched from repository:", user);
-  
-        if (!user) {
-          return {
-            message: "User not found",
-          };
-        }
-  
-        const newStatus = !user.status;
-        let response = await this.userRepository.blockUser(id, newStatus);
-        console.log(
-          "Response after toggling user status from the user repository:",
-          response
-        );
-  
-        return {
-          message: `User successfully ${newStatus ? "unblocked" : "blocked"}`,
-          user: { ...user.toObject(), status: newStatus },
-        };
-      } catch (error) {
-        console.error("Error toggling user status:", error);
-        return {
-          message: "Failed to toggle user status",
-        };
-      }
-    }
+  }
 }

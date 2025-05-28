@@ -289,4 +289,32 @@ export class UserController implements IuserController {
       });
     }
   }
+
+    async getProfile(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("Entering technician profile fetch");
+      const userId = (req as any).user?.id;
+
+      if (!userId) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          message: "Unauthorized access",
+          success: false,
+          status: HTTP_STATUS.UNAUTHORIZED,
+        });
+        return;
+      }
+
+      const response = await this.userService.getUserProfile(
+        userId
+      );
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("Error fetching technician profile:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server Error",
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      });
+    }
+  }
 }

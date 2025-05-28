@@ -78,8 +78,14 @@ export interface ResetPasswordResponse {
   status: number;
 }
 
-
 export interface ToggleUserStatusResponse {
   message: string;
+  user?: Iuser;
+}
+
+export interface UserProfileResponse {
+  message: string;
+  success: boolean;
+  status: number;
   user?: Iuser;
 }

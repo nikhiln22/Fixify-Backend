@@ -60,6 +60,12 @@ export class UserRoutes {
     );
 
     this.router.get(
+      "/profile",
+      this.authMiddleware.authenticate(Roles.USER),
+      userController.getProfile.bind(userController)
+    );
+
+    this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.USER),
       userController.logout.bind(userController)
