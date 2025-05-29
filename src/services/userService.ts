@@ -422,7 +422,7 @@ export class UserService implements IuserService {
       }
 
       const userId = String(user.userData._id);
-
+      console.log("userId from login:",userId);
       const access_token = this.jwtService.generateAccessToken(
         userId,
         Roles.USER

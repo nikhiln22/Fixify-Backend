@@ -22,8 +22,6 @@ import { IOTPService } from "../interfaces/Iotp/IOTP";
 import { IredisService } from "../interfaces/Iredis/Iredis";
 import { CloudinaryUploader } from "../utils/cloudinaryUploader";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
-import { ICityLocationRepository } from "../interfaces/Irepositories/IcityLocationRepository";
-import { CityLocationRepository } from "../repositories/cityLocationRepository";
 import { IjobsService } from "../interfaces/Iservices/IjobsService";
 import { JobService } from "../services/jobService";
 
@@ -32,7 +30,6 @@ container.registerSingleton<ItechnicianService>("ItechnicianService", Technician
 container.registerSingleton<ItechnicianRepository>("ItechnicianRepository", TechnicianRepository);
 container.registerSingleton<ItempTechnicianRepository>("ItempTechnicianRepository", TempTechnicianRepository);
 container.registerSingleton<IjobDesignationRepository>("IjobDesignationRepository", JobDesignationRepository);
-container.registerSingleton<ICityLocationRepository>("ICityLocationRepository",CityLocationRepository)
 container.registerSingleton<IPasswordHasher>("IPasswordHasher", PasswordHasher);
 container.registerSingleton<IjwtService>("IjwtService", JWTService);
 container.registerSingleton<IOTPService>("IOTPService", OTPService);

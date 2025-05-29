@@ -2,9 +2,8 @@ import express, { Router } from "express";
 import { AuthController } from "../controllers/authController";
 import { container } from "tsyringe";
 
-export class CommonRoutes {
+export class AuthRoutes {
   private router: Router;
-
   constructor() {
     this.router = express.Router();
     this.setupRoutes();

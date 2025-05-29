@@ -19,12 +19,6 @@ export class UserRoutes {
 
     this.router.post("/login", userController.login.bind(userController));
 
-    this.router.get(
-      "/checkstatus",
-      this.authMiddleware.authenticate(Roles.USER),
-      userController.checkUserStatus.bind(userController)
-    );
-
     this.router.post("/register", userController.register.bind(userController));
 
     this.router.post(
@@ -49,19 +43,19 @@ export class UserRoutes {
 
     this.router.get(
       "/categories",
-      this.authMiddleware.authenticate(Roles.USER),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
       userController.getAllCategories.bind(userController)
     );
 
     this.router.get(
       "/services",
-      this.authMiddleware.authenticate(Roles.USER),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
       userController.getAllServices.bind(userController)
     );
-
+    
     this.router.get(
       "/profile",
-      this.authMiddleware.authenticate(Roles.USER),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
       userController.getProfile.bind(userController)
     );
 

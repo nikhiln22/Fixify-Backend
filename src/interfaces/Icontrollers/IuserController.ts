@@ -6,7 +6,6 @@ export interface IuserController {
   resendOtp(req: Request, res: Response): Promise<void>;
   forgotPassword(req: Request, res: Response): Promise<void>;
   login(req: Request, res: Response): Promise<void>;
-  checkUserStatus(req: Request, res: Response): Promise<void>;
   getAllCategories(req: Request, res: Response): Promise<void>;
   getAllServices(req: Request, res: Response): Promise<void>;
   getProfile(req: Request, res: Response): Promise<void>;
