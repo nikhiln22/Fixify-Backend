@@ -3,3 +3,6 @@
 
 # Dev Dependencies
 node_modules
+
+# log files
+logs/
