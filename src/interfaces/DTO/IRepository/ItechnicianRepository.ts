@@ -1,51 +1,52 @@
 import { Itechnician } from "../../Models/Itechnician";
 import { ItempTechnician } from "../../Models/ItempTechnician";
 
-export interface findByEmailResponseDTO {
+export interface findByEmailResponse {
   success: boolean;
   technicianData?: Itechnician;
 }
 
-export interface createTempTechnicianResponseDTO {
+export interface createTempTechnicianResponse {
   success: boolean;
   tempTechnicianId: String;
 }
 
-export interface findTempTechnicianByIdDTO {
+export interface findTempTechnicianById {
   success: boolean;
   tempTechnicianData?: ItempTechnician;
   message?: string;
 }
 
-export interface createTechnicianDTO {
+export interface createTechnician {
   username: string;
   email: string;
   phone: number;
   password: string;
 }
 
-export interface findTempTechnicianByEmailDTO {
+export interface findTempTechnicianByEmail {
   success: boolean;
   tempTechnicianData?: ItempTechnician;
   message?: string;
 }
 
-export interface UpdatePasswordResponseDTO {
+export interface UpdatePasswordResponse {
   success: boolean;
   message?: string;
 }
 
-export interface TechnicianQualificationDTO {
+export interface TechnicianQualification {
   experience: string;
   designation: string;
   about: string;
-  city: string;
-  preferredWorkLocation: string;
+  latitude: number;
+  longitude: number;
+  address: string;
   profilePhoto?: string;
   certificates?: string[];
 }
 
-export interface UpdateTechnicianQualificationResponseDTO {
+export interface UpdateTechnicianQualificationResponse {
   success: boolean;
   message: string;
   technician?: Pick<
@@ -55,13 +56,23 @@ export interface UpdateTechnicianQualificationResponseDTO {
     | "About"
     | "image"
     | "certificates"
-    | "preferredWorkLocation"
-    | "city"
+    | "address"
   >;
 }
 
-export interface findByIdResponseDTO {
+export interface findByIdResponse {
   success: boolean;
   technicianData?: Itechnician | null;
   message?: string;
+}
+
+export interface VerifyTechnicianResponse {
+  success: boolean;
+  message: string;
+  technicianData?: Itechnician;
+}
+
+export interface RejectTechnicianResponse {
+  success: boolean;
+  message: string;
 }

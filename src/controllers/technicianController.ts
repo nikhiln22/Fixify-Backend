@@ -11,7 +11,7 @@ export class TechnicianController implements ItechnicianController {
     @inject("ItechnicianService")
     private technicianService: ItechnicianService,
     @inject("IjobsService")
-    private jobsService:IjobsService
+    private jobsService: IjobsService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {
@@ -236,6 +236,8 @@ export class TechnicianController implements ItechnicianController {
 
       const technicianId = (req as any).user?.id;
 
+      console.log("technicianId:",technicianId);
+
       const files = req.files as
         | {
             [fieldname: string]: Express.Multer.File[];
@@ -245,8 +247,9 @@ export class TechnicianController implements ItechnicianController {
       const qualificationData = {
         experience: req.body.experience,
         designation: req.body.designation,
-        city: req.body.city,
-        preferredWorkLocation: req.body.preferredWorkLocation,
+        longitude: req.body.longitude,
+        latitude: req.body.latitude,
+        address: req.body.address,
         about: req.body.about,
         profilePhoto: files?.profilePhoto?.[0],
         certificates: files?.certificates,
@@ -305,10 +308,7 @@ export class TechnicianController implements ItechnicianController {
       );
 
       let response = await this.jobsService.getAllDesignations({});
-      console.log(
-        "respone from the job designations controller:",
-        response
-      );
+      console.log("respone from the job designations controller:", response);
       res.status(response.status).json(response);
     } catch (error) {
       console.log("error occured:", error);

@@ -30,54 +30,76 @@ export class EmailService implements IemailService {
 
   async sendOtpEmail(toEmail: string, otp: string): Promise<void> {
     const expiryTimeInMinutes = Math.ceil(OTP_EXPIRY_SECONDS / 60);
-    await this.sendEmail({
-      to: toEmail,
-      subject: `Verify Your ${this.appName} Account`,
-      type: EmailType.SIGNUP_OTP,
-      data: {
+
+    const emailContent = this.emailTemplateService.generateEmailContent(
+      EmailType.SIGNUP_OTP,
+      {
         otp,
         expiryTime: `${expiryTimeInMinutes} minute${
           expiryTimeInMinutes > 1 ? "s" : ""
         }`,
         purpose: OtpPurpose.REGISTRATION,
-      },
+      }
+    );
+
+    await this.sendEmail({
+      to: toEmail,
+      subject: `Verify Your ${this.appName} Account`,
+      html: emailContent.html,
+      text: emailContent.text,
     });
+
     console.log(`Signup OTP email sent to ${toEmail}`);
   }
 
   async sendPasswordResetEmail(toEmail: string, otp: string): Promise<void> {
     const expiryTimeInMinutes = Math.ceil(OTP_EXPIRY_SECONDS / 60);
-    await this.sendEmail({
-      to: toEmail,
-      subject: `Reset Your ${this.appName} Password`,
-      type: EmailType.PASSWORD_RESET,
-      data: {
+
+    const emailContent = this.emailTemplateService.generateEmailContent(
+      EmailType.PASSWORD_RESET_OTP,
+      {
         otp,
         expiryTime: `${expiryTimeInMinutes} minute${
           expiryTimeInMinutes > 1 ? "s" : ""
         }`,
         purpose: OtpPurpose.PASSWORD_RESET,
-      },
+      }
+    );
+
+    // Then send with the expected format
+    await this.sendEmail({
+      to: toEmail,
+      subject: `Reset Your ${this.appName} Password`,
+      html: emailContent.html,
+      text: emailContent.text,
     });
+
     console.log(`Password reset OTP email sent to ${toEmail}`);
   }
 
-  private async sendEmail(options: EmailTemplate): Promise<void> {
-    const { to, subject, type, data } = options;
-
-    const emailContent = this.emailTemplateService.generateEmailContent(
-      type,
-      data
-    );
+  async sendEmail(emailData: {
+    to: string;
+    subject: string;
+    html: string;
+    text: string;
+  }): Promise<void> {
+    const { to, subject, html, text } = emailData;
 
     const mailOptions = {
       from: `"${this.appName} Team" <${config.EMAIL_USER}>`,
       to,
       subject,
-      html: emailContent.html,
-      text: emailContent.text,
+      html,
+      text,
     };
 
     await this.transporter.sendMail(mailOptions);
+  }
+
+  generateEmailContent(
+    type: EmailType,
+    data: any
+  ): { html: string; text: string } {
+    return this.emailTemplateService.generateEmailContent(type, data);
   }
 }

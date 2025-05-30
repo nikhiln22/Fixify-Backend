@@ -4,10 +4,10 @@ import mongoose from "mongoose";
 import tempTechnician from "../../models/tempTechnicianModel";
 import { BaseRepository } from "../baseRepository";
 import {
-  createTempTechnicianResponseDTO,
-  findTempTechnicianByEmailDTO,
-  findTempTechnicianByIdDTO,
-} from "../../interfaces/DTO/IRepository/technicianRepositoryDTO";
+  createTempTechnicianResponse,
+  findTempTechnicianByEmail,
+  findTempTechnicianById,
+} from "../../interfaces/DTO/IRepository/ItechnicianRepository";
 import { injectable } from "tsyringe";
 
 @injectable()
@@ -21,7 +21,7 @@ export class TempTechnicianRepository
 
   async createTempTechnician(
     technicianData: ItempTechnician
-  ): Promise< createTempTechnicianResponseDTO> {
+  ): Promise< createTempTechnicianResponse> {
     try {
       console.log("entering into the temporary technician creating function");
       const temporaryTechnician = await this.create(technicianData);
@@ -44,7 +44,7 @@ export class TempTechnicianRepository
     }
   }
 
-  async findTempTechnicianById(tempTechnicianId: string): Promise<findTempTechnicianByIdDTO> {
+  async findTempTechnicianById(tempTechnicianId: string): Promise<findTempTechnicianById> {
     try {
       const tempSavedTechnician = await this.findById(tempTechnicianId);
       console.log("tempSavedTechnician:", tempSavedTechnician);
@@ -62,7 +62,7 @@ export class TempTechnicianRepository
     }
   }
 
-  async findTempTechnicianByEmail(email: string): Promise<findTempTechnicianByEmailDTO> {
+  async findTempTechnicianByEmail(email: string): Promise<findTempTechnicianByEmail> {
     try {
       const tempSavedTechnician = await this.findOne({
         email,

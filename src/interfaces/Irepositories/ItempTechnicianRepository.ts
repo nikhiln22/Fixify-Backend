@@ -2,7 +2,7 @@ import {
   createTempTechnicianResponseDTO,
   findTempTechnicianByEmailDTO,
   findTempTechnicianByIdDTO,
-} from "../DTO/IRepository/technicianRepositoryDTO";
+} from "../DTO/IRepository/ItechnicianRepository";
 import { ItempTechnician } from "../Models/ItempTechnician";
 
 export interface ItempTechnicianRepository {

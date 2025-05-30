@@ -52,10 +52,46 @@ export class AdminRoutes {
       adminController.getAllUsers.bind(adminController)
     );
 
+    this.router.get(
+      "/technicianslist",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.getAllTechnicians.bind(adminController)
+    );
+
+    this.router.patch(
+      "/blocktechnician/:id",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.toggleTechnicianStatus.bind(adminController)
+    );
+
     this.router.patch(
       "/blockuser/:id",
       this.authMiddleware.authenticate(Roles.ADMIN),
       adminController.toggleUserStatus.bind(adminController)
+    );
+
+    this.router.get(
+      "/applicantslist",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.getAllApplicants.bind(adminController)
+    );
+
+    this.router.patch(
+      "/verifyapplicant/:applicantId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.verifyApplicant.bind(adminController)
+    );
+
+    this.router.delete(
+      "/rejectapplicant/:applicantId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.rejectApplicant.bind(adminController)
+    );
+
+    this.router.get(
+      "/technicianprofile/:technicianId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.getTechnicianProfile.bind(adminController)
     );
 
     this.router.get(

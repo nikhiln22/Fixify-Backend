@@ -81,7 +81,9 @@ export interface TechnicianQualification {
   designation: string;
   about: string;
   city: string;
-  preferredWorkLocation: string;
+  address: string;
+  latitude: number;
+  longitude: number;
   profilePhoto: Express.Multer.File;
   certificates?: Express.Multer.File[];
 }
@@ -97,8 +99,7 @@ export interface TechnicianQualificationUpdateResponse {
     | "About"
     | "image"
     | "certificates"
-    | "city"
-    | "preferredWorkLocation"
+    | "address"
   >;
 }
 
@@ -114,9 +115,28 @@ export interface TechnicianProfileResponse {
     yearsOfExperience?: number;
     Designation?: string;
     city?: string;
-    preferredWorkLocation?: string;
+    address?: string;
     About?: string;
     image?: string;
     certificates?: string[];
   };
+}
+
+export interface VerifyTechnicianServiceResponse {
+  success: boolean;
+  message: string;
+  status: number;
+}
+
+export interface RejectTechnicianServiceResponse {
+  success: boolean;
+  message: string;
+  status: number;
+}
+
+export interface ToggleTechnicianStatusResponse {
+  message: string;
+  success: boolean;
+  status: number;
+  technician?: Itechnician;
 }

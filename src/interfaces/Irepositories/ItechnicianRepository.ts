@@ -1,30 +1,55 @@
 import {
-  createTechnicianDTO,
-  findByEmailResponseDTO,
-  findByIdResponseDTO,
-  TechnicianQualificationDTO,
-  UpdatePasswordResponseDTO,
-  UpdateTechnicianQualificationResponseDTO,
-} from "../DTO/IRepository/technicianRepositoryDTO";
+  createTechnician,
+  findByEmailResponse,
+  findByIdResponse,
+  RejectTechnicianResponse,
+  TechnicianQualification,
+  UpdatePasswordResponse,
+  UpdateTechnicianQualificationResponse,
+  VerifyTechnicianResponse,
+} from "../DTO/IRepository/ItechnicianRepository";
 import { Itechnician } from "../Models/Itechnician";
 
 export interface ItechnicianRepository {
-  createTechnician(technicianData: createTechnicianDTO): Promise<Itechnician>;
-  findByEmail(email: string): Promise<findByEmailResponseDTO>;
-  getTechnicianById(id: string): Promise<findByIdResponseDTO>;
+  createTechnician(technicianData: createTechnician): Promise<Itechnician>;
+  findByEmail(email: string): Promise<findByEmailResponse>;
+  getTechnicianById(id: string): Promise<findByIdResponse>;
   updatePassword(
     email: string,
     hashedPassword: string
-  ): Promise<UpdatePasswordResponseDTO>;
+  ): Promise<UpdatePasswordResponse>;
   updateTechnicianQualification(
     technicianId: string,
-    qualificationData: TechnicianQualificationDTO
-  ): Promise<UpdateTechnicianQualificationResponseDTO>;
-  getUnverifiedTechnicians(
-    page: number,
-    limit: number
-  ): Promise<{
+    qualificationData: TechnicianQualification
+  ): Promise<UpdateTechnicianQualificationResponse>;
+  getAllApplicants(options: { page?: number; limit?: number }): Promise<{
     data: Itechnician[];
     total: number;
+    page: number;
+    limit: number;
+    pages: number;
   }>;
+  verifyTechnician(technicianId: string): Promise<VerifyTechnicianResponse>;
+  rejectTechnician(technicianId: string): Promise<RejectTechnicianResponse>;
+  getAllTechnicians(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    designation?:string;
+  }): Promise<{
+    data: Itechnician[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  }>;
+  toggleTechnicianStatus(
+    technicianId: string,
+    newStatus: "Active" | "Blocked"
+  ): Promise<{
+    success: boolean;
+    message?: string;
+    technicianData?: Itechnician;
+  }> 
 }

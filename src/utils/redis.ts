@@ -9,7 +9,7 @@ export class RedisService implements IredisService {
     this.client = new Redis({
       host: config.REDIS_HOST,
       port: config.REDIS_PORT,
-      password: config.REDIS_PASSWORD || undefined,
+      // password: config.REDIS_PASSWORD || undefined,
     });
     
     this.client.on('error', (err) => {
