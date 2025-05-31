@@ -46,7 +46,7 @@ export interface loginResponse {
   status: number;
   message: string;
   role?: string;
-  user?: Pick<Iuser, "username" | "email" | "phone">;
+  user?: Pick<Iuser, "username" | "email" | "phone" | "image">;
   access_token?: string;
   refresh_token?: string;
 }
@@ -88,4 +88,17 @@ export interface UserProfileResponse {
   success: boolean;
   status: number;
   user?: Iuser;
+}
+
+export interface EditProfileResponse {
+  success: boolean;
+  message: string;
+  status: number;
+  user?: Iuser;
+}
+
+export interface UserProfileUpdateData {
+  username?: string;
+  phone?: string;
+  image?: string;
 }

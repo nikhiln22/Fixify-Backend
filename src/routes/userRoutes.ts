@@ -3,14 +3,17 @@ import { container } from "../di/container";
 import { UserController } from "../controllers/userController";
 import { AuthMiddleware } from "../middlewares/AuthMiddleware";
 import { Roles } from "../config/roles";
+import { LocalUpload } from "../config/multerConfig";
 
 export class UserRoutes {
   private router: Router;
   private authMiddleware: AuthMiddleware;
+  private localUpload: LocalUpload;
 
   constructor() {
     this.router = express.Router();
     this.authMiddleware = AuthMiddleware.getInstance();
+    this.localUpload = new LocalUpload();
     this.setupRoutes();
   }
 
@@ -52,11 +55,18 @@ export class UserRoutes {
       this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
       userController.getAllServices.bind(userController)
     );
-    
+
     this.router.get(
       "/profile",
       this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
       userController.getProfile.bind(userController)
+    );
+
+    this.router.put(
+      "/updateprofile",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      this.localUpload.upload.single("image"),
+      userController.editProfile.bind(userController)
     );
 
     this.router.get(

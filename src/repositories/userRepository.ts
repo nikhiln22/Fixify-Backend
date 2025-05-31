@@ -74,7 +74,7 @@ export class UserRepository
     page?: number;
     limit?: number;
     search?: string;
-    status?:string;
+    status?: string;
   }): Promise<{
     data: Iuser[];
     total: number;
@@ -96,11 +96,11 @@ export class UserRepository
         ];
       }
 
-      if(options.status){
-        if(options.status === "active"){
+      if (options.status) {
+        if (options.status === "active") {
           filter.status = true;
-        }else if(options.status === "blocked"){
-          filter.status = false
+        } else if (options.status === "blocked") {
+          filter.status = false;
         }
       }
 
@@ -109,12 +109,11 @@ export class UserRepository
         sort: { createdAt: -1 },
       })) as { data: Iuser[]; total: number };
 
-
       console.log("data fetched from the user repository:", result);
 
       return {
-        data:result.data,
-        total:result.total,
+        data: result.data,
+        total: result.total,
         page,
         limit,
         pages: Math.ceil(result.total / limit),
@@ -139,6 +138,43 @@ export class UserRepository
       return await user.findById(id).exec();
     } catch (error) {
       throw new Error("Error finding designation by ID: " + error);
+    }
+  }
+
+  async editProfile(
+    userId: string,
+    profileData: {
+      username?: string;
+      phone?: string;
+      image?: string;
+    }
+  ): Promise<Iuser | undefined> {
+    try {
+      console.log("editing user profile in repository for ID:", userId);
+      console.log("Profile data:", profileData);
+
+      const updatedUser = await this.updateOne(
+        { _id: userId },
+        {
+          $set: {
+            username: profileData.username,
+            phone: profileData.phone,
+            image: profileData.image,
+            },
+          },
+      );
+
+      if (updatedUser) {
+        const { password, ...safeUser } = updatedUser.toObject
+          ? updatedUser.toObject()
+          : updatedUser;
+        return safeUser as Iuser;
+      } else {
+        return undefined;
+      }
+    } catch (error) {
+      console.log("Error occurred while updating user profile:", error);
+      throw new Error("An error occurred while updating the user profile");
     }
   }
 }

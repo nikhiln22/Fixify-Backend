@@ -1,4 +1,5 @@
 import {
+  EditProfileResponse,
   ForgotPasswordRequest,
   ForgotPasswordResponse,
   loginData,
@@ -47,7 +48,6 @@ export interface IuserService {
     };
   }>;
   toggleUserStatus(id: string): Promise<ToggleUserStatusResponse>;
-  getUserProfile(
-    technicianId: string
-  ): Promise<UserProfileResponse>;
+  getUserProfile(technicianId: string): Promise<UserProfileResponse>;
+  editProfile(userId: string, updateData: any): Promise<EditProfileResponse>;
 }

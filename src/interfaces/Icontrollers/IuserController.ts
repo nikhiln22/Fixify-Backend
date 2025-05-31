@@ -9,5 +9,6 @@ export interface IuserController {
   getAllCategories(req: Request, res: Response): Promise<void>;
   getAllServices(req: Request, res: Response): Promise<void>;
   getProfile(req: Request, res: Response): Promise<void>;
+  editProfile(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

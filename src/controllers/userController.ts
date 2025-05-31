@@ -259,7 +259,7 @@ export class UserController implements IuserController {
     }
   }
 
-    async getProfile(req: Request, res: Response): Promise<void> {
+  async getProfile(req: Request, res: Response): Promise<void> {
     try {
       console.log("Entering user profile fetch");
       const userId = (req as any).user?.id;
@@ -273,9 +273,7 @@ export class UserController implements IuserController {
         return;
       }
 
-      const response = await this.userService.getUserProfile(
-        userId
-      );
+      const response = await this.userService.getUserProfile(userId);
       res.status(response.status).json(response);
     } catch (error) {
       console.log("Error fetching technician profile:", error);
@@ -283,6 +281,49 @@ export class UserController implements IuserController {
         message: "Internal Server Error",
         success: false,
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      });
+    }
+  }
+
+  async editProfile(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering to the user editing the profile function");
+      const userId = (req as any).user?.id;
+
+      if (!userId) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          message: "Unauthorized access",
+          success: false,
+          status: HTTP_STATUS.UNAUTHORIZED,
+        });
+        return;
+      }
+
+      console.log("Received form data:", req.body);
+      console.log("Received files:", req.file);
+
+      const profileUpdateData = {
+        username: req.body.username,
+        phone: req.body.phone,
+        image: req.file?.path as string | undefined,
+      };
+
+      console.log("userId from the edit profile:", userId);
+      console.log("Profile update data:", profileUpdateData);
+
+      const response = await this.userService.editProfile(
+        userId,
+        profileUpdateData
+      );
+
+      console.log("response in the user editing profile function:", response);
+
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("Error in editProfile controller:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
       });
     }
   }

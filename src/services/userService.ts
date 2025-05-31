@@ -19,6 +19,8 @@ import {
   verifyOtpData,
   ToggleUserStatusResponse,
   UserProfileResponse,
+  EditProfileResponse,
+  UserProfileUpdateData,
 } from "../interfaces/DTO/IServices/IuserService";
 import { ItempUserRepository } from "../interfaces/Irepositories/ItempUserRepository";
 import { IuserRepository } from "../interfaces/Irepositories/IuserRepository";
@@ -33,6 +35,7 @@ import { IredisService } from "../interfaces/Iredis/Iredis";
 import { OtpVerificationResult } from "../interfaces/Iotp/IOTP";
 import { inject, injectable } from "tsyringe";
 import { Iuser } from "../interfaces/Models/Iuser";
+import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
 
 @injectable()
 export class UserService implements IuserService {
@@ -44,7 +47,8 @@ export class UserService implements IuserService {
     @inject("IOTPService") private otpService: IOTPService,
     @inject("IPasswordHasher") private passwordService: IPasswordHasher,
     @inject("IjwtService") private jwtService: IjwtService,
-    @inject("IredisService") private redisService: IredisService
+    @inject("IredisService") private redisService: IredisService,
+    @inject("IFileUploader") private fileUploader: IFileUploader
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -422,7 +426,7 @@ export class UserService implements IuserService {
       }
 
       const userId = String(user.userData._id);
-      console.log("userId from login:",userId);
+      console.log("userId from login:", userId);
       const access_token = this.jwtService.generateAccessToken(
         userId,
         Roles.USER
@@ -444,6 +448,7 @@ export class UserService implements IuserService {
           username: user.userData.username,
           email: user.userData.email,
           phone: user.userData.phone,
+          image:user.userData.image
         },
       };
     } catch (error) {
@@ -615,6 +620,73 @@ export class UserService implements IuserService {
       return {
         message: "Failed to fetch user profile",
         success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
+    }
+  }
+
+  async editProfile(
+    userId: string,
+    updateData: UserProfileUpdateData
+  ): Promise<EditProfileResponse> {
+    try {
+      console.log("Entering editProfile in user service");
+      console.log("userId:", userId, "updateData:", updateData);
+
+      const existingUser = await this.userRepository.findById(userId);
+      if (!existingUser) {
+        return {
+          success: false,
+          message: "User not found",
+          status: HTTP_STATUS.NOT_FOUND,
+        };
+      }
+
+      const profileDataToSave: any = {};
+
+      if (updateData.username) {
+        profileDataToSave.username = updateData.username;
+      }
+
+      if (updateData.phone) {
+        profileDataToSave.phone = updateData.phone;
+      }
+
+      if (updateData.image) {
+        console.log("Uploading profile photo to Cloudinary");
+        const imageUrl = await this.fileUploader.uploadFile(
+          updateData.image,
+          { folder: "fixify/users/profile" }
+        );
+
+        if (imageUrl) {
+          profileDataToSave.image = imageUrl;
+          console.log("Profile photo uploaded successfully:", imageUrl);
+        } else {
+          console.log("Failed to upload profile photo");
+        }
+      }
+
+      console.log("Final data to save:", profileDataToSave);
+
+      const updatedUser = await this.userRepository.editProfile(
+        userId,
+        profileDataToSave
+      );
+
+      console.log("updatedUser from the user repository:", updatedUser);
+
+      return {
+        success: true,
+        message: "Profile updated successfully",
+        status: HTTP_STATUS.OK,
+        user: updatedUser,
+      };
+    } catch (error) {
+      console.log("Error in editProfile service:", error);
+      return {
+        success: false,
+        message: "An error occurred while updating profile",
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }

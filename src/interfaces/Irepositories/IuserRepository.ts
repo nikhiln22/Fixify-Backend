@@ -12,12 +12,12 @@ export interface IuserRepository {
     email: string,
     hashedPassword: string
   ): Promise<UpdatePasswordResponseDTO>;
-  
+
   getAllUsers(options: {
     page?: number;
     limit?: number;
     search?: string;
-    status?:string;
+    status?: string;
   }): Promise<{
     data: Iuser[];
     total: number;
@@ -27,4 +27,12 @@ export interface IuserRepository {
   }>;
   blockUser(id: string, status: boolean): Promise<void>;
   findById(id: string): Promise<Iuser | null>;
+  editProfile(
+    userId: string,
+    profileData: {
+      username?: string;
+      phone?: string;
+      profilePhoto?: string;
+    }
+  ): Promise<Iuser | undefined>;
 }
