@@ -10,5 +10,8 @@ export interface IuserController {
   getAllServices(req: Request, res: Response): Promise<void>;
   getProfile(req: Request, res: Response): Promise<void>;
   editProfile(req: Request, res: Response): Promise<void>;
+  getAddress(req: Request, res: Response): Promise<void>;
+  addAddress(req: Request, res: Response): Promise<void>;
+  deleteAddress(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

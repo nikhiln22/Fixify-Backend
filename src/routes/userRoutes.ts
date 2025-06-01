@@ -70,6 +70,24 @@ export class UserRoutes {
     );
 
     this.router.get(
+      "/address",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.getAddress.bind(userController)
+    );
+
+    this.router.post(
+      "/addaddress",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.addAddress.bind(userController)
+    );
+
+    this.router.delete(
+      "/deleteaddress/:addressId",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.deleteAddress.bind(userController)
+    );
+
+    this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.USER),
       userController.logout.bind(userController)

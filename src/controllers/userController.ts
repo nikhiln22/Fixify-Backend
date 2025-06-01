@@ -1,6 +1,7 @@
 import { IuserController } from "../interfaces/Icontrollers/IuserController";
 import { IuserService } from "../interfaces/Iservices/IuserService";
 import { IServiceService } from "../interfaces/Iservices/IserviceService";
+import { IAddressService } from "../interfaces/Iservices/IaddressService";
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
@@ -9,7 +10,8 @@ import { inject, injectable } from "tsyringe";
 export class UserController implements IuserController {
   constructor(
     @inject("IuserService") private userService: IuserService,
-    @inject("IServiceService") private serviceService: IServiceService
+    @inject("IServiceService") private serviceService: IServiceService,
+    @inject("IAddressService") private addressService: IAddressService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {
@@ -324,6 +326,98 @@ export class UserController implements IuserController {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: "Internal Server Error",
+      });
+    }
+  }
+
+  async getAddress(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering to the controller for fetchning the user address");
+      const userId = (req as any).user?.id;
+      console.log("userId from the address fetching controller:", userId);
+      if (!userId) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: "UnAuthorized access",
+        });
+        return;
+      }
+      const response = await this.addressService.getUserAddresses(userId);
+      console.log(
+        "response from the user controller fetchning the user address:",
+        response
+      );
+
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while fetchning the user address:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server error",
+      });
+    }
+  }
+
+  async addAddress(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering to the function adding the user address");
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: "UnAuthorized access",
+        });
+        return;
+      }
+
+      const addressData = req.body;
+
+      console.log("address Data received:", req.body);
+
+      const response = await this.addressService.addAddress(
+        userId,
+        addressData
+      );
+
+      console.log("response from the addService service:", response);
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while adding new address:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server error",
+      });
+    }
+  }
+
+  async deleteAddress(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("deleting the already existing address of the user");
+      const userId = (req as any).user?.id;
+      const addressId = req.params.addressId;
+      console.log("userId from the address deleting controller:", userId);
+      console.log("addressId from the address deleting controller:", addressId);
+      if (!userId && !addressId) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: "UnAuthorized access",
+        });
+        return;
+      }
+      const response = await this.addressService.deleteAddress(
+        addressId,
+        userId
+      );
+      console.log(
+        "response from the user controller deleting the user address:",
+        response
+      );
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while deleting the address:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server error",
       });
     }
   }

@@ -20,6 +20,10 @@ import { IOTPService } from "../interfaces/Iotp/IOTP";
 import { IredisService } from "../interfaces/Iredis/Iredis";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
 import { CloudinaryUploader } from "../utils/cloudinaryUploader";
+import { IAddressRepository } from "../interfaces/Irepositories/IaddressRepository";
+import { AddressRepository } from "../repositories/addressRepository";
+import { IAddressService } from "../interfaces/Iservices/IaddressService";
+import { AddressService } from "../services/addressService";
 
 container.registerSingleton<IuserService>("IuserService",UserService);
 container.registerSingleton<IuserRepository>("IuserRepository", UserRepository);
@@ -31,3 +35,5 @@ container.registerSingleton<IredisService>("IredisService", RedisService);
 container.registerSingleton<IemailService>("IemailService", EmailService);
 container.registerSingleton<IemailTemplateService>("IemailTemplateService", EmailTemplateService);
 container.registerSingleton<IFileUploader>("IFileUploader", CloudinaryUploader);
+container.registerSingleton<IAddressRepository>("IAddressRepository",AddressRepository);
+container.registerSingleton<IAddressService>("IAddressService",AddressService)
