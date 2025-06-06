@@ -64,6 +64,16 @@ export class BaseRepository<T extends Document> {
     return await this.model.findOneAndDelete(filter).exec();
   }
 
+  async deleteMany(
+    filter: FilterQuery<T>
+  ): Promise<{ acknowledged: boolean; deletedCount: number }> {
+    const result = await this.model.deleteMany(filter);
+    return {
+      acknowledged: result.acknowledged,
+      deletedCount: result.deletedCount,
+    };
+  }
+
   async countDocument(filter: FilterQuery<T> = {}): Promise<number> {
     return await this.model.countDocuments(filter).exec();
   }

@@ -24,6 +24,10 @@ import { CloudinaryUploader } from "../utils/cloudinaryUploader";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
 import { IjobsService } from "../interfaces/Iservices/IjobsService";
 import { JobService } from "../services/jobService";
+import { ITimeSlotRepository } from "../interfaces/Irepositories/ItimeSlotRepository";
+import { TimeSlotRepository } from "../repositories/timeSlotRepository";
+import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
+import { TimeSlotService } from "../services/timeSlotService";
 
 
 container.registerSingleton<ItechnicianService>("ItechnicianService", TechnicianService);
@@ -38,3 +42,5 @@ container.registerSingleton<IemailService>("IemailService", EmailService);
 container.registerSingleton<IemailTemplateService>("IemailTemplateService", EmailTemplateService);
 container.registerSingleton<IFileUploader>("IFileUploader", CloudinaryUploader);
 container.registerSingleton<IjobsService>("IjobsService",JobService);
+container.registerSingleton<ITimeSlotService>("ITimeSlotService",TimeSlotService);
+container.registerSingleton<ITimeSlotRepository>("ITimeSlotRepository",TimeSlotRepository);

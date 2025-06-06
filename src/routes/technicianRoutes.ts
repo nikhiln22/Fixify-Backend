@@ -18,7 +18,6 @@ export class TechnicianRoutes {
   }
 
   private setupRoutes() {
- 
     const technicianController = container.resolve(TechnicianController);
 
     this.router.post(
@@ -57,7 +56,6 @@ export class TechnicianRoutes {
       technicianController.getJobDesignations.bind(technicianController)
     );
 
-
     this.router.patch(
       "/qualifications",
       this.authMiddleware.authenticate(Roles.TECHNICIAN),
@@ -69,6 +67,24 @@ export class TechnicianRoutes {
       "/profile",
       this.authMiddleware.authenticate(Roles.TECHNICIAN),
       technicianController.getProfile.bind(technicianController)
+    );
+
+    this.router.get(
+      "/timeslot",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      technicianController.getTimeSlots.bind(technicianController)
+    );
+
+    this.router.post(
+      "/addtimeslot",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      technicianController.addTimeSlots.bind(technicianController)
+    );
+
+    this.router.patch(
+      "/blockslot/:slotId",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      technicianController.blockTimeSlot.bind(technicianController)
     );
 
     this.router.get(
