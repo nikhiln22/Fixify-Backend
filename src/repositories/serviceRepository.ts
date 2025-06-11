@@ -20,6 +20,7 @@ export class ServiceRepository
     imageFile: string;
     description: string;
     category: string;
+    designation: string;
   }): Promise<IService> {
     try {
       console.log("entered into the service adding function in the repository");
@@ -29,6 +30,7 @@ export class ServiceRepository
         price: serviceData.price,
         description: serviceData.description,
         category: new Types.ObjectId(serviceData.category),
+        designation: new Types.ObjectId(serviceData.designation),
       });
       return newService;
     } catch (error) {
@@ -117,7 +119,8 @@ export class ServiceRepository
 
   async findServiceById(id: string): Promise<IService | null> {
     try {
-      return await this.findById(id);
+      const service = await this.findById(id);
+      return service;
     } catch (error) {
       throw new Error("Error finding service by ID: " + error);
     }
@@ -150,8 +153,7 @@ export class ServiceRepository
     }
   }
 
-
-async updateService(
+  async updateService(
     id: string,
     updateData: {
       name?: string;
@@ -165,33 +167,32 @@ async updateService(
       console.log(`Updating service with ID: ${id}`, updateData);
 
       const updateObject: any = {};
-      
+
       if (updateData.name !== undefined) {
         updateObject.name = updateData.name;
       }
-      
+
       if (updateData.image !== undefined) {
         updateObject.image = updateData.image;
       }
-      
+
       if (updateData.price !== undefined) {
         updateObject.price = updateData.price;
       }
-      
+
       if (updateData.description !== undefined) {
         updateObject.description = updateData.description;
       }
-      
+
       if (updateData.categoryId !== undefined) {
         updateObject.category = updateData.categoryId;
       }
 
-      await this.updateOne(
-        { _id: id },
-        { $set: updateObject }
-      );
+      await this.updateOne({ _id: id }, { $set: updateObject });
 
-      const updatedService = await this.model.findById(id).populate('category', 'name _id');
+      const updatedService = await this.model
+        .findById(id)
+        .populate("category", "name _id");
 
       console.log(`Service updated successfully:`, updatedService);
       return updatedService;

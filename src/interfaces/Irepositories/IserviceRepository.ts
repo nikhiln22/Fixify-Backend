@@ -1,4 +1,3 @@
-import { Types } from "mongoose";
 import { IService } from "../Models/Iservice";
 
 export interface IserviceRepository {
@@ -8,6 +7,7 @@ export interface IserviceRepository {
     imageFile: string;
     description: string;
     category: string;
+    designation: string;
   }): Promise<IService>;
 
   findServiceByName(name: string): Promise<IService | null>;

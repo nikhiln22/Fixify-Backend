@@ -1,4 +1,5 @@
 import { Itechnician } from "../../../interfaces/Models/Itechnician";
+import { ITimeSlot } from "../../Models/ItimeSlot";
 
 export interface RegisterResponse {
   success: boolean;
@@ -114,7 +115,6 @@ export interface TechnicianProfileResponse {
     is_verified?: boolean;
     yearsOfExperience?: number;
     Designation?: string;
-    city?: string;
     address?: string;
     About?: string;
     image?: string;
@@ -139,4 +139,11 @@ export interface ToggleTechnicianStatusResponse {
   success: boolean;
   status: number;
   technician?: Itechnician;
+}
+
+export interface AddTimeSlotsResult {
+  success: boolean;
+  message: string;
+  status: number;
+  data?: ITimeSlot[];
 }

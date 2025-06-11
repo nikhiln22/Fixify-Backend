@@ -8,6 +8,9 @@ export interface ItechnicianController {
   login(req: Request, res: Response): Promise<void>;
   submitQualifications(req: Request, res: Response): Promise<void>;
   getProfile(req: Request, res: Response): Promise<void>;
-  getJobDesignations(req: Request, res: Response): Promise<void>
+  getJobDesignations(req: Request, res: Response): Promise<void>;
+  getTimeSlots(req: Request, res: Response): Promise<void>;
+  addTimeSlots(req: Request, res: Response): Promise<void>;
+  blockTimeSlot(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

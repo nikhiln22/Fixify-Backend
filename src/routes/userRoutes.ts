@@ -57,6 +57,12 @@ export class UserRoutes {
     );
 
     this.router.get(
+      "/servicedetails/:serviceId",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.getServiceDetails.bind(userController)
+    );
+
+    this.router.get(
       "/profile",
       this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
       userController.getProfile.bind(userController)
@@ -67,6 +73,54 @@ export class UserRoutes {
       this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
       this.localUpload.upload.single("image"),
       userController.editProfile.bind(userController)
+    );
+
+    this.router.get(
+      "/address",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.getAddress.bind(userController)
+    );
+
+    this.router.post(
+      "/addaddress",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.addAddress.bind(userController)
+    );
+
+    this.router.delete(
+      "/deleteaddress/:addressId",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.deleteAddress.bind(userController)
+    );
+
+    this.router.get(
+      "/technicians",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.getNearbyTechnicians.bind(userController)
+    );
+
+    this.router.get(
+      "/timeslots/:technicianId",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.getTimeSlots.bind(userController)
+    );
+
+    this.router.post(
+      "/bookservice",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.bookService.bind(userController)
+    );
+
+    this.router.get(
+      "/bookings",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.getAllBookings.bind(userController)
+    );
+
+    this.router.get(
+      "/bookingdetails/:bookingId",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.getBookingDetails.bind(userController)
     );
 
     this.router.get(

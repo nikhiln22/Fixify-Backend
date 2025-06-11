@@ -1,7 +1,8 @@
 import { ItechnicianController } from "../interfaces/Icontrollers/ItechnicianController";
 import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
 import { IjobsService } from "../interfaces/Iservices/IjobsService";
-import { Request, Response } from "express";
+import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
+import { Request, response, Response } from "express";
 import { HTTP_STATUS } from "../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
 
@@ -11,7 +12,9 @@ export class TechnicianController implements ItechnicianController {
     @inject("ItechnicianService")
     private technicianService: ItechnicianService,
     @inject("IjobsService")
-    private jobsService: IjobsService
+    private jobsService: IjobsService,
+    @inject("ITimeSlotService")
+    private timeSlotService: ITimeSlotService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {
@@ -236,7 +239,7 @@ export class TechnicianController implements ItechnicianController {
 
       const technicianId = (req as any).user?.id;
 
-      console.log("technicianId:",technicianId);
+      console.log("technicianId:", technicianId);
 
       const files = req.files as
         | {
@@ -315,6 +318,85 @@ export class TechnicianController implements ItechnicianController {
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ message: "Internal server error occured" });
+    }
+  }
+
+  async addTimeSlots(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "adding the time slots by the technician in time slot function"
+      );
+      const technicianId = (req as any).user?.id;
+      const data = req.body;
+      console.log("data in the addtime slot controller:", data);
+      console.log("technicianId from the addtimeslot function:", technicianId);
+      const response = await this.timeSlotService.addTimeSlots(
+        technicianId,
+        data
+      );
+      console.log(
+        "response from the technician controller adding time Slots:",
+        response
+      );
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while adding the time slots:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server error",
+      });
+    }
+  }
+
+  async getTimeSlots(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("fetching the added time slots for the technician");
+      const technicianId = (req as any).user?.id;
+      const includePast = req.query.includePast === "true";
+      console.log(
+        "technicianId from the getTimeSlots function in technician controller:",
+        technicianId
+      );
+      const response = await this.timeSlotService.getTimeSlots(technicianId,includePast);
+      console.log(
+        "response from the technician controller getting time slots:",
+        response
+      );
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log(
+        "error occured while fetching the time slots for the controller:",
+        error
+      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server error",
+      });
+    }
+  }
+
+  async blockTimeSlot(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entering the technician controller function that makes the released slots unavailable"
+      );
+      const technicianId = (req as any).user?.id;
+      console.log(
+        "technicianId in the blocktime slots function:",
+        technicianId
+      );
+      const slotId = req.params.slotId;
+      console.log("slotId in the blocktime slots function:", slotId);
+      const response = await this.timeSlotService.blockTimeSlot(
+        technicianId,
+        slotId
+      );
+      console.log("response from the blockslotId Service:", response);
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while blocking the slots:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
     }
   }
 }

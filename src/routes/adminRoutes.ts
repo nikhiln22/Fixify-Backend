@@ -52,6 +52,7 @@ export class AdminRoutes {
       adminController.getAllUsers.bind(adminController)
     );
 
+    
     this.router.get(
       "/technicianslist",
       this.authMiddleware.authenticate(Roles.ADMIN),

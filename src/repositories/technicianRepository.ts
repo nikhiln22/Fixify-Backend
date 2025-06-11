@@ -140,7 +140,13 @@ export class TechnicianRepository
   async getTechnicianById(id: string): Promise<findByIdResponse> {
     try {
       console.log("Finding technician by ID in repository:", id);
-      const technicianData = await this.findById(id);
+      const technicianData = await this.model
+        .findById(id)
+        .populate("Designation")
+        .exec();
+
+      console.log("Found technician data:", technicianData);
+      console.log("Designation field:", technicianData?.Designation);
 
       if (technicianData) {
         return {
@@ -350,5 +356,99 @@ export class TechnicianRepository
       console.log("Error occurred while toggling technician status:", error);
       throw new Error("An error occurred while updating the technician status");
     }
+  }
+
+  // Add this method to your TechnicianRepository class
+  // This finds technicians within radius of USER'S location
+
+  async nearbyTechnicians(
+    designationId: string,
+    userLongitude: number,
+    userLatitude: number,
+    radius: number = 10
+  ): Promise<Itechnician[]> {
+    try {
+      console.log("Searching for technicians near user location:", {
+        designationId,
+        userLongitude,
+        userLatitude,
+        radius,
+      });
+
+      // Step 1: Get all technicians with the specified designation who have location data
+      const techniciansWithDesignation = (await this.findAll({
+        Designation: designationId,
+        is_verified: true,
+        status: "Active",
+        latitude: { $exists: true, $ne: null },
+        longitude: { $exists: true, $ne: null },
+      })) as Itechnician[];
+
+      console.log(
+        `Found ${techniciansWithDesignation.length} technicians with designation and location data`
+      );
+
+      if (techniciansWithDesignation.length === 0) {
+        return [];
+      }
+
+      // Step 2: Calculate distance from USER's location to each TECHNICIAN's location
+      const nearbyTechniciansWithDistance = techniciansWithDesignation
+        .map((technician) => {
+          // Calculate distance from user's location to technician's location
+          const distance = this.calculateDistance(
+            userLatitude, // User's latitude
+            userLongitude, // User's longitude
+            technician.latitude!, // Technician's latitude
+            technician.longitude! // Technician's longitude
+          );
+
+          return {
+            ...technician.toObject(),
+            distance: Math.round(distance * 100) / 100, // Round to 2 decimal places
+          };
+        })
+        .filter((technician) => technician.distance <= radius) // Keep only technicians within radius
+        .sort((a, b) => a.distance - b.distance); // Sort by distance (closest first)
+
+      console.log(
+        `Found ${nearbyTechniciansWithDistance.length} technicians within ${radius}km of user's location`
+      );
+
+      return nearbyTechniciansWithDistance as Itechnician[];
+    } catch (error) {
+      console.log("Error occurred while fetching nearby technicians:", error);
+      throw new Error("An error occurred while retrieving nearby technicians");
+    }
+  }
+
+  // Helper method to calculate distance between two coordinates using Haversine formula
+  private calculateDistance(
+    userLat: number, // User's latitude
+    userLon: number, // User's longitude
+    technicianLat: number, // Technician's latitude
+    technicianLon: number // Technician's longitude
+  ): number {
+    const R = 6371; // Earth's radius in kilometers
+
+    const dLat = this.toRadians(technicianLat - userLat);
+    const dLon = this.toRadians(technicianLon - userLon);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.toRadians(userLat)) *
+        Math.cos(this.toRadians(technicianLat)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+
+    return distance;
+  }
+
+  // Helper method to convert degrees to radians
+  private toRadians(degrees: number): number {
+    return degrees * (Math.PI / 180);
   }
 }

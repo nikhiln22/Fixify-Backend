@@ -644,7 +644,7 @@ export class TechnicianService implements ItechnicianService {
           phone: result.technicianData.phone,
           is_verified: result.technicianData.is_verified,
           yearsOfExperience: result.technicianData.yearsOfExperience,
-          Designation: result.technicianData.Designation,
+          Designation: (result.technicianData.Designation as any).designation,
           address: result.technicianData.address,
           About: result.technicianData.About,
           image: result.technicianData.image,
@@ -857,6 +857,74 @@ export class TechnicianService implements ItechnicianService {
         success: false,
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Something went wrong while fetching users",
+      };
+    }
+  }
+
+  async getNearbyTechnicians(
+    designationId: string,
+    userLongitude: number,
+    userLatitude: number,
+    radius: number
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: Itechnician[];
+  }> {
+    try {
+      console.log(
+        "designationId in the getNearByTechnicians service:",
+        designationId
+      );
+      console.log(
+        "user longitude in the getNearByTechnicians service:",
+        userLongitude
+      );
+      console.log(
+        "user latitude in the getNearByTechnicians service:",
+        userLatitude
+      );
+      console.log("radius in the getNearByTechnicians service:", radius);
+
+      // Validate input parameters
+      if (!designationId || !userLongitude || !userLatitude) {
+        return {
+          success: false,
+          message:
+            "Missing required parameters: designationId, longitude, or latitude",
+          status: HTTP_STATUS.BAD_REQUEST,
+        };
+      }
+
+      const nearbyTechnicians =
+        await this.technicianRepository.nearbyTechnicians(
+          designationId,
+          userLongitude,
+          userLatitude,
+          radius
+        );
+
+      console.log(
+        "nearby technicians in the technician service:",
+        nearbyTechnicians
+      );
+
+      return {
+        success: true,
+        message: `Found ${nearbyTechnicians.length} nearby technicians within ${radius}km`,
+        status: HTTP_STATUS.OK,
+        data: nearbyTechnicians,
+      };
+    } catch (error) {
+      console.log(
+        "error occurred while fetching the nearby technicians:",
+        error
+      );
+      return {
+        success: false,
+        message: "An error occurred while fetching nearby technicians",
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }

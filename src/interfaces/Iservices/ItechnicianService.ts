@@ -68,6 +68,10 @@ export interface ItechnicianService {
     search?: string;
     status?: string;
     designation?: string;
+    designationId?: string;
+    longitude?: string;
+    latitude?: string;
+    radius?: number;
   }): Promise<{
     success: boolean;
     status: number;
@@ -83,6 +87,17 @@ export interface ItechnicianService {
         hasPrevPage: boolean;
       };
     };
+  }>;
+  getNearbyTechnicians(
+    designationId: string,
+    longitude: number,
+    latitude: number,
+    radius: number
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: Itechnician[];
   }>;
   toggleTechnicianStatus(id: string): Promise<ToggleTechnicianStatusResponse>;
 }

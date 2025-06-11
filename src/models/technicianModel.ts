@@ -31,7 +31,8 @@ const technicianSchema: Schema<Itechnician> = new Schema(
       type: Number,
     },
     Designation: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref:"jobDesignation"
     },
     About: {
       type: String,

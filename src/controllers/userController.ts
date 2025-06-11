@@ -1,15 +1,23 @@
 import { IuserController } from "../interfaces/Icontrollers/IuserController";
 import { IuserService } from "../interfaces/Iservices/IuserService";
 import { IServiceService } from "../interfaces/Iservices/IserviceService";
+import { IAddressService } from "../interfaces/Iservices/IaddressService";
+import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
+import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
+import { IbookingService } from "../interfaces/Iservices/IbookingService";
 
 @injectable()
 export class UserController implements IuserController {
   constructor(
     @inject("IuserService") private userService: IuserService,
-    @inject("IServiceService") private serviceService: IServiceService
+    @inject("IServiceService") private serviceService: IServiceService,
+    @inject("IAddressService") private addressService: IAddressService,
+    @inject("ItechnicianService") private technicianService: ItechnicianService,
+    @inject("ITimeSlotService") private timeSlotService: ITimeSlotService,
+    @inject("IbookingService") private bookingService: IbookingService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {
@@ -324,6 +332,277 @@ export class UserController implements IuserController {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: "Internal Server Error",
+      });
+    }
+  }
+
+  async getAddress(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering to the controller for fetchning the user address");
+      const userId = (req as any).user?.id;
+      console.log("userId from the address fetching controller:", userId);
+      if (!userId) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: "UnAuthorized access",
+        });
+        return;
+      }
+      const response = await this.addressService.getUserAddresses(userId);
+      console.log(
+        "response from the user controller fetchning the user address:",
+        response
+      );
+
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while fetchning the user address:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server error",
+      });
+    }
+  }
+
+  async addAddress(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering to the function adding the user address");
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: "UnAuthorized access",
+        });
+        return;
+      }
+
+      const addressData = req.body;
+
+      console.log("address Data received:", req.body);
+
+      const response = await this.addressService.addAddress(
+        userId,
+        addressData
+      );
+
+      console.log("response from the addService service:", response);
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while adding new address:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server error",
+      });
+    }
+  }
+
+  async deleteAddress(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("deleting the already existing address of the user");
+      const userId = (req as any).user?.id;
+      const addressId = req.params.addressId;
+      console.log("userId from the address deleting controller:", userId);
+      console.log("addressId from the address deleting controller:", addressId);
+      if (!userId && !addressId) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: "UnAuthorized access",
+        });
+        return;
+      }
+      const response = await this.addressService.deleteAddress(
+        addressId,
+        userId
+      );
+      console.log(
+        "response from the user controller deleting the user address:",
+        response
+      );
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while deleting the address:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server error",
+      });
+    }
+  }
+
+  async getServiceDetails(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("fetching the service details for the user");
+      const serviceId = req.params.serviceId;
+      console.log("serviceId in the user controller:", serviceId);
+      const response = await this.serviceService.getServiceDetails(serviceId);
+      console.log("response in the user controller:", response);
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log(
+        "error occured while fetching the service details for the user:",
+        error
+      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
+  async getNearbyTechnicians(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entering the function which fetches the nearby technicians for the user:"
+      );
+
+      const designationId = req.query.designationId as string;
+      const userLongitude = parseFloat(req.query.longitude as string);
+      const userLatitude = parseFloat(req.query.latitude as string);
+      const radius = req.query.radius
+        ? parseFloat(req.query.radius as string)
+        : 10;
+
+      if (!designationId || isNaN(userLongitude) || isNaN(userLatitude)) {
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message:
+            "Invalid or missing parameters. Required: designationId, longitude (user's), latitude (user's)",
+        });
+        return;
+      }
+
+      const response = await this.technicianService.getNearbyTechnicians(
+        designationId,
+        userLongitude,
+        userLatitude,
+        radius
+      );
+
+      console.log("response in the user controller:", response);
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log(
+        "error occurred while fetching the nearby technicians for the user:",
+        error
+      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
+  async getTimeSlots(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("finding the time slots for the user");
+      const technicianId = req.params.technicianId;
+      const includePast = req.query.includePast === "true";
+      console.log("techncianId in the user controller:", technicianId);
+
+      const userFilters = {
+        isAvailable: true,
+        isBooked: false,
+      };
+
+      const response = await this.timeSlotService.getTimeSlots(
+        technicianId,
+        includePast,
+        userFilters
+      );
+      console.log(
+        "response from the get time slots user controller:",
+        response
+      );
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while fetching the time slots for the user");
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server error",
+      });
+    }
+  }
+
+  async bookService(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering to the user booking the controller function");
+      const userId = (req as any).user?.id;
+      const data = req.body;
+      console.log("Received Data:", data);
+      const response = await this.bookingService.bookService(userId, data);
+      console.log(
+        "response from the user service booking controller:",
+        response
+      );
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error ocured while booking the service:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server error",
+      });
+    }
+  }
+
+  async getAllBookings(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering to the all bookings fetching for the user");
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+
+      const response = await this.bookingService.getAllBookings({
+        page,
+        limit,
+      });
+      console.log(
+        "result from the fetching all bookings for users controller:",
+        response
+      );
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.error("Error in getAllBookings controller:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Error fetching Bookings",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  
+  async getBookingDetails(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("Controller: Getting booking details");
+
+      const userId = (req as any).user?.id;
+      const { bookingId } = req.params;
+
+      if (!userId) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: "User not authenticated",
+        });
+        return;
+      }
+
+      if (!bookingId) {
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "Booking ID is required",
+        });
+        return;
+      }
+
+      console.log("Fetching booking details for:", bookingId, "User:", userId);
+
+      const response = await this.bookingService.getBookingById(
+        bookingId,
+        userId
+      );
+
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.error("Error in getBookingDetails controller:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal server error",
       });
     }
   }
