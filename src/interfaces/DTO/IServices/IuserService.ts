@@ -1,3 +1,4 @@
+import { IBooking } from "../../Models/Ibooking";
 import { Iuser } from "../../Models/Iuser";
 
 export interface RegisterResponse {
@@ -101,4 +102,30 @@ export interface UserProfileUpdateData {
   username?: string;
   phone?: string;
   image?: string;
+}
+
+export interface CreateBookingRequest {
+  technicianId: string;
+  serviceId: string;
+  addressId: string;
+  timeSlotId: string;
+  date: string;
+  totalAmount: number;
+  paymentMethod: "Cash" | "online" | "Wallet";
+}
+
+export interface BookServiceResponse {
+  success: boolean;
+  status:number;
+  message: string;
+  data?: IBooking;
+  error?: string;
+}
+
+export interface BookingsListResponse {
+  success: boolean;
+  message: string;
+  status: number;
+  data?: IBooking[];
+  error?: string;
 }

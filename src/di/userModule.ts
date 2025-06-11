@@ -24,6 +24,14 @@ import { IAddressRepository } from "../interfaces/Irepositories/IaddressReposito
 import { AddressRepository } from "../repositories/addressRepository";
 import { IAddressService } from "../interfaces/Iservices/IaddressService";
 import { AddressService } from "../services/addressService";
+import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
+import { TimeSlotService } from "../services/timeSlotService";
+import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
+import { TechnicianService } from "../services/technicianService";
+import { IbookingService } from "../interfaces/Iservices/IbookingService";
+import { IbookingRepository } from "../interfaces/Irepositories/IbookingRespository";
+import { BookingService } from "../services/bookingService";
+import { BookingRepository } from "../repositories/bookingRespository";
 
 container.registerSingleton<IuserService>("IuserService",UserService);
 container.registerSingleton<IuserRepository>("IuserRepository", UserRepository);
@@ -36,4 +44,8 @@ container.registerSingleton<IemailService>("IemailService", EmailService);
 container.registerSingleton<IemailTemplateService>("IemailTemplateService", EmailTemplateService);
 container.registerSingleton<IFileUploader>("IFileUploader", CloudinaryUploader);
 container.registerSingleton<IAddressRepository>("IAddressRepository",AddressRepository);
-container.registerSingleton<IAddressService>("IAddressService",AddressService)
+container.registerSingleton<IAddressService>("IAddressService",AddressService);
+container.registerSingleton<ITimeSlotService>("ITimeSlotService",TimeSlotService);
+container.registerSingleton<ItechnicianService>("ItechnicianService",TechnicianService);
+container.registerSingleton<IbookingService>("IbookingService",BookingService);
+container.registerSingleton<IbookingRepository>("IbookingRepository",BookingRepository);

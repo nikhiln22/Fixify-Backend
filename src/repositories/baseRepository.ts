@@ -43,6 +43,20 @@ export class BaseRepository<T extends Document> {
     return await query.exec();
   }
 
+  
+  async findAll(
+    filter: FilterQuery<T> = {},
+    sort?: Record<string, SortOrder>
+  ): Promise<T[]> {
+    let query = this.model.find(filter);
+
+    if (sort) {
+      query = query.sort(sort);
+    }
+
+    return await query.exec();
+  }
+
   async findOne(filter: FilterQuery<T>): Promise<T | null> {
     return await this.model.findOne(filter).exec();
   }

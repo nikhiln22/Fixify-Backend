@@ -6,14 +6,18 @@ export interface ITimeSlotService {
     technicianId: string,
     data: {
       dateTimeSlots: Array<{
-        date: Date;
+        date: string;
         startTime: string;
         endTime: string;
       }>;
     }
   ): Promise<AddTimeSlotsResult>;
 
-  getTimeSlots(technicianId: String): Promise<{
+  getTimeSlots(
+    technicianId: String,
+    includePast: boolean,
+    additionalFilters?: { [key: string]: any }
+  ): Promise<{
     success: boolean;
     message: string;
     status: number;
@@ -23,6 +27,17 @@ export interface ITimeSlotService {
   blockTimeSlot(
     technicianId: string,
     slotId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    status: number;
+    data?: ITimeSlot;
+  }>;
+
+  updateSlotBookingStatus(
+    technicianId: string,
+    slotId: string,
+    isBooked: boolean
   ): Promise<{
     success: boolean;
     message: string;

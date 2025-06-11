@@ -6,6 +6,7 @@ export interface ServiceData {
   price: number;
   description: string;
   categoryId: string;
+  designationId:string;
   imageFile?: string;
   serviceId?: string;
 }
@@ -58,4 +59,14 @@ export interface UpdatedCategoryResponse {
   success: boolean;
   message: string;
   data?: Icategory;
+}
+
+export interface getServiceDetailsResponse {
+  status: number;
+  success: boolean;
+  message: string;
+  data?: {
+    service: IService;
+    relatedService: IService[];
+  };
 }

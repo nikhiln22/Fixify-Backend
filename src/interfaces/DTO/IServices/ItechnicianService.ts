@@ -115,7 +115,6 @@ export interface TechnicianProfileResponse {
     is_verified?: boolean;
     yearsOfExperience?: number;
     Designation?: string;
-    city?: string;
     address?: string;
     About?: string;
     image?: string;

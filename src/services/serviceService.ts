@@ -9,12 +9,14 @@ import {
   UpdatedCategoryResponse,
   ToggleServiceStatusResponse,
   UpdatedServiceResponse,
+  getServiceDetailsResponse,
 } from "../interfaces/DTO/IServices/IservicesService";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
 import { IserviceRepository } from "../interfaces/Irepositories/IserviceRepository";
 import { IService } from "../interfaces/Models/Iservice";
 import { Icategory } from "../interfaces/Models/Icategory";
 import { ICategoryRepository } from "../interfaces/Irepositories/IcategoryRepository";
+
 
 @injectable()
 export class ServiceServices implements IServiceService {
@@ -67,6 +69,7 @@ export class ServiceServices implements IServiceService {
         imageFile: imageUrl,
         description: data.description,
         category: data.categoryId,
+        designation:data.designationId
       };
 
       const newService = await this.serviceRepository.addService(serviceData);
@@ -205,7 +208,7 @@ export class ServiceServices implements IServiceService {
     }
   }
 
- async updateService(
+  async updateService(
     serviceId: string,
     updateData: {
       name?: string;
@@ -251,7 +254,6 @@ export class ServiceServices implements IServiceService {
       if (updateData.categoryId !== undefined) {
         updatedFields.categoryId = updateData.categoryId;
       }
-
 
       if (updateData.image) {
         const newImageUrl = await this.fileUploader.uploadFile(
@@ -545,6 +547,59 @@ export class ServiceServices implements IServiceService {
       };
     } catch (error) {
       console.error("Error updating category:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Failed to update category",
+      };
+    }
+  }
+
+  async getServiceDetails(
+    serviceId: string
+  ): Promise<getServiceDetailsResponse> {
+    try {
+      console.log(
+        "serviceId in the service service layer for getting service layers:",
+        serviceId
+      );
+
+      const service = await this.serviceRepository.findServiceById(serviceId);
+
+      console.log("fetched service details:", service);
+
+      if (!service) {
+        return {
+          status: HTTP_STATUS.OK,
+          success: false,
+          message: "Service not found",
+        };
+      }
+
+      const relatdServicesResult = await this.serviceRepository.getAllServices({
+        categoryId: service?.category.toString(),
+        status: "active",
+      });
+
+      console.log("fetched related services:", relatdServicesResult);
+
+      const relatedServices = relatdServicesResult.data.filter(
+        (relatedService) => relatedService._id.toString() !== serviceId
+      );
+
+      console.log("final related services result:", relatedServices);
+
+      return {
+        success: true,
+        message: "service details fetched successfully",
+        status: HTTP_STATUS.OK,
+        data: {
+          service: service,
+          relatedService: relatedServices,
+        },
+      };
+    } catch (error) {
+      console.log("error occured while fetching the service Details:", error);
       return {
         success: false,
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,

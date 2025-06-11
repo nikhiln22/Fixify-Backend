@@ -351,11 +351,12 @@ export class TechnicianController implements ItechnicianController {
     try {
       console.log("fetching the added time slots for the technician");
       const technicianId = (req as any).user?.id;
+      const includePast = req.query.includePast === "true";
       console.log(
         "technicianId from the getTimeSlots function in technician controller:",
         technicianId
       );
-      const response = await this.timeSlotService.getTimeSlots(technicianId);
+      const response = await this.timeSlotService.getTimeSlots(technicianId,includePast);
       console.log(
         "response from the technician controller getting time slots:",
         response

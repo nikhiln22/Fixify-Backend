@@ -36,7 +36,7 @@ export interface ItechnicianRepository {
     limit?: number;
     search?: string;
     status?: string;
-    designation?:string;
+    designation?: string;
   }): Promise<{
     data: Itechnician[];
     total: number;
@@ -51,5 +51,11 @@ export interface ItechnicianRepository {
     success: boolean;
     message?: string;
     technicianData?: Itechnician;
-  }> 
+  }>;
+  nearbyTechnicians(
+    designationId: string,
+    userLongitude: number,
+    userLatitude: number,
+    radius: number
+  ): Promise<Itechnician[]>;
 }

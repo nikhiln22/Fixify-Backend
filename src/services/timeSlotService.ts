@@ -16,7 +16,7 @@ export class TimeSlotService implements ITimeSlotService {
     technicianId: string,
     data: {
       dateTimeSlots: Array<{
-        date: Date;
+        date: string;
         startTime: string;
         endTime: string;
       }>;
@@ -26,11 +26,26 @@ export class TimeSlotService implements ITimeSlotService {
       console.log("entering the addslot function in the timeslot service");
       const { dateTimeSlots } = data;
 
-      console.log(
-        "dateTimeSlots in the timeslot service layer:",
-        dateTimeSlots
-      );
-      console.log("technicianId:", technicianId);
+      for (const slot of dateTimeSlots) {
+        const { date, startTime, endTime } = slot;
+
+        const overlappingSlots =
+          await this.timeSlotRepository.findOverlappingSlots(
+            technicianId,
+            date,
+            startTime,
+            endTime
+          );
+
+        if (overlappingSlots.length > 0) {
+          const existingSlot = overlappingSlots[0];
+          return {
+            success: false,
+            message: `Time slot conflict detected. You already have availability from ${existingSlot.startTime} to ${existingSlot.endTime} on ${date}. Please choose a different time or date.`,
+            status: HTTP_STATUS.CONFLICT,
+          };
+        }
+      }
 
       const generatedSlots: ITimeSlot[] = [];
       const slotDuration = 60;
@@ -38,31 +53,9 @@ export class TimeSlotService implements ITimeSlotService {
       for (const slot of dateTimeSlots) {
         const { date, startTime, endTime } = slot;
 
-        let slotDate: Date;
-        if (typeof date === "string") {
-          slotDate = new Date(date);
-        } else {
-          slotDate = new Date(date);
-        }
-
-        const year = slotDate.getFullYear();
-        const month = (slotDate.getMonth() + 1).toString().padStart(2, "0");
-        const day = slotDate.getDate().toString().padStart(2, "0");
-
-        const dbDate = `${day}-${month}-${year}`;
-
-        console.log(
-          "Processing slot for date:",
-          dbDate,
-          "from",
-          startTime,
-          "to",
-          endTime
-        );
-
         const slotsForDate = await this.generateTimeSlotsForDate(
           technicianId,
-          dbDate,
+          date,
           startTime,
           endTime,
           slotDuration
@@ -70,11 +63,6 @@ export class TimeSlotService implements ITimeSlotService {
 
         generatedSlots.push(...slotsForDate);
       }
-
-      console.log(
-        "All generated slots in the time slot service layer:",
-        generatedSlots
-      );
 
       if (generatedSlots.length > 0) {
         return {
@@ -86,26 +74,18 @@ export class TimeSlotService implements ITimeSlotService {
       } else {
         return {
           success: false,
-          message:
-            "No new timeslots were created (possible overlap with existing slots)",
+          message: "No new timeslots were created",
           status: HTTP_STATUS.CONFLICT,
         };
       }
     } catch (error) {
       console.error("Error creating time slots:", error);
-      if (error instanceof Error) {
-        return {
-          success: false,
-          message: error.message,
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-        };
-      } else {
-        return {
-          success: false,
-          message: "An unknown error occurred while creating the timeslots",
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-        };
-      }
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : "An unknown error occurred",
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
     }
   }
 
@@ -233,7 +213,11 @@ export class TimeSlotService implements ITimeSlotService {
     return `${displayHour}:${mins.toString().padStart(2, "0")} ${period}`;
   }
 
-  async getTimeSlots(technicianId: string): Promise<{
+  async getTimeSlots(
+    technicianId: string,
+    includePast: boolean,
+    additionalFilters?: { [key: string]: any }
+  ): Promise<{
     success: boolean;
     message: string;
     status: number;
@@ -245,7 +229,9 @@ export class TimeSlotService implements ITimeSlotService {
       );
 
       const timeSlots = await this.timeSlotRepository.getTimeSlots(
-        technicianId
+        technicianId,
+        includePast,
+        additionalFilters
       );
       console.log(
         "Response from the timeSlot repository getting timeSlots:",
@@ -327,6 +313,80 @@ export class TimeSlotService implements ITimeSlotService {
       return {
         success: false,
         message: "Failed to block/unblock time slot",
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
+    }
+  }
+  async updateSlotBookingStatus(
+    technicianId: string,
+    slotId: string,
+    isBooked: boolean
+  ): Promise<{
+    success: boolean;
+    message: string;
+    status: number;
+    data?: ITimeSlot;
+  }> {
+    try {
+      console.log(
+        `TimeSlotService: Updating slot ${slotId} for technician ${technicianId} booking status to:`,
+        isBooked
+      );
+
+      const updatedSlot = await this.timeSlotRepository.updateSlotBookingStatus(
+        technicianId,
+        slotId,
+        isBooked
+      );
+
+      const action = isBooked ? "booked" : "unbooked";
+
+      return {
+        success: true,
+        message: `Time slot ${action} successfully`,
+        status: HTTP_STATUS.OK,
+        data: updatedSlot,
+      };
+    } catch (error: any) {
+      console.error("Error in updateSlotBookingStatus service:", error);
+      if (
+        error.message.includes("not found") ||
+        error.message.includes("permission")
+      ) {
+        return {
+          success: false,
+          message:
+            "Time slot not found or you don't have permission to modify this slot",
+          status: HTTP_STATUS.NOT_FOUND,
+        };
+      }
+
+      if (error.message.includes("already booked")) {
+        return {
+          success: false,
+          message: "Time slot is already booked",
+          status: HTTP_STATUS.CONFLICT,
+        };
+      }
+
+      if (error.message.includes("already unbooked")) {
+        return {
+          success: false,
+          message: "Time slot is not currently booked",
+          status: HTTP_STATUS.BAD_REQUEST,
+        };
+      }
+
+      if (error.message.includes("not available")) {
+        return {
+          success: false,
+          message: "Time slot is not available for booking",
+          status: HTTP_STATUS.BAD_REQUEST,
+        };
+      }
+      return {
+        success: false,
+        message: "Failed to update slot booking status",
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }

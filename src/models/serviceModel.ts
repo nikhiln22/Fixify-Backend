@@ -1,5 +1,5 @@
-import { IService } from "../interfaces/Models/Iservice";
 import mongoose, { Schema } from "mongoose";
+import { IService } from "../interfaces/Models/Iservice";
 
 const serviceSchema: Schema<IService> = new Schema(
   {
@@ -20,6 +20,11 @@ const serviceSchema: Schema<IService> = new Schema(
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "category",
+    },
+    designation: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "jobDesignation",
+      required: true,
     },
     status: {
       type: Boolean,
