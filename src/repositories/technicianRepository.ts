@@ -375,7 +375,6 @@ export class TechnicianRepository
         radius,
       });
 
-      // Step 1: Get all technicians with the specified designation who have location data
       const techniciansWithDesignation = (await this.findAll({
         Designation: designationId,
         is_verified: true,
@@ -392,24 +391,22 @@ export class TechnicianRepository
         return [];
       }
 
-      // Step 2: Calculate distance from USER's location to each TECHNICIAN's location
       const nearbyTechniciansWithDistance = techniciansWithDesignation
         .map((technician) => {
-          // Calculate distance from user's location to technician's location
           const distance = this.calculateDistance(
-            userLatitude, // User's latitude
-            userLongitude, // User's longitude
-            technician.latitude!, // Technician's latitude
-            technician.longitude! // Technician's longitude
+            userLatitude, 
+            userLongitude, 
+            technician.latitude!, 
+            technician.longitude! 
           );
 
           return {
             ...technician.toObject(),
-            distance: Math.round(distance * 100) / 100, // Round to 2 decimal places
+            distance: Math.round(distance * 100) / 100, 
           };
         })
-        .filter((technician) => technician.distance <= radius) // Keep only technicians within radius
-        .sort((a, b) => a.distance - b.distance); // Sort by distance (closest first)
+        .filter((technician) => technician.distance <= radius) 
+        .sort((a, b) => a.distance - b.distance); 
 
       console.log(
         `Found ${nearbyTechniciansWithDistance.length} technicians within ${radius}km of user's location`
@@ -422,14 +419,13 @@ export class TechnicianRepository
     }
   }
 
-  // Helper method to calculate distance between two coordinates using Haversine formula
   private calculateDistance(
-    userLat: number, // User's latitude
-    userLon: number, // User's longitude
-    technicianLat: number, // Technician's latitude
-    technicianLon: number // Technician's longitude
+    userLat: number, 
+    userLon: number,
+    technicianLat: number, 
+    technicianLon: number
   ): number {
-    const R = 6371; // Earth's radius in kilometers
+    const R = 6371; 
 
     const dLat = this.toRadians(technicianLat - userLat);
     const dLon = this.toRadians(technicianLon - userLon);
@@ -447,8 +443,7 @@ export class TechnicianRepository
     return distance;
   }
 
-  // Helper method to convert degrees to radians
-  private toRadians(degrees: number): number {
+   private toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
   }
 }
