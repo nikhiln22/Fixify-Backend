@@ -109,23 +109,25 @@ export interface CreateBookingRequest {
   serviceId: string;
   addressId: string;
   timeSlotId: string;
-  date: string;
   totalAmount: number;
-  paymentMethod: "Cash" | "online" | "Wallet";
+  paymentMethod: "Online" | "Wallet";
+  bookingStatus?: "Pending" | "Booked" | "Cancelled" | "Completed";
 }
 
 export interface BookServiceResponse {
   success: boolean;
-  status:number;
+  status: number;
   message: string;
-  data?: IBooking;
-  error?: string;
+  data?: IBooking | null;
 }
 
-export interface BookingsListResponse {
+export interface AddMoneyResponse {
   success: boolean;
-  message: string;
   status: number;
-  data?: IBooking[];
-  error?: string;
+  message: string;
+  data?: {
+    checkoutUrl: string;
+    sessionId: string;
+    requiresPayment: boolean;
+  };
 }

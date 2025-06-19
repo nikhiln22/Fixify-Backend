@@ -28,6 +28,8 @@ import { ITimeSlotRepository } from "../interfaces/Irepositories/ItimeSlotReposi
 import { TimeSlotRepository } from "../repositories/timeSlotRepository";
 import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
 import { TimeSlotService } from "../services/timeSlotService";
+import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
+import { WalletRepository } from "../repositories/walletRepository";
 
 
 container.registerSingleton<ItechnicianService>("ItechnicianService", TechnicianService);
@@ -44,3 +46,4 @@ container.registerSingleton<IFileUploader>("IFileUploader", CloudinaryUploader);
 container.registerSingleton<IjobsService>("IjobsService",JobService);
 container.registerSingleton<ITimeSlotService>("ITimeSlotService",TimeSlotService);
 container.registerSingleton<ITimeSlotRepository>("ITimeSlotRepository",TimeSlotRepository);
+container.registerSingleton<IWalletRepository>("IWalletRepository",WalletRepository);

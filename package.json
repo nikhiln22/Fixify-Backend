@@ -29,6 +29,7 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
+    "@types/stripe": "^8.0.416",
     "argon2": "^0.41.1",
     "cloudinary": "^2.6.0",
     "cookie-parser": "^1.4.7",
@@ -44,6 +45,7 @@
     "nodemailer": "^6.10.0",
     "redis": "^4.7.0",
     "reflect-metadata": "^0.2.2",
+    "stripe": "^18.2.1",
     "tsyringe": "^4.9.1",
     "winston": "^3.17.0"
   }

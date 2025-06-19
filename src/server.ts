@@ -13,9 +13,11 @@ class Server {
   public async start(): Promise<void> {
     try {
       await database.connect();
+
       this.appInstance.getServer().listen(config.PORT, () => {
-        console.log(`Fixify Server is running at http://localhost:${config.PORT}`);
-        console.log(`Environment: ${config.NODE_ENV}`);
+        console.log(
+          `Fixify Server is running at http://localhost:${config.PORT}`
+        );
       });
     } catch (error) {
       console.error("Server failed to start due to database error:", error);

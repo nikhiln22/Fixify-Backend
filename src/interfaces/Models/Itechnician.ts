@@ -1,6 +1,7 @@
 import { Document, Types } from "mongoose";
 
 export interface Itechnician extends Document {
+  _id: string;
   username: string;
   email: string;
   password: string;
