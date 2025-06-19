@@ -112,6 +112,12 @@ export class UserRoutes {
     );
 
     this.router.get(
+      "/verifypayment/:sessionId",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.verifyStripeSession.bind(userController)
+    );
+
+    this.router.get(
       "/bookings",
       this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
       userController.getAllBookings.bind(userController)
@@ -121,6 +127,30 @@ export class UserRoutes {
       "/bookingdetails/:bookingId",
       this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
       userController.getBookingDetails.bind(userController)
+    );
+
+    this.router.post(
+      "/addmoney",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.addMoney.bind(userController)
+    );
+
+    this.router.get(
+      "/verifywalletsession/:sessionId",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.verifyWalletStripeSession.bind(userController)
+    );
+
+    this.router.get(
+      "/walletbalance",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.getWalletBalance.bind(userController)
+    );
+
+    this.router.get(
+      "/wallettransactions",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.getWalletTransactions.bind(userController)
     );
 
     this.router.get(

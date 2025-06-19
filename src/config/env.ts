@@ -18,6 +18,7 @@ interface Config {
   CLOUDINARY_API_KEY: string;
   CLOUDINARY_API_SECRET: string;
   NODE_ENV:string;
+  STRIPE_SECRET_KEY:string;
 }
 
 function validateEnvVars(): void {
@@ -36,7 +37,8 @@ function validateEnvVars(): void {
     "CLOUDINARY_CLOUD_NAME",
     "CLOUDINARY_API_KEY",
     "CLOUDINARY_API_SECRET",
-    "NODE_ENV"
+    "NODE_ENV",
+    "STRIPE_SECRET_KEY"
   ];
 
   requiredEnvVars.forEach((envVar) => {
@@ -64,7 +66,8 @@ const config: Config = {
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME as string,
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY as string,
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET as string,
-  NODE_ENV:process.env.NODE_ENV as string
+  NODE_ENV:process.env.NODE_ENV as string,
+  STRIPE_SECRET_KEY:process.env.STRIPE_SECRET_KEY as string
 };
 
 export default config;

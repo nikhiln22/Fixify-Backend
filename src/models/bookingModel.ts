@@ -1,11 +1,11 @@
 import { IBooking } from "../interfaces/Models/Ibooking";
-import mongoose, { Schema, Model } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const bookingSchema: Schema<IBooking> = new Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
+      ref: "User",
       required: true,
     },
     technicianId: {
@@ -27,34 +27,14 @@ const bookingSchema: Schema<IBooking> = new Schema(
       type: String,
       required: true,
     },
-    date: {
-      type: String,
-      required: true,
-    },
     totalAmount: {
       type: Number,
       required: true,
     },
-    paymentMethod: {
-      type: String,
-      enum: ["Cash", "online", "Wallet"],
-      required: true,
-    },
     bookingStatus: {
       type: String,
-      enum: ["Pending", "cancelled", "completed"],
-      default: "Pending",
+      enum: ["Pending", "Booked", "Cancelled", "Completed"],
       required: true,
-    },
-    paymentStatus: {
-      type: String,
-      enum: ["Pending", "success", "Failed"],
-      default: "Pending",
-      required: true,
-    },
-    completed: {
-      type: Boolean,
-      default: false,
     },
   },
   {

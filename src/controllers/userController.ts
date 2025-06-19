@@ -541,6 +541,37 @@ export class UserController implements IuserController {
     }
   }
 
+  async verifyStripeSession(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entering to the verifyStripeSession in the user controller function for booking"
+      );
+
+      const userId = (req as any).user?.id;
+      const sessionId = req.params.sessionId as string;
+      console.log("userId in the stripe verify function:", userId);
+      console.log("sessionId in the stripe verify function:", sessionId);
+
+      const result = await this.bookingService.verifyStripeSession(
+        sessionId,
+        userId
+      );
+
+      console.log(
+        "result from the veryfying stripe session in user controller:",
+        result
+      );
+
+      res.status(result.status).json(result);
+    } catch (error) {
+      console.log("error occured while veryfying the stripe session:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
   async getAllBookings(req: Request, res: Response): Promise<void> {
     try {
       console.log("entering to the all bookings fetching for the user");
@@ -566,7 +597,6 @@ export class UserController implements IuserController {
     }
   }
 
-  
   async getBookingDetails(req: Request, res: Response): Promise<void> {
     try {
       console.log("Controller: Getting booking details");
@@ -603,6 +633,125 @@ export class UserController implements IuserController {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: "Internal server error",
+      });
+    }
+  }
+
+  async addMoney(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entering the function which adds the money to the user wallet"
+      );
+      const userId = (req as any).user?.id;
+      const { amount } = req.body;
+      console.log("userId in the add money controller:", userId);
+      console.log("Received Data:", amount);
+      const result = await this.userService.addMoney(userId, amount);
+      console.log(
+        "result in the usercontroller for adding money in wallet:",
+        result
+      );
+      res.status(result.status).json(result);
+    } catch (error) {
+      console.log(
+        "error occured in the user controller while adding the money to wallet:",
+        error
+      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
+  async verifyWalletStripeSession(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entering to the verifyStripeSession in the user controller function for wallet"
+      );
+
+      const userId = (req as any).user?.id;
+      const sessionId = req.params.sessionId as string;
+      console.log("userId in the verify stripe session for wallet:", userId);
+      console.log(
+        "sessionId in the verify stripe session for wallet:",
+        sessionId
+      );
+
+      const result = await this.userService.verifyWalletStripeSession(
+        sessionId,
+        userId
+      );
+
+      console.log(
+        "result from the veryfying stripe session in user controller:",
+        result
+      );
+
+      res.status(result.status).json(result);
+    } catch (error) {
+      console.log("error occured while veryfying the stripe session:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
+  async getWalletBalance(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "fetching the wallet balance for the user in the user controller function"
+      );
+      const userId = (req as any).user?.id;
+      console.log(
+        "userId in the getWalletBalance function in user controller:",
+        userId
+      );
+      const response = await this.userService.getWalletBalance(userId);
+      console.log(
+        "response in the user controller for fetching the user wallet balance:",
+        response
+      );
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log(
+        "error occured while fetching the user wallet balance:",
+        error
+      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
+  async getWalletTransactions(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("fetching the wallet transactions by the user:");
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+      const userId = (req as any).user?.id;
+      console.log(
+        "userId in the getwallet transactions in the user controller:",
+        userId
+      );
+      const response = await this.userService.getAllWalletTransactions({
+        page,
+        limit,
+        userId,
+      });
+
+      console.log("response in the getWalletTransactions:", response);
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log(
+        "error occured while fetching all the wallet transactions of the user:",
+        error
+      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
       });
     }
   }

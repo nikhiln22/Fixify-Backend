@@ -9,10 +9,11 @@ export interface IbookingService {
     userId: string,
     data: CreateBookingRequest
   ): Promise<BookServiceResponse>;
-  getAllBookings(options: {
-    page?: number;
-    limit?: number; 
-  }): Promise<{
+  verifyStripeSession(
+    sessionId: string,
+    userId: string
+  ): Promise<BookServiceResponse>;
+  getAllBookings(options: { page?: number; limit?: number }): Promise<{
     success: boolean;
     status: number;
     message: string;
@@ -28,9 +29,8 @@ export interface IbookingService {
       };
     };
   }>;
-  updateBookingStatus(
+  getBookingById(
     bookingId: string,
-    status: string
+    userId?: string
   ): Promise<BookServiceResponse>;
-  getBookingById(bookingId: string, userId?: string): Promise<BookServiceResponse>
 }

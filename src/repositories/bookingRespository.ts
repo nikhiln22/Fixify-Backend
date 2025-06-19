@@ -4,7 +4,7 @@ import { IBooking } from "../interfaces/Models/Ibooking";
 import Booking from "../models/bookingModel";
 import { CreateBookingRequest } from "../interfaces/DTO/IServices/IuserService";
 import { IbookingRepository } from "../interfaces/Irepositories/IbookingRespository";
-import { FilterQuery, Types } from "mongoose";
+import { FilterQuery, Types, UpdateQuery } from "mongoose";
 
 @injectable()
 export class BookingRepository
@@ -29,24 +29,13 @@ export class BookingRepository
         serviceId: new Types.ObjectId(data.serviceId),
         addressId: new Types.ObjectId(data.addressId),
         timeSlotId: data.timeSlotId,
-        date: data.date,
         totalAmount: data.totalAmount,
-        paymentMethod: data.paymentMethod,
-        bookingStatus: "Pending" as const,
-        paymentStatus: "Pending" as const,
-        completed: false,
+        bookingStatus: data.bookingStatus
       };
 
       const newBooking = await this.create(bookingData);
 
-      const populatedBooking = await this.model
-        .findById(newBooking._id)
-        .populate("serviceId", "name price description")
-        .populate("technicianId", "username email phone")
-        .populate("addressId", "fullAddress")
-        .exec();
-
-      return populatedBooking || newBooking;
+      return newBooking;
     } catch (error) {
       console.error("Error in bookService repository:", error);
       throw error;
@@ -115,9 +104,9 @@ export class BookingRepository
         .findOne(filter)
         .populate("serviceId", "name price description")
         .populate("technicianId", "username email phone profilePicture")
-        .populate("addressId", "fullAddress city state zipCode landmark")
+        .populate("addressId", "fullAddress")
         .populate("userId", "username email phone")
-        .populate("timeSlotId", "date startTime endTime isBooked isAvailable")
+        .populate("timeSlotId", "date startTime endTime")
         .exec();
 
       if (!booking) {
@@ -133,6 +122,13 @@ export class BookingRepository
       console.error("Error fetching booking details:", error);
       throw error;
     }
+  }
+
+  async updateBooking(
+    filter: FilterQuery<IBooking>,
+    update: UpdateQuery<IBooking>
+  ): Promise<IBooking | null> {
+    return await this.updateOne(filter, update);
   }
 
   async findBookingById(bookingId: string): Promise<IBooking | null> {

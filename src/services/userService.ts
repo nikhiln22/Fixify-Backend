@@ -21,6 +21,7 @@ import {
   UserProfileResponse,
   EditProfileResponse,
   UserProfileUpdateData,
+  AddMoneyResponse,
 } from "../interfaces/DTO/IServices/IuserService";
 import { ItempUserRepository } from "../interfaces/Irepositories/ItempUserRepository";
 import { IuserRepository } from "../interfaces/Irepositories/IuserRepository";
@@ -36,6 +37,12 @@ import { OtpVerificationResult } from "../interfaces/Iotp/IOTP";
 import { inject, injectable } from "tsyringe";
 import { Iuser } from "../interfaces/Models/Iuser";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
+import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
+import { IWalletTransactionRepository } from "../interfaces/Irepositories/IwalletTransactionRepository";
+import { IWallet } from "../interfaces/Models/Iwallet";
+import { stripe } from "../config/stripeConfig";
+import config from "../config/env";
+import { IWalletTransaction } from "../interfaces/Models/IwalletTransaction";
 
 @injectable()
 export class UserService implements IuserService {
@@ -48,7 +55,10 @@ export class UserService implements IuserService {
     @inject("IPasswordHasher") private passwordService: IPasswordHasher,
     @inject("IjwtService") private jwtService: IjwtService,
     @inject("IredisService") private redisService: IredisService,
-    @inject("IFileUploader") private fileUploader: IFileUploader
+    @inject("IFileUploader") private fileUploader: IFileUploader,
+    @inject("IWalletRepository") private walletRepository: IWalletRepository,
+    @inject("IWalletTransactionRepository")
+    private walletTransactionRepository: IWalletTransactionRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -201,6 +211,12 @@ export class UserService implements IuserService {
 
         const newUser = await this.userRepository.createUser(userData);
         console.log("new created user:", newUser);
+
+        const newWallet = await this.walletRepository.createWallet(
+          newUser._id.toString()
+        );
+
+        console.log("newly created wallet:", newWallet);
 
         const newUserObj = newUser.toObject
           ? newUser.toObject()
@@ -448,7 +464,7 @@ export class UserService implements IuserService {
           username: user.userData.username,
           email: user.userData.email,
           phone: user.userData.phone,
-          image:user.userData.image
+          image: user.userData.image,
         },
       };
     } catch (error) {
@@ -456,50 +472,6 @@ export class UserService implements IuserService {
       return {
         success: false,
         message: "error occured during the login",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-      };
-    }
-  }
-
-  async checkUserStatus(
-    userId: string
-  ): Promise<{ success: boolean; message: string; status: number }> {
-    try {
-      console.log(
-        "checking whether the user is blocked from the userAuthService"
-      );
-      const userData = await this.userRepository.findById(userId);
-
-      console.log(
-        "userData from the checkuserstatus in user repository:",
-        userData
-      );
-
-      if (!userData) {
-        return {
-          success: false,
-          message: "User not found",
-          status: HTTP_STATUS.NOT_FOUND,
-        };
-      }
-
-      if (!userData.status) {
-        return {
-          success: false,
-          message: "Your account has been blocked by an administrator",
-          status: HTTP_STATUS.FORBIDDEN,
-        };
-      }
-      return {
-        success: true,
-        message: "User is active",
-        status: HTTP_STATUS.OK,
-      };
-    } catch (error) {
-      console.log("Error checking user status:", error);
-      return {
-        success: false,
-        message: "Error checking user status",
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
@@ -654,10 +626,9 @@ export class UserService implements IuserService {
 
       if (updateData.image) {
         console.log("Uploading profile photo to Cloudinary");
-        const imageUrl = await this.fileUploader.uploadFile(
-          updateData.image,
-          { folder: "fixify/users/profile" }
-        );
+        const imageUrl = await this.fileUploader.uploadFile(updateData.image, {
+          folder: "fixify/users/profile",
+        });
 
         if (imageUrl) {
           profileDataToSave.image = imageUrl;
@@ -688,6 +659,322 @@ export class UserService implements IuserService {
         success: false,
         message: "An error occurred while updating profile",
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
+    }
+  }
+
+  async addMoney(userId: string, amount: number): Promise<AddMoneyResponse> {
+    try {
+      console.log("Add money service called:", { userId, amount });
+
+      if (!amount || amount <= 0) {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "Invalid amount. Amount must be greater than 0",
+        };
+      }
+
+      if (amount < 100) {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "Minimum amount to add is ₹100",
+        };
+      }
+
+      if (amount > 1000) {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "Maximum amount to add is ₹1,000",
+        };
+      }
+
+      let wallet = await this.walletRepository.getWalletByUserId(userId);
+      if (!wallet) {
+        wallet = await this.walletRepository.createWallet(userId);
+      }
+
+      const amountInCents = Math.round(amount * 100);
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        mode: "payment",
+        line_items: [
+          {
+            price_data: {
+              currency: "inr",
+              product_data: {
+                name: "Wallet Top-up",
+                description: "Add money to your Fixify wallet",
+              },
+              unit_amount: amountInCents,
+            },
+            quantity: 1,
+          },
+        ],
+        metadata: {
+          userId: userId,
+          amount: amount.toString(),
+          type: "wallet_topup",
+        },
+        success_url: `${config.CLIENT_URL}/user/wallet?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${config.CLIENT_URL}/user/wallet-cancelled`,
+      });
+
+      console.log("Stripe session created:", session.id);
+
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: "Payment session created successfully",
+        data: {
+          checkoutUrl: session.url!,
+          sessionId: session.id,
+          requiresPayment: true,
+        },
+      };
+    } catch (error) {
+      console.log("Error in addMoney service:", error);
+      return {
+        success: false,
+        message: "Failed to create payment session",
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
+    }
+  }
+
+  async verifyWalletStripeSession(
+    sessionId: string,
+    userId: string
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      wallet: IWallet | null;
+      transaction: IWalletTransaction | null;
+    };
+  }> {
+    try {
+      console.log("Verifying Stripe session:", { sessionId, userId });
+
+      const existingTransaction =
+        await this.walletTransactionRepository.findByReferenceId(
+          sessionId,
+          "Credit"
+        );
+
+      if (existingTransaction) {
+        console.log("Session already processed:", sessionId);
+        const wallet = await this.walletRepository.getWalletByUserId(userId);
+        return {
+          success: true,
+          status: HTTP_STATUS.OK,
+          message: "Transaction already processed successfully",
+          data: {
+            wallet,
+            transaction: existingTransaction,
+          },
+        };
+      }
+
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+      if (!session || session.payment_status !== "paid") {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "Payment not completed or session not found",
+        };
+      }
+
+      const amount = parseFloat(session.metadata?.amount || "0");
+
+      console.log("amount in the userService:", amount);
+
+      if (!amount || amount <= 0) {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "Invalid amount in session",
+        };
+      }
+
+      if (session.metadata?.userId !== userId) {
+        return {
+          success: false,
+          status: HTTP_STATUS.FORBIDDEN,
+          message: "Session does not belong to this user",
+        };
+      }
+
+      const result = await this.walletRepository.addMoney(
+        amount,
+        userId,
+        sessionId
+      );
+
+      console.log("Wallet updated successfully:", result.wallet);
+      console.log("Transaction created:", result.transaction);
+
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: "Money added to wallet successfully",
+        data: {
+          wallet: result.wallet,
+          transaction: result.transaction,
+        },
+      };
+    } catch (error) {
+      console.log("Error verifying Stripe session:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Internal server error",
+      };
+    }
+  }
+
+  async getWalletBalance(userId: string): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: { balance: number };
+  }> {
+    try {
+      console.log(
+        "entering to the user service function which fetches the wallet balance for the user"
+      );
+      console.log(
+        "userId in the user service function fetching the wallet balance:",
+        userId
+      );
+
+      let fetchedWallet = await this.walletRepository.getWalletByUserId(userId);
+
+      console.log(`fetched wallet with the ${userId}:`, fetchedWallet);
+
+      if (!fetchedWallet) {
+        console.log(`Wallet not found for user ${userId}, creating new wallet`);
+        try {
+          fetchedWallet = await this.walletRepository.createWallet(userId);
+          console.log(`Created new wallet for user ${userId}:`, fetchedWallet);
+        } catch (createError) {
+          console.log("Error creating wallet:", createError);
+          return {
+            success: false,
+            message: "Failed to create wallet",
+            status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          };
+        }
+      }
+
+      return {
+        success: true,
+        message: "Wallet balance fetched successfully",
+        status: HTTP_STATUS.OK,
+        data: {
+          balance: fetchedWallet.balance,
+        },
+      };
+    } catch (error) {
+      console.log(
+        "error occured while fetching the user wallet balance:",
+        error
+      );
+      return {
+        success: false,
+        message: "Internal Server Error",
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
+    }
+  }
+
+  async getAllWalletTransactions(options: {
+    page?: number;
+    limit?: number;
+    userId: string;
+  }): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      transactions: IWalletTransaction[];
+      pagination: {
+        total: number;
+        page: number;
+        pages: number;
+        limit: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    };
+  }> {
+    try {
+      console.log(
+        "entered to the user service fetching all the wallet tranasctions for the user"
+      );
+      const page = options.page || 1;
+      const limit = options.limit || 5;
+      const userId = options.userId;
+      console.log(
+        "userId in the userService fetching all the wallet transactions:",
+        userId
+      );
+
+      const fetchedWallet = await this.walletRepository.getWalletByUserId(
+        userId
+      );
+
+      console.log(
+        "fetched wallet in the user wallet transations fetching services:",
+        fetchedWallet
+      );
+
+      const walletId = fetchedWallet?._id?.toString();
+
+      if (!walletId) {
+        return {
+          success: false,
+          status: HTTP_STATUS.NOT_FOUND,
+          message: "Wallet not found for the user",
+        };
+      }
+
+      const result =
+        await this.walletTransactionRepository.getUserWalletTranasctions({
+          page,
+          limit,
+          userId,
+          walletId,
+        });
+
+      console.log("fetched wallet transactions for the user:", result);
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: "Users fetched successfully",
+        data: {
+          transactions: result.data,
+          pagination: {
+            total: result.total,
+            page: result.page,
+            pages: result.pages,
+            limit: limit,
+            hasNextPage: result.page < result.pages,
+            hasPrevPage: page > 1,
+          },
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching user wallet transactions:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Something went wrong while fetching user wallet transactions",
       };
     }
   }

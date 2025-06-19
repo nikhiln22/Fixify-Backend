@@ -17,7 +17,12 @@ export interface IuserController {
   getNearbyTechnicians(req: Request, res: Response): Promise<void>;
   getTimeSlots(req: Request, res: Response): Promise<void>;
   bookService(req: Request, res: Response): Promise<void>;
+  verifyStripeSession(req: Request, res: Response): Promise<void>;
   getAllBookings(req: Request, res: Response): Promise<void>;
   getBookingDetails(req: Request, res: Response): Promise<void>;
+  addMoney(req: Request, res: Response): Promise<void>;
+  verifyWalletStripeSession(req: Request, res: Response): Promise<void>;
+  getWalletBalance(req: Request, res: Response): Promise<void>;
+  getWalletTransactions(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

@@ -32,6 +32,13 @@ import { IbookingService } from "../interfaces/Iservices/IbookingService";
 import { IbookingRepository } from "../interfaces/Irepositories/IbookingRespository";
 import { BookingService } from "../services/bookingService";
 import { BookingRepository } from "../repositories/bookingRespository";
+import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
+import { WalletRepository } from "../repositories/walletRepository";
+import { IWalletTransactionRepository } from "../interfaces/Irepositories/IwalletTransactionRepository";
+import { WalletTransactionRepository } from "../repositories/walletTransactionRepository";
+import { IPaymentRepository } from "../interfaces/Irepositories/IpaymentRepository";
+import { PaymentRepository } from "../repositories/paymentRepository";
+
 
 container.registerSingleton<IuserService>("IuserService",UserService);
 container.registerSingleton<IuserRepository>("IuserRepository", UserRepository);
@@ -49,3 +56,6 @@ container.registerSingleton<ITimeSlotService>("ITimeSlotService",TimeSlotService
 container.registerSingleton<ItechnicianService>("ItechnicianService",TechnicianService);
 container.registerSingleton<IbookingService>("IbookingService",BookingService);
 container.registerSingleton<IbookingRepository>("IbookingRepository",BookingRepository);
+container.registerSingleton<IWalletRepository>("IWalletRepository",WalletRepository);
+container.registerSingleton<IWalletTransactionRepository>("IWalletTransactionRepository",WalletTransactionRepository)
+container.registerSingleton<IPaymentRepository>("IPaymentRepository",PaymentRepository);

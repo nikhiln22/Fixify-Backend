@@ -39,6 +39,7 @@ import { OtpVerificationResult } from "../interfaces/Iotp/IOTP";
 import { inject, injectable } from "tsyringe";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
 import { Itechnician } from "../interfaces/Models/Itechnician";
+import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
 
 @injectable()
 export class TechnicianService implements ItechnicianService {
@@ -52,7 +53,8 @@ export class TechnicianService implements ItechnicianService {
     @inject("IPasswordHasher") private passwordService: IPasswordHasher,
     @inject("IjwtService") private jwtService: IjwtService,
     @inject("IredisService") private redisService: IredisService,
-    @inject("IFileUploader") private fileUploader: IFileUploader
+    @inject("IFileUploader") private fileUploader: IFileUploader,
+    @inject("IWalletRepository") private walletRepository: IWalletRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -218,6 +220,12 @@ export class TechnicianService implements ItechnicianService {
           technicianData
         );
         console.log("new created technician:", newTechnician);
+
+        const newWallet = await this.walletRepository.createWallet(
+          newTechnician._id.toString()
+        );
+
+        console.log("newly created wallet:", newWallet);
 
         const newTechnicianObj = newTechnician.toObject
           ? newTechnician.toObject()
