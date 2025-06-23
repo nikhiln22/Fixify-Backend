@@ -5,7 +5,6 @@ import {
 import { IbookingService } from "../interfaces/Iservices/IbookingService";
 import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
 import { IbookingRepository } from "../interfaces/Irepositories/IbookingRespository";
-import { IWalletTransactionRepository } from "../interfaces/Irepositories/IwalletTransactionRepository";
 import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
 import { IPaymentRepository } from "../interfaces/Irepositories/IpaymentRepository";
 import { HTTP_STATUS } from "../utils/httpStatus";
@@ -71,10 +70,10 @@ export class BookingService implements IbookingService {
         };
       }
 
-      if (!data.totalAmount) {
+      if (!data.bookingAmount) {
         return {
           success: false,
-          message: "Total amount is required",
+          message: "Booking amount is required",
           status: HTTP_STATUS.BAD_REQUEST,
         };
       }
@@ -132,7 +131,7 @@ export class BookingService implements IbookingService {
             };
           }
 
-          if (userWallet.balance < data.totalAmount) {
+          if (userWallet.balance < data.bookingAmount) {
             await this.timeSlotService.updateSlotBookingStatus(
               data.technicianId,
               data.timeSlotId,
@@ -157,12 +156,14 @@ export class BookingService implements IbookingService {
 
           console.log("Booking created successfully:", newBooking);
 
+          let newBookingId = newBooking._id.toString().slice(-8);
+
           const walletUpdate =
             await this.walletRepository.updateWalletBalanceWithTransaction(
               userId,
-              data.totalAmount,
+              data.bookingAmount,
               "Debit",
-              `Payment for service booking - ${newBooking._id}`,
+              `Payment for service booking #${newBookingId}`,
               newBooking._id.toString()
             );
 
@@ -172,24 +173,29 @@ export class BookingService implements IbookingService {
 
           const fixifySharePercentage = 0.2;
           const fixifyShare = parseFloat(
-            (data.totalAmount * fixifySharePercentage).toFixed(2)
+            (data.bookingAmount * fixifySharePercentage).toFixed(2)
           );
           const technicianShare = parseFloat(
-            (data.totalAmount - fixifyShare).toFixed(2)
+            (data.bookingAmount - fixifyShare).toFixed(2)
           );
 
-          await this.paymentRepository.createPayment({
+          let newPayment = await this.paymentRepository.createPayment({
             userId: userId,
             bookingId: newBooking._id.toString(),
             technicianId: data.technicianId,
-            totalAmount: data.totalAmount,
+            amountPaid: data.bookingAmount,
             fixifyShare: fixifyShare,
             technicianShare: technicianShare,
             paymentMethod: "Wallet",
-            paymentStatus: "paid",
+            paymentStatus: "Paid",
             technicianPaid: false,
-            refundStatus: "not refunded",
+            refundStatus: "Not Refunded",
           });
+
+          await this.bookingRepository.updateBooking(
+            { _id: newBooking._id },
+            { paymentId: newPayment._id }
+          );
 
           return {
             success: true,
@@ -197,6 +203,7 @@ export class BookingService implements IbookingService {
               "Booking created and payment completed successfully using wallet",
             data: {
               ...newBooking.toObject(),
+              paymentMethod: data.paymentMethod,
               requiresPayment: false,
               paymentCompleted: true,
             },
@@ -231,7 +238,7 @@ export class BookingService implements IbookingService {
       console.log("Booking created successfully:", newBooking);
 
       try {
-        const amountInCents = Math.round(data.totalAmount * 100);
+        const amountInCents = Math.round(data.bookingAmount * 100);
 
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
@@ -261,16 +268,12 @@ export class BookingService implements IbookingService {
 
         console.log("Session:", session);
 
-        await this.bookingRepository.updateBooking(
-          { _id: newBooking._id },
-          { stripePaymentIntentId: session.id }
-        );
-
         return {
           success: true,
           message: "Booking created successfully. Complete payment to confirm.",
           data: {
             ...newBooking.toObject(),
+            paymentMethod: data.paymentMethod,
             checkoutUrl: session.url,
             requiresPayment: true,
           },
@@ -301,7 +304,142 @@ export class BookingService implements IbookingService {
     }
   }
 
-  async getAllBookings(options: { page?: number; limit?: number }): Promise<{
+  async verifyStripeSession(
+    sessionId: string,
+    userId: string
+  ): Promise<BookServiceResponse> {
+    try {
+      console.log(
+        "entering to the booking service that verifies stripe session"
+      );
+      console.log("sessionId in the booking service:", sessionId);
+      console.log("userId in the booking service:", userId);
+
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+      if (!session || session.payment_status !== "paid") {
+        return {
+          success: false,
+          message: "Payment not completed or session not found",
+          status: HTTP_STATUS.BAD_REQUEST,
+        };
+      }
+
+      const bookingId = session.metadata?.bookingId;
+
+      console.log("bookingId in the booking service:", bookingId);
+
+      if (!bookingId) {
+        return {
+          success: false,
+          message: "Invalid or missing booking ID in session metadata",
+          status: HTTP_STATUS.BAD_REQUEST,
+        };
+      }
+
+      const booking = await this.bookingRepository.getBookingDetailsById(
+        bookingId
+      );
+
+      console.log(
+        "booking details in the stripe verifying function in the booking service:",
+        booking
+      );
+
+      if (!booking) {
+        return {
+          success: false,
+          message: "Booking not found",
+          status: HTTP_STATUS.NOT_FOUND,
+        };
+      }
+
+      const existingPayment = await this.paymentRepository.findByBookingId(
+        bookingId
+      );
+
+      if (existingPayment) {
+        return {
+          success: true,
+          message: "Payment already verified",
+          data: {
+            ...booking.toObject(),
+            paymentMethod: "Online",
+            paymentCompleted: true,
+          },
+          status: HTTP_STATUS.OK,
+        };
+      }
+
+      const updatedBooking = await this.bookingRepository.updateBooking(
+        { _id: bookingId },
+        { bookingStatus: "Booked" }
+      );
+
+      console.log("updatedBooking in the booking service:", updatedBooking);
+
+      if (!updatedBooking) {
+        return {
+          success: false,
+          message: "Failed to update booking status",
+          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        };
+      }
+
+      const fixifySharePercentage = 0.2;
+      const fixifyShare = parseFloat(
+        (booking.bookingAmount * fixifySharePercentage).toFixed(2)
+      );
+      const technicianShare = parseFloat(
+        (booking.bookingAmount - fixifyShare).toFixed(2)
+      );
+
+      let newPayment = await this.paymentRepository.createPayment({
+        userId: userId,
+        bookingId: bookingId,
+        technicianId: booking.technicianId._id.toString(),
+        amountPaid: booking.bookingAmount,
+        fixifyShare: fixifyShare,
+        technicianShare: technicianShare,
+        paymentMethod: "Online",
+        paymentStatus: "Paid",
+        technicianPaid: false,
+        refundStatus: "Not Refunded",
+      });
+
+      await this.bookingRepository.updateBooking(
+        { _id: bookingId },
+        { paymentId: newPayment._id }
+      );
+
+      return {
+        success: true,
+        message: "Payment verified and booking completed",
+        data: {
+          ...updatedBooking.toObject(),
+          paymentMethod: "Online",
+          paymentCompleted: true,
+        },
+        status: HTTP_STATUS.OK,
+      };
+    } catch (error) {
+      console.log(
+        "error occurred while verifying the session in the booking service:",
+        error
+      );
+      return {
+        success: false,
+        message: "Internal server error",
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
+    }
+  }
+
+  async getAllBookings(options: {
+    page?: number;
+    limit?: number;
+    technicianId?: string;
+  }): Promise<{
     success: boolean;
     status: number;
     message: string;
@@ -321,9 +459,12 @@ export class BookingService implements IbookingService {
       console.log("Function fetching all the Bookings");
       const page = options.page || 1;
       const limit = options.limit || 5;
+      const { technicianId } = options;
+
       const result = await this.bookingRepository.getAllBookings({
         page,
         limit,
+        technicianId,
       });
 
       console.log("result from the booking service:", result);
@@ -331,7 +472,9 @@ export class BookingService implements IbookingService {
       return {
         success: true,
         status: HTTP_STATUS.OK,
-        message: "Bookings fetched successfully",
+        message: technicianId
+          ? "Technician bookings fetched successfully"
+          : "Bookings fetched successfully",
         data: {
           bookings: result.data,
           pagination: {
@@ -394,116 +537,6 @@ export class BookingService implements IbookingService {
       return {
         success: false,
         message: "Failed to retrieve booking details",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-      };
-    }
-  }
-
-  async verifyStripeSession(
-    sessionId: string,
-    userId: string
-  ): Promise<BookServiceResponse> {
-    try {
-      console.log(
-        "entering to the booking service that verrifies stripe session"
-      );
-      console.log("sessionId in the booking service:", sessionId);
-      console.log("userId in the booking service:", userId);
-
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
-
-      if (!session || session.payment_status !== "paid") {
-        return {
-          success: false,
-          message: "Payment not completed or session not found",
-          status: HTTP_STATUS.BAD_REQUEST,
-        };
-      }
-
-      const bookingId = session.metadata?.bookingId;
-
-      console.log("bookingId in the booking service:", bookingId);
-
-      if (!bookingId) {
-        return {
-          success: false,
-          message: "Invalid or missing booking ID in session metadata",
-          status: HTTP_STATUS.BAD_REQUEST,
-        };
-      }
-
-      const booking = await this.bookingRepository.getBookingDetailsById(
-        bookingId
-      );
-
-      console.log(
-        "booking details in the stripe veryfying function in the booking service:",
-        booking
-      );
-
-      if (!booking) {
-        return {
-          success: false,
-          message: "Booking not found",
-          status: HTTP_STATUS.NOT_FOUND,
-        };
-      }
-
-      const existingPayment = await this.paymentRepository.findByBookingId(
-        bookingId
-      );
-
-      if (existingPayment) {
-        return {
-          success: true,
-          message: "Payment already verified",
-          data: booking,
-          status: HTTP_STATUS.OK,
-        };
-      }
-
-      const updatedBooking = await this.bookingRepository.updateBooking(
-        { _id: bookingId },
-        { bookingStatus: "Booked" }
-      );
-
-      console.log("updatedBooking in the booking service:", updatedBooking);
-
-      const fixifySharePercentage = 0.2;
-      const fixifyShare = parseFloat(
-        (booking.totalAmount * fixifySharePercentage).toFixed(2)
-      );
-      const technicianShare = parseFloat(
-        (booking.totalAmount - fixifyShare).toFixed(2)
-      );
-
-      await this.paymentRepository.createPayment({
-        userId: userId,
-        bookingId: bookingId,
-        technicianId: booking.technicianId._id.toString(),
-        totalAmount: booking.totalAmount,
-        fixifyShare: fixifyShare,
-        technicianShare: technicianShare,
-        paymentMethod: "Online",
-        paymentStatus: "paid",
-        technicianPaid: false,
-        refundStatus: "not refunded",
-      });
-
-      return {
-        success: true,
-        message: "Payment verified and booking completed",
-        data: updatedBooking,
-        status: HTTP_STATUS.OK,
-      };
-    } catch (error) {
-      console.log(
-        "error occured while veryfying the session in the booking service:",
-        error
-      );
-      return {
-        success: false,
-        message: "Internal server error",
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }

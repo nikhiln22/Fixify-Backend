@@ -14,6 +14,7 @@ import {
 import { BaseRepository } from "./baseRepository";
 import { injectable } from "tsyringe";
 import { FilterQuery } from "mongoose";
+import jobDesignation from "../models/jobDesignationModel";
 
 @injectable()
 export class TechnicianRepository
@@ -298,6 +299,7 @@ export class TechnicianRepository
       const result = (await this.find(filter, {
         pagination: { page, limit },
         sort: { createdAt: -1 },
+        populate: { path: "Designation", select: "designation" },
       })) as { data: Itechnician[]; total: number };
 
       console.log("data fetched from the technician repository:", result);
@@ -394,19 +396,19 @@ export class TechnicianRepository
       const nearbyTechniciansWithDistance = techniciansWithDesignation
         .map((technician) => {
           const distance = this.calculateDistance(
-            userLatitude, 
-            userLongitude, 
-            technician.latitude!, 
-            technician.longitude! 
+            userLatitude,
+            userLongitude,
+            technician.latitude!,
+            technician.longitude!
           );
 
           return {
             ...technician.toObject(),
-            distance: Math.round(distance * 100) / 100, 
+            distance: Math.round(distance * 100) / 100,
           };
         })
-        .filter((technician) => technician.distance <= radius) 
-        .sort((a, b) => a.distance - b.distance); 
+        .filter((technician) => technician.distance <= radius)
+        .sort((a, b) => a.distance - b.distance);
 
       console.log(
         `Found ${nearbyTechniciansWithDistance.length} technicians within ${radius}km of user's location`
@@ -420,12 +422,12 @@ export class TechnicianRepository
   }
 
   private calculateDistance(
-    userLat: number, 
+    userLat: number,
     userLon: number,
-    technicianLat: number, 
+    technicianLat: number,
     technicianLon: number
   ): number {
-    const R = 6371; 
+    const R = 6371;
 
     const dLat = this.toRadians(technicianLat - userLat);
     const dLon = this.toRadians(technicianLon - userLon);
@@ -443,7 +445,7 @@ export class TechnicianRepository
     return distance;
   }
 
-   private toRadians(degrees: number): number {
+  private toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
   }
 }

@@ -1,5 +1,7 @@
 import { Model, Document, FilterQuery, UpdateQuery, SortOrder } from "mongoose";
 
+type PopulateOption = { path: string; select?: string };
+
 export class BaseRepository<T extends Document> {
   protected model: Model<T>;
 
@@ -17,12 +19,17 @@ export class BaseRepository<T extends Document> {
     options?: {
       pagination?: { page: number; limit: number };
       sort?: Record<string, SortOrder>;
+      populate?: PopulateOption | PopulateOption[];
     }
   ): Promise<T[] | { data: T[]; total: number }> {
     let query = this.model.find(filter);
 
     if (options?.sort) {
       query = query.sort(options.sort);
+    }
+
+    if (options?.populate) {
+      query = query.populate(options.populate);
     }
 
     if (options?.pagination) {
@@ -43,7 +50,6 @@ export class BaseRepository<T extends Document> {
     return await query.exec();
   }
 
-  
   async findAll(
     filter: FilterQuery<T> = {},
     sort?: Record<string, SortOrder>

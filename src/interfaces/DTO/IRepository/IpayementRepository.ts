@@ -3,13 +3,13 @@ export interface CreatePaymentData {
   userId: string;
   bookingId: string;
   technicianId: string;
-  totalAmount: number;
+  amountPaid: number;
   fixifyShare: number;
   technicianShare: number;
   paymentMethod: "Online" | "Wallet";
-  paymentStatus: "paid" | "refunded";
+  paymentStatus: "Paid" | "Refunded";
   technicianPaid: boolean;
-  refundStatus: "not refunded" | "refunded";
+  refundStatus: "Not Refunded" | "Refunded";
   technicianPaidAt?: Date;
   refundDate?: Date;
 }

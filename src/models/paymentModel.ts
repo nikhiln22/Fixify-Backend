@@ -18,7 +18,7 @@ const paymentSchema: Schema<IPayment> = new Schema(
       ref: "technician",
       required: true,
     },
-    totalAmount: {
+    amountPaid: {
       type: Number,
       required: true,
     },
@@ -49,8 +49,8 @@ const paymentSchema: Schema<IPayment> = new Schema(
     },
     refundStatus: {
       type: String,
-      enum: ["not refunded", "refunded"],
-      default: "not refunded",
+      enum: ["Not Refunded", "Refunded"],
+      default: "Not Refunded",
     },
     refundDate: {
       type: Date,

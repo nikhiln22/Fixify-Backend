@@ -53,7 +53,7 @@ export class UserService implements IuserService {
     @inject("IemailService") private emailService: IemailService,
     @inject("IOTPService") private otpService: IOTPService,
     @inject("IPasswordHasher") private passwordService: IPasswordHasher,
-    @inject("IjwtService") private jwtService: IjwtService,
+    @inject("IjwtService") private jwtService: IjwtService,  
     @inject("IredisService") private redisService: IredisService,
     @inject("IFileUploader") private fileUploader: IFileUploader,
     @inject("IWalletRepository") private walletRepository: IWalletRepository,

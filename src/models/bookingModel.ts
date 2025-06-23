@@ -27,7 +27,11 @@ const bookingSchema: Schema<IBooking> = new Schema(
       type: String,
       required: true,
     },
-    totalAmount: {
+    paymentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "payment",
+    },
+    bookingAmount: {
       type: Number,
       required: true,
     },

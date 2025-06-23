@@ -8,14 +8,17 @@ export interface IbookingRepository {
     filter: FilterQuery<IBooking>,
     update: UpdateQuery<IBooking>
   ): Promise<IBooking | null>;
-  getAllBookings(options: { page?: number; limit?: number }): Promise<{
+  getAllBookings(options: {
+    page?: number;
+    limit?: number;
+    technicianId?: string;
+  }): Promise<{
     data: IBooking[];
     total: number;
     page: number;
     limit: number;
     pages: number;
   }>;
-  findBookingById(bookingId: string): Promise<IBooking | null>;
   updateBookingStatus(
     bookingId: string,
     paymentStatus: string,

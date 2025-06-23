@@ -13,7 +13,11 @@ export interface IbookingService {
     sessionId: string,
     userId: string
   ): Promise<BookServiceResponse>;
-  getAllBookings(options: { page?: number; limit?: number }): Promise<{
+  getAllBookings(options: {
+    page?: number;
+    limit?: number;
+    technicianId?: string;
+  }): Promise<{
     success: boolean;
     status: number;
     message: string;

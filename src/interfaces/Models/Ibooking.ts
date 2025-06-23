@@ -6,10 +6,11 @@ export interface IBooking extends Document {
   technicianId: Types.ObjectId;
   serviceId: Types.ObjectId;
   addressId: Types.ObjectId;
+  paymentId: Types.ObjectId;
   timeSlotId: string;
-  totalAmount: number;
+  bookingAmount: number;
   bookingStatus: "Pending" | "Booked" | "Cancelled" | "Completed";
-  paymentStatus?: "Paid" | "Refunded"
+  paymentStatus?: "Paid" | "Refunded";
   createdAt: Date;
   updatedAt: Date;
 }

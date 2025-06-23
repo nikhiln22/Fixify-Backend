@@ -109,7 +109,7 @@ export interface CreateBookingRequest {
   serviceId: string;
   addressId: string;
   timeSlotId: string;
-  totalAmount: number;
+  bookingAmount: number;
   paymentMethod: "Online" | "Wallet";
   bookingStatus?: "Pending" | "Booked" | "Cancelled" | "Completed";
 }

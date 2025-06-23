@@ -2,9 +2,10 @@ import { ItechnicianController } from "../interfaces/Icontrollers/ItechnicianCon
 import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
 import { IjobsService } from "../interfaces/Iservices/IjobsService";
 import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
-import { Request, response, Response } from "express";
+import { Request, Response } from "express";
 import { HTTP_STATUS } from "../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
+import { IbookingService } from "../interfaces/Iservices/IbookingService";
 
 @injectable()
 export class TechnicianController implements ItechnicianController {
@@ -14,7 +15,8 @@ export class TechnicianController implements ItechnicianController {
     @inject("IjobsService")
     private jobsService: IjobsService,
     @inject("ITimeSlotService")
-    private timeSlotService: ITimeSlotService
+    private timeSlotService: ITimeSlotService,
+    @inject("IbookingService") private bookingService: IbookingService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {
@@ -356,7 +358,10 @@ export class TechnicianController implements ItechnicianController {
         "technicianId from the getTimeSlots function in technician controller:",
         technicianId
       );
-      const response = await this.timeSlotService.getTimeSlots(technicianId,includePast);
+      const response = await this.timeSlotService.getTimeSlots(
+        technicianId,
+        includePast
+      );
       console.log(
         "response from the technician controller getting time slots:",
         response
@@ -396,6 +401,39 @@ export class TechnicianController implements ItechnicianController {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: "Internal Server Error",
+      });
+    }
+  }
+
+  async getAllBookings(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entering to the technician controller which fetches all the bookings for the technician"
+      );
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+      const technicianId = (req as any).user?._id;
+      console.log(
+        "technicianId in the fetching booking in the technician controller:",
+        technicianId
+      );
+      const response = await this.bookingService.getAllBookings({
+        technicianId,
+        page,
+        limit,
+      });
+      console.log("result from the technician service:", response);
+
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.error(
+        "Error in getAllBookings for technician controller:",
+        error
+      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Error fetching Bookings",
+        error: error instanceof Error ? error.message : "Unknown error",
       });
     }
   }

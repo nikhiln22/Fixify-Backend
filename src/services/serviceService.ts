@@ -17,7 +17,6 @@ import { IService } from "../interfaces/Models/Iservice";
 import { Icategory } from "../interfaces/Models/Icategory";
 import { ICategoryRepository } from "../interfaces/Irepositories/IcategoryRepository";
 
-
 @injectable()
 export class ServiceServices implements IServiceService {
   constructor(
@@ -69,7 +68,7 @@ export class ServiceServices implements IServiceService {
         imageFile: imageUrl,
         description: data.description,
         category: data.categoryId,
-        designation:data.designationId
+        designation: data.designationId,
       };
 
       const newService = await this.serviceRepository.addService(serviceData);
@@ -328,6 +327,8 @@ export class ServiceServices implements IServiceService {
       const imageUrl = await this.fileUploader.uploadFile(imageFile, {
         folder: "fixify/categories",
       });
+
+      console.log("imageUrl:", imageUrl);
 
       if (!imageUrl) {
         return {

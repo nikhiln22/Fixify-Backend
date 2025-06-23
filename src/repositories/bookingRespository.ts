@@ -29,8 +29,8 @@ export class BookingRepository
         serviceId: new Types.ObjectId(data.serviceId),
         addressId: new Types.ObjectId(data.addressId),
         timeSlotId: data.timeSlotId,
-        totalAmount: data.totalAmount,
-        bookingStatus: data.bookingStatus
+        bookingAmount: data.bookingAmount,
+        bookingStatus: data.bookingStatus,
       };
 
       const newBooking = await this.create(bookingData);
@@ -42,7 +42,11 @@ export class BookingRepository
     }
   }
 
-  async getAllBookings(options: { page?: number; limit?: number }): Promise<{
+  async getAllBookings(options: {
+    page?: number;
+    limit?: number;
+    technicianId?: string;
+  }): Promise<{
     data: IBooking[];
     total: number;
     page: number;
@@ -53,30 +57,26 @@ export class BookingRepository
       console.log("entering the function which fetches all the bookings");
       const page = options.page || 1;
       const limit = options.limit || 5;
+      const { technicianId } = options;
 
       const filter: FilterQuery<IBooking> = {};
 
       const result = (await this.find(filter, {
         pagination: { page, limit },
         sort: { createdAt: -1 },
+        populate: [
+          { path: "serviceId", select: "name" },
+          { path: "paymentId", select: "paymentStatus" },
+        ],
       })) as { data: IBooking[]; total: number };
 
-      const populatedData = await Promise.all(
-        result.data.map(async (booking) => {
-          return await this.model
-            .findById(booking._id)
-            .populate("serviceId", "name price")
-            .exec();
-        })
-      );
-
       console.log("data fetched from the booking repository:", {
-        data: populatedData,
+        data: result,
         total: result.total,
       });
 
       return {
-        data: populatedData.filter(Boolean) as IBooking[],
+        data: result.data,
         total: result.total,
         page,
         limit,
@@ -103,7 +103,7 @@ export class BookingRepository
       const booking = await this.model
         .findOne(filter)
         .populate("serviceId", "name price description")
-        .populate("technicianId", "username email phone profilePicture")
+        .populate("technicianId", "username email phone image")
         .populate("addressId", "fullAddress")
         .populate("userId", "username email phone")
         .populate("timeSlotId", "date startTime endTime")
@@ -129,10 +129,6 @@ export class BookingRepository
     update: UpdateQuery<IBooking>
   ): Promise<IBooking | null> {
     return await this.updateOne(filter, update);
-  }
-
-  async findBookingById(bookingId: string): Promise<IBooking | null> {
-    return await this.findById(bookingId);
   }
 
   async updateBookingStatus(

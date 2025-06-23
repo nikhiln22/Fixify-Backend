@@ -895,7 +895,6 @@ export class TechnicianService implements ItechnicianService {
       );
       console.log("radius in the getNearByTechnicians service:", radius);
 
-      // Validate input parameters
       if (!designationId || !userLongitude || !userLatitude) {
         return {
           success: false,

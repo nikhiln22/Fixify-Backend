@@ -88,6 +88,12 @@ export class TechnicianRoutes {
     );
 
     this.router.get(
+      "/bookings",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      technicianController.getAllBookings.bind(technicianController)
+    );
+
+    this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.TECHNICIAN),
       technicianController.logout.bind(technicianController)

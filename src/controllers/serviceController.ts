@@ -16,6 +16,7 @@ export class ServiceController implements IserviceController {
       console.log("adding the service by admin by the controller");
       const data = req.body;
       console.log("data:",data);
+      console.log("req.file:",req.file);
       data.imageFile = req.file?.path;
       let result = await this.serviceService.addService(data);
       console.log("result from the addservice function:", result);
