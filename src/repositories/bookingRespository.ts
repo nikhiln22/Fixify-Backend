@@ -28,7 +28,7 @@ export class BookingRepository
         technicianId: new Types.ObjectId(data.technicianId),
         serviceId: new Types.ObjectId(data.serviceId),
         addressId: new Types.ObjectId(data.addressId),
-        timeSlotId: data.timeSlotId,
+        timeSlotId: new Types.ObjectId(data.timeSlotId),
         bookingAmount: data.bookingAmount,
         bookingStatus: data.bookingStatus,
       };
@@ -61,12 +61,17 @@ export class BookingRepository
 
       const filter: FilterQuery<IBooking> = {};
 
+      if (technicianId) {
+        filter.technicianId = technicianId;
+      }
+
       const result = (await this.find(filter, {
         pagination: { page, limit },
         sort: { createdAt: -1 },
         populate: [
           { path: "serviceId", select: "name" },
           { path: "paymentId", select: "paymentStatus" },
+          { path: "timeSlotId", select: "startTime date" },
         ],
       })) as { data: IBooking[]; total: number };
 
@@ -90,23 +95,39 @@ export class BookingRepository
 
   async getBookingDetailsById(
     bookingId: string,
-    userId?: string
+    userId?: string,
+    technicianId?: string
   ): Promise<IBooking | null> {
     try {
       console.log("Fetching booking details for ID:", bookingId);
+      console.log("userId in the booking respository:", userId);
+      console.log("technicianId in the booking repository:", technicianId);
 
       const filter: any = { _id: new Types.ObjectId(bookingId) };
       if (userId) {
         filter.userId = new Types.ObjectId(userId);
       }
 
+      if (technicianId) {
+        filter.technicianId = new Types.ObjectId(technicianId);
+      }
+
       const booking = await this.model
         .findOne(filter)
-        .populate("serviceId", "name price description")
-        .populate("technicianId", "username email phone image")
-        .populate("addressId", "fullAddress")
+        .populate("serviceId", "name price description image")
         .populate("userId", "username email phone")
+        .populate({
+          path: "technicianId",
+          select:
+            "username email phone image is_verified yearsOfExperience Designation",
+          populate: {
+            path: "Designation",
+            select: "designation",
+          },
+        })
+        .populate("addressId", "fullAddress landmark addressType")
         .populate("timeSlotId", "date startTime endTime")
+        .populate("paymentId", "paymentMethod paymentStatus amountPaid")
         .exec();
 
       if (!booking) {
@@ -115,7 +136,8 @@ export class BookingRepository
       }
 
       console.log(
-        "Booking details fetched successfully with populated timeSlot"
+        "Booking details fetched successfully with populated timeSlot:",
+        booking
       );
       return booking;
     } catch (error) {

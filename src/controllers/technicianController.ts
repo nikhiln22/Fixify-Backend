@@ -412,7 +412,7 @@ export class TechnicianController implements ItechnicianController {
       );
       const page = parseInt(req.query.page as string) || undefined;
       const limit = parseInt(req.query.limit as string) || undefined;
-      const technicianId = (req as any).user?._id;
+      const technicianId = (req as any).user?.id;
       console.log(
         "technicianId in the fetching booking in the technician controller:",
         technicianId
@@ -434,6 +434,54 @@ export class TechnicianController implements ItechnicianController {
         success: false,
         message: "Error fetching Bookings",
         error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  async getBookingDetails(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("technician Controller: Getting booking details");
+
+      const technicianId = (req as any).user?.id;
+      console.log(
+        "technicianId in the fetching booking details in the technician controller:",
+        technicianId
+      );
+      const { bookingId } = req.params;
+
+      if (!technicianId) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: "User not authenticated",
+        });
+        return;
+      }
+
+      if (!bookingId) {
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "Booking ID is required",
+        });
+        return;
+      }
+
+      console.log(
+        "Fetching booking details for:",
+        bookingId,
+        "technician:",
+        technicianId
+      );
+
+      const response = await this.bookingService.getBookingById(bookingId, {
+        technicianId: technicianId,
+      });
+
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.error("Error in getBookingDetails controller:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal server error",
       });
     }
   }

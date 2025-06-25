@@ -13,5 +13,6 @@ export interface ItechnicianController {
   addTimeSlots(req: Request, res: Response): Promise<void>;
   blockTimeSlot(req: Request, res: Response): Promise<void>;
   getAllBookings(req: Request, res: Response): Promise<void>;
+  getBookingDetails(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

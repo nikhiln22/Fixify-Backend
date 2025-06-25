@@ -622,10 +622,9 @@ export class UserController implements IuserController {
 
       console.log("Fetching booking details for:", bookingId, "User:", userId);
 
-      const response = await this.bookingService.getBookingById(
-        bookingId,
-        userId
-      );
+      const response = await this.bookingService.getBookingById(bookingId, {
+        userId: userId,
+      });
 
       res.status(response.status).json(response);
     } catch (error) {

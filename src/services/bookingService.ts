@@ -499,10 +499,14 @@ export class BookingService implements IbookingService {
 
   async getBookingById(
     bookingId: string,
-    userId?: string
+    options?: { userId?: string; technicianId?: string }
   ): Promise<BookServiceResponse> {
     try {
-      console.log("BookingService: Getting booking details for ID:", bookingId);
+      console.log(
+        "BookingService: Getting booking details for bookingId:",
+        bookingId
+      );
+      console.log("BookingService: Options:", options);
 
       if (!bookingId || bookingId.length !== 24) {
         return {
@@ -512,9 +516,17 @@ export class BookingService implements IbookingService {
         };
       }
 
+      const { userId, technicianId } = options || {};
+
       const booking = await this.bookingRepository.getBookingDetailsById(
         bookingId,
-        userId
+        userId,
+        technicianId
+      );
+
+      console.log(
+        "fetched booking details from the booking repository:",
+        booking
       );
 
       if (!booking) {

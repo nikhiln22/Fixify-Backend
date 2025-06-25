@@ -7,7 +7,7 @@ export interface IBooking extends Document {
   serviceId: Types.ObjectId;
   addressId: Types.ObjectId;
   paymentId: Types.ObjectId;
-  timeSlotId: string;
+  timeSlotId: Types.ObjectId;
   bookingAmount: number;
   bookingStatus: "Pending" | "Booked" | "Cancelled" | "Completed";
   paymentStatus?: "Paid" | "Refunded";

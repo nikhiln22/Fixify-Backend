@@ -24,7 +24,8 @@ const bookingSchema: Schema<IBooking> = new Schema(
       required: true,
     },
     timeSlotId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "timeSlot",
       required: true,
     },
     paymentId: {

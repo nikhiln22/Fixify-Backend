@@ -35,6 +35,6 @@ export interface IbookingService {
   }>;
   getBookingById(
     bookingId: string,
-    userId?: string
+    options?: { userId?: string; technicianId?: string }
   ): Promise<BookServiceResponse>;
 }
