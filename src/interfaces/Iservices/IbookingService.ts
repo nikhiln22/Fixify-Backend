@@ -17,6 +17,9 @@ export interface IbookingService {
     page?: number;
     limit?: number;
     technicianId?: string;
+    search?: string;
+    filter?: string;
+    role?: string;
   }): Promise<{
     success: boolean;
     status: number;

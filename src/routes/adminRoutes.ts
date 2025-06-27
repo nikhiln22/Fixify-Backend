@@ -52,7 +52,6 @@ export class AdminRoutes {
       adminController.getAllUsers.bind(adminController)
     );
 
-    
     this.router.get(
       "/technicianslist",
       this.authMiddleware.authenticate(Roles.ADMIN),
@@ -145,6 +144,18 @@ export class AdminRoutes {
       this.authMiddleware.authenticate(Roles.ADMIN),
       this.localUpload.upload.single("image"),
       serviceController.editService.bind(serviceController)
+    );
+
+    this.router.get(
+      "/bookings",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.getAllBookings.bind(adminController)
+    );
+
+    this.router.get(
+      "/bookingdetails/:bookingId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.getBookingDetails.bind(adminController)
     );
 
     this.router.get(

@@ -12,6 +12,9 @@ export interface IbookingRepository {
     page?: number;
     limit?: number;
     technicianId?: string;
+    search?: string;
+    filter?: string;
+    role?: string;
   }): Promise<{
     data: IBooking[];
     total: number;

@@ -5,6 +5,7 @@ import Booking from "../models/bookingModel";
 import { CreateBookingRequest } from "../interfaces/DTO/IServices/IuserService";
 import { IbookingRepository } from "../interfaces/Irepositories/IbookingRespository";
 import { FilterQuery, Types, UpdateQuery } from "mongoose";
+import { ITimeSlot } from "../interfaces/Models/ItimeSlot";
 
 @injectable()
 export class BookingRepository
@@ -46,6 +47,9 @@ export class BookingRepository
     page?: number;
     limit?: number;
     technicianId?: string;
+    search?: string;
+    filter?: string;
+    role?: string;
   }): Promise<{
     data: IBooking[];
     total: number;
@@ -57,28 +61,97 @@ export class BookingRepository
       console.log("entering the function which fetches all the bookings");
       const page = options.page || 1;
       const limit = options.limit || 5;
-      const { technicianId } = options;
+      const { technicianId, filter, role } = options;
 
-      const filter: FilterQuery<IBooking> = {};
+      const query: FilterQuery<IBooking> = {};
 
       if (technicianId) {
-        filter.technicianId = technicianId;
+        query.technicianId = technicianId;
       }
 
-      const result = (await this.find(filter, {
+      if (filter) {
+        if (role === "admin") {
+          if (filter === "Booked") {
+            query.bookingStatus = "Booked";
+          } else if (filter === "Cancelled") {
+            query.bookingStatus = "Cancelled";
+          } else if (filter === "Completed") {
+            query.bookingStatus = "Completed";
+          }
+        } else if (role === "technician") {
+          switch (filter) {
+            case "today":
+            case "upcoming":
+              query.bookingStatus = "Booked";
+              break;
+
+            case "completed":
+              query.bookingStatus = "Completed";
+              break;
+
+            case "cancelled":
+              query.bookingStatus = "Cancelled";
+              break;
+
+            default:
+              break;
+          }
+        }
+      }
+
+      const result = (await this.find(query, {
         pagination: { page, limit },
         sort: { createdAt: -1 },
         populate: [
           { path: "serviceId", select: "name" },
           { path: "paymentId", select: "paymentStatus" },
-          { path: "timeSlotId", select: "startTime date" },
+          { path: "timeSlotId", select: "startTime endTime date" },
         ],
       })) as { data: IBooking[]; total: number };
 
-      console.log("data fetched from the booking repository:", {
-        data: result,
-        total: result.total,
-      });
+      if (filter && role === "technician") {
+        if (filter === "today") {
+          const today = new Date();
+          const todayStr =
+            today.getDate().toString().padStart(2, "0") +
+            "-" +
+            (today.getMonth() + 1).toString().padStart(2, "0") +
+            "-" +
+            today.getFullYear();
+
+          console.log("todayStr:", todayStr);
+          result.data = result.data.filter((booking) => {
+            const timeSlot = booking.timeSlotId as ITimeSlot;
+            return timeSlot && timeSlot.date === todayStr;
+          });
+          result.total = result.data.length;
+        } else if (filter === "upcoming") {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const tomorrowStr =
+            tomorrow.getDate().toString().padStart(2, "0") +
+            "-" +
+            (tomorrow.getMonth() + 1).toString().padStart(2, "0") +
+            "-" +
+            tomorrow.getFullYear();
+
+          console.log("tomorrowStr:", tomorrowStr);
+
+          result.data = result.data.filter((booking) => {
+            const timeSlot = booking.timeSlotId as ITimeSlot;
+            return timeSlot && timeSlot.date && timeSlot.date >= tomorrowStr;
+          });
+          result.total = result.data.length;
+        }
+      }
+
+      console.log(
+        `data fetched from the booking repository for ${filter} bookings:`,
+        {
+          data: result,
+          total: result.total,
+        }
+      );
 
       return {
         data: result.data,

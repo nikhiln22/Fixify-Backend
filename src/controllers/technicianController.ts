@@ -208,31 +208,6 @@ export class TechnicianController implements ItechnicianController {
     }
   }
 
-  async logout(req: Request, res: Response): Promise<void> {
-    try {
-      console.log(
-        "entering the logout function from the technician auth controller"
-      );
-      const role = (req as any).user?.role;
-      console.log("role in the technician auth controller:", role);
-      res.clearCookie(`${role}_refresh_token`, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-      });
-      res.status(HTTP_STATUS.OK).json({
-        success: true,
-        message: "Logged out successfully",
-      });
-    } catch (error) {
-      console.log("error occured while technician logging out:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: true,
-        message: "Internal server error occured",
-      });
-    }
-  }
-
   async submitQualifications(req: Request, res: Response): Promise<void> {
     try {
       console.log("Entering technician qualification submission");
@@ -412,17 +387,26 @@ export class TechnicianController implements ItechnicianController {
       );
       const page = parseInt(req.query.page as string) || undefined;
       const limit = parseInt(req.query.limit as string) || undefined;
+      const search = (req.query.search as string) || undefined;
+      const filter = (req.query.filter as string) || undefined;
+
       const technicianId = (req as any).user?.id;
       console.log(
         "technicianId in the fetching booking in the technician controller:",
         technicianId
       );
+
+      console.log("filter in technician controller:", filter);
+
       const response = await this.bookingService.getAllBookings({
-        technicianId,
         page,
         limit,
+        technicianId,
+        search,
+        filter,
+        role: "technician",
       });
-      console.log("result from the technician service:", response);
+      console.log("result from the booking service:", response);
 
       res.status(response.status).json(response);
     } catch (error) {
@@ -482,6 +466,31 @@ export class TechnicianController implements ItechnicianController {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: "Internal server error",
+      });
+    }
+  }
+
+  async logout(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entering the logout function from the technician auth controller"
+      );
+      const role = (req as any).user?.role;
+      console.log("role in the technician auth controller:", role);
+      res.clearCookie(`${role}_refresh_token`, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+      });
+      res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: "Logged out successfully",
+      });
+    } catch (error) {
+      console.log("error occured while technician logging out:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: true,
+        message: "Internal server error occured",
       });
     }
   }

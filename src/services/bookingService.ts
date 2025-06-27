@@ -439,6 +439,9 @@ export class BookingService implements IbookingService {
     page?: number;
     limit?: number;
     technicianId?: string;
+    search?: string;
+    filter?: string;
+    role?: string;
   }): Promise<{
     success: boolean;
     status: number;
@@ -459,12 +462,18 @@ export class BookingService implements IbookingService {
       console.log("Function fetching all the Bookings");
       const page = options.page || 1;
       const limit = options.limit || 5;
+      const search = options.search;
+      const filter = options.filter;
+      const role = options.role || "admin";
       const { technicianId } = options;
 
       const result = await this.bookingRepository.getAllBookings({
         page,
         limit,
         technicianId,
+        search,
+        filter,
+        role,
       });
 
       console.log("result from the booking service:", result);
