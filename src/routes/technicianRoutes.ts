@@ -99,6 +99,12 @@ export class TechnicianRoutes {
       technicianController.getBookingDetails.bind(technicianController)
     );
 
+    this.router.post(
+      "/generatecompletionotp/:bookingId",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      technicianController.generateCompletionOtp.bind(technicianController)
+    );
+
     this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.TECHNICIAN),

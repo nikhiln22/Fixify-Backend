@@ -66,7 +66,6 @@ export class EmailService implements IemailService {
       }
     );
 
-    // Then send with the expected format
     await this.sendEmail({
       to: toEmail,
       subject: `Reset Your ${this.appName} Password`,

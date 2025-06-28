@@ -40,4 +40,15 @@ export interface IbookingService {
     bookingId: string,
     options?: { userId?: string; technicianId?: string }
   ): Promise<BookServiceResponse>;
+  generateCompletionOtp(
+    technicianId: string,
+    bookingId: string
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      otp: string;
+    };
+  }>;
 }

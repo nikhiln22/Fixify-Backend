@@ -470,6 +470,30 @@ export class TechnicianController implements ItechnicianController {
     }
   }
 
+  async generateCompletionOtp(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entering to the technician controller function that generates the completion otp"
+      );
+      const technicianId = (req as any).user?.id;
+      const bookingId = req.params.bookingId;
+
+      const response = await this.bookingService.generateCompletionOtp(
+        technicianId,
+        bookingId
+      );
+
+      console.log("response in the generate otp controller:", response);
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while generating the completion otp:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
   async logout(req: Request, res: Response): Promise<void> {
     try {
       console.log(

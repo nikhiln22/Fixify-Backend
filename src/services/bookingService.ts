@@ -12,6 +12,15 @@ import { inject, injectable } from "tsyringe";
 import { IBooking } from "../interfaces/Models/Ibooking";
 import { stripe } from "../config/stripeConfig";
 import config from "../config/env";
+import { IOTPService } from "../interfaces/Iotp/IOTP";
+import { IredisService } from "../interfaces/Iredis/Iredis";
+import {
+  OtpPurpose,
+  BOOKING_OTP_EXPIRATION_SECONDS,
+  OTP_PREFIX,
+} from "../config/otpConfig";
+import { IemailService } from "../interfaces/Iemail/Iemail";
+import { EmailType, APP_NAME } from "../config/emailConfig";
 
 @injectable()
 export class BookingService implements IbookingService {
@@ -19,8 +28,36 @@ export class BookingService implements IbookingService {
     @inject("IbookingRepository") private bookingRepository: IbookingRepository,
     @inject("ITimeSlotService") private timeSlotService: ITimeSlotService,
     @inject("IWalletRepository") private walletRepository: IWalletRepository,
-    @inject("IPaymentRepository") private paymentRepository: IPaymentRepository
+    @inject("IPaymentRepository") private paymentRepository: IPaymentRepository,
+    @inject("IOTPService") private otpService: IOTPService,
+    @inject("IredisService") private redisService: IredisService,
+    @inject("IemailService") private emailService: IemailService
   ) {}
+
+  private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
+    return `${OTP_PREFIX}${purpose}:${email}`;
+  }
+
+  private async generateAndSendOtp(
+    email: string,
+    purpose: OtpPurpose
+  ): Promise<string> {
+    const otp = await this.otpService.generateOtp();
+    console.log(`Generated Otp for ${purpose}:`, otp);
+
+    const redisKey = this.getOtpRedisKey(email, purpose);
+
+    console.log("generated RedisKey:", redisKey);
+
+    await this.redisService.set(redisKey, otp, BOOKING_OTP_EXPIRATION_SECONDS);
+
+    if (purpose === OtpPurpose.PASSWORD_RESET) {
+      await this.emailService.sendPasswordResetEmail(email, otp);
+    } else {
+      await this.emailService.sendOtpEmail(email, otp);
+    }
+    return otp;
+  }
 
   async bookService(
     userId: string,
@@ -559,6 +596,134 @@ export class BookingService implements IbookingService {
         success: false,
         message: "Failed to retrieve booking details",
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
+    }
+  }
+
+  async generateCompletionOtp(
+    technicianId: string,
+    bookingId: string
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: { otp: string };
+  }> {
+    try {
+      console.log(
+        "entering the booking service function which generates the completion otp"
+      );
+      console.log("technicianId in the booking service:", technicianId);
+      console.log("bookingId in the booking service:", bookingId);
+
+      if (!technicianId || !bookingId) {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "Technician ID and Booking ID are required",
+        };
+      }
+
+      const booking = (await this.bookingRepository.getBookingDetailsById(
+        bookingId
+      )) as any;
+
+      console.log("fetched booking:", booking);
+
+      if (!booking) {
+        return {
+          success: false,
+          status: HTTP_STATUS.NOT_FOUND,
+          message: "Booking not found",
+        };
+      }
+
+      if (booking.technicianId._id.toString() !== technicianId) {
+        return {
+          success: false,
+          status: HTTP_STATUS.FORBIDDEN,
+          message: "You are not authorized to complete this booking",
+        };
+      }
+
+      if (booking.bookingStatus !== "Booked") {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: `Cannot complete booking with status: ${booking.bookingStatus}`,
+        };
+      }
+
+      const existingOtpKey = this.getOtpRedisKey(
+        bookingId,
+        OtpPurpose.BOOKING_COMPLETION
+      );
+      const existingOtp = await this.redisService.get(existingOtpKey);
+
+      if (existingOtp) {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "OTP already sent. Please wait before requesting a new one.",
+        };
+      }
+
+      const otp = await this.otpService.generateOtp();
+      console.log(`Generated completion OTP for booking ${bookingId}:`, otp);
+
+      const redisKey = this.getOtpRedisKey(
+        bookingId,
+        OtpPurpose.BOOKING_COMPLETION
+      );
+      await this.redisService.set(
+        redisKey,
+        otp,
+        BOOKING_OTP_EXPIRATION_SECONDS
+      );
+
+      console.log("OTP stored in Redis with key:", redisKey);
+
+      const emailData = {
+        customerName:
+          booking.userId?.username || booking.userId?.name || "Customer",
+        serviceName: booking.serviceId?.name || "Service",
+        technicianName:
+          booking.technicianId?.username ||
+          booking.technicianId?.name ||
+          "Technician",
+        otp: otp,
+        bookingId: bookingId,
+      };
+
+      const emailContent = this.emailService.generateEmailContent(
+        EmailType.BOOKING_COMPLETION_OTP,
+        emailData
+      );
+
+      await this.emailService.sendEmail({
+        to: booking.userId.email,
+        subject: `Service Completion Verification - ${APP_NAME}`,
+        html: emailContent.html,
+        text: emailContent.text,
+      });
+
+      console.log(
+        "Completion OTP email sent to customer:",
+        booking.userId.email
+      );
+
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: "Completion OTP generated and sent to customer successfully",
+        data: { otp },
+      };
+    } catch (error) {
+      console.error("Error in generateCompletionOtp:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Failed to generate completion OTP",
       };
     }
   }

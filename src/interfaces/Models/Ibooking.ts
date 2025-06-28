@@ -13,7 +13,6 @@ export interface IBooking extends Document {
   timeSlotId: Types.ObjectId | ITimeSlot;
   bookingAmount: number;
   bookingStatus: "Pending" | "Booked" | "Cancelled" | "Completed";
-  // paymentStatus?: "Paid" | "Refunded";
   createdAt: Date;
   updatedAt: Date;
 }
