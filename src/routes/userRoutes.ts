@@ -154,6 +154,30 @@ export class UserRoutes {
     );
 
     this.router.get(
+      "/chatmessages/:bookingId",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.getChatHistory.bind(userController)
+    );
+
+    this.router.post(
+      "/sendchatmessages/:bookingId",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.sendChat.bind(userController)
+    );
+
+    this.router.put(
+      "/cancelbooking/:bookingId",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.cancelBooking.bind(userController)
+    );
+
+    this.router.post(
+      "/rateservice/:bookingId",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.rateService.bind(userController)
+    );
+
+    this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.USER),
       userController.logout.bind(userController)

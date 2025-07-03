@@ -55,6 +55,9 @@ const paymentSchema: Schema<IPayment> = new Schema(
     refundDate: {
       type: Date,
     },
+    refundAmount: {
+      type: Number,
+    },
   },
   { timestamps: true }
 );

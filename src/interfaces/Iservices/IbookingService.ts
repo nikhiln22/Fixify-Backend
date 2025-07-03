@@ -17,6 +17,9 @@ export interface IbookingService {
     page?: number;
     limit?: number;
     technicianId?: string;
+    search?: string;
+    filter?: string;
+    role?: string;
   }): Promise<{
     success: boolean;
     status: number;
@@ -35,6 +38,64 @@ export interface IbookingService {
   }>;
   getBookingById(
     bookingId: string,
-    userId?: string
+    options?: { userId?: string; technicianId?: string }
   ): Promise<BookServiceResponse>;
+  generateCompletionOtp(
+    technicianId: string,
+    bookingId: string
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      otp: string;
+    };
+  }>;
+
+  verifyCompletionOtp(
+    technicianId: string,
+    bookingId: string,
+    otp: string
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+  }>;
+  cancelBookingByUser(
+    userId: string,
+    bookingId: string,
+    cancellationReason: string
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      booking: IBooking;
+    };
+  }>;
+  cancelBookingByTechnician(
+    techncianId: string,
+    bookingId: string,
+    cancellationReason: string
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      booking: IBooking;
+    };
+  }>;
+  rateService(
+    userId: string,
+    bookingId: string,
+    rating: number,
+    review: string
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      booking: IBooking;
+    };
+  }>;
 }

@@ -38,6 +38,10 @@ import { IWalletTransactionRepository } from "../interfaces/Irepositories/Iwalle
 import { WalletTransactionRepository } from "../repositories/walletTransactionRepository";
 import { IPaymentRepository } from "../interfaces/Irepositories/IpaymentRepository";
 import { PaymentRepository } from "../repositories/paymentRepository";
+import { IchatService } from "../interfaces/Iservices/IchatService";
+import { IchatRepository } from "../interfaces/Irepositories/IchatRepository";
+import { ChatService } from "../services/chatService";
+import { ChatRepository } from "../repositories/chatRepository";
 
 
 container.registerSingleton<IuserService>("IuserService",UserService);
@@ -59,3 +63,5 @@ container.registerSingleton<IbookingRepository>("IbookingRepository",BookingRepo
 container.registerSingleton<IWalletRepository>("IWalletRepository",WalletRepository);
 container.registerSingleton<IWalletTransactionRepository>("IWalletTransactionRepository",WalletTransactionRepository)
 container.registerSingleton<IPaymentRepository>("IPaymentRepository",PaymentRepository);
+container.registerSingleton<IchatService>("IchatService",ChatService);
+container.registerSingleton<IchatRepository>("IchatRepository",ChatRepository)

@@ -57,4 +57,26 @@ export class PaymentRepository
       throw error;
     }
   }
+
+  async updatePayment(
+    paymentId: string,
+    updateData: Partial<IPayment>
+  ): Promise<IPayment | null> {
+    try {
+      console.log("updating payment in payment repository");
+      console.log("paymentId:", paymentId);
+      console.log("updateData:", updateData);
+
+      const updatedPayment = await this.updateOne(
+        { _id: new Types.ObjectId(paymentId) },
+        updateData
+      );
+
+      console.log("payment updated successfully");
+      return updatedPayment;
+    } catch (error) {
+      console.log("error occurred while updating payment:", error);
+      throw error;
+    }
+  }
 }

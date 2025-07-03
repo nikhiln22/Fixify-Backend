@@ -38,7 +38,6 @@ export class AuthMiddleware {
 
   private getToken(req: Request): string | null {
     const header = req.headers.authorization;
-    console.log("header from the getToken method in Auth Middleware:", header);
     if (!header || !header.startsWith("Bearer ")) return null;
     return header.split(" ")[1];
   }
@@ -46,10 +45,6 @@ export class AuthMiddleware {
   authenticate(role: Roles) {
     return (req: Request, res: Response, next: NextFunction) => {
       const token = this.getToken(req);
-      console.log(
-        "token from the authenticate method in Auth Middleware:",
-        token
-      );
       if (!token) {
         res
           .status(HTTP_STATUS.UNAUTHORIZED)
@@ -59,10 +54,6 @@ export class AuthMiddleware {
 
       try {
         const payload = this.jwtService.verifyAccessToken(token) as JwtPayload;
-        console.log(
-          "payload from the authenticate method in the Auth Middleware:",
-          payload
-        );
         if (!payload || payload.role !== role) {
           res
             .status(HTTP_STATUS.UNAUTHORIZED)
@@ -87,10 +78,6 @@ export class AuthMiddleware {
 
   private async checkUserStatus(userId: string, role: Roles): Promise<boolean> {
     try {
-      console.log(
-        "entering to the user status checking method in the auth middleware"
-      );
-      
       switch (role) {
         case Roles.USER:
           console.log(`checking user status for ID: ${userId}`);
@@ -104,16 +91,18 @@ export class AuthMiddleware {
 
         case Roles.TECHNICIAN:
           console.log(`checking technician status for ID: ${userId}`);
-          const technicianResult = await this.technicianRepository.getTechnicianById(userId);
+          const technicianResult =
+            await this.technicianRepository.getTechnicianById(userId);
           if (!technicianResult.success || !technicianResult.technicianData) {
             console.log("Technician not found");
             return false;
           }
 
-          return technicianResult.technicianData.is_verified === true && 
-                 technicianResult.technicianData.status === "Active";
+          return (
+            technicianResult.technicianData.is_verified === true &&
+            technicianResult.technicianData.status === "Active"
+          );
 
-        
         default:
           console.log("Invalid role provided");
           return false;
@@ -151,11 +140,10 @@ export class AuthMiddleware {
         });
         return;
       }
-      
+
       next();
     };
   }
-
 
   authenticateAndCheckStatus(role: Roles) {
     return async (req: Request, res: Response, next: NextFunction) => {
@@ -180,7 +168,6 @@ export class AuthMiddleware {
           id: payload.Id,
           role: payload.role,
         };
-
 
         const isActive = await this.checkUserStatus(payload.Id, role);
         if (!isActive) {

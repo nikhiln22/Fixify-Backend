@@ -15,6 +15,7 @@ import {
   verifyOtpData,
 } from "../DTO/IServices/ItechnicianService";
 import { Itechnician } from "../Models/Itechnician";
+import { IWalletTransaction } from "../Models/IwalletTransaction";
 
 export interface ItechnicianService {
   technicianSignUp(data: SignupTechnicianData): Promise<tempTechnicianResponse>;
@@ -100,4 +101,30 @@ export interface ItechnicianService {
     data?: Itechnician[];
   }>;
   toggleTechnicianStatus(id: string): Promise<ToggleTechnicianStatusResponse>;
+  getWalletBalance(technicianId: string): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: { balance: number };
+  }>;
+  getAllWalletTransactions(options: {
+    page?: number;
+    limit?: number;
+    technicianId: string;
+  }): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      transactions: IWalletTransaction[];
+      pagination: {
+        total: number;
+        page: number;
+        pages: number;
+        limit: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    };
+  }>;
 }

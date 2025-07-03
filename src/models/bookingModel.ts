@@ -24,7 +24,8 @@ const bookingSchema: Schema<IBooking> = new Schema(
       required: true,
     },
     timeSlotId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "timeSlot",
       required: true,
     },
     paymentId: {
@@ -39,6 +40,20 @@ const bookingSchema: Schema<IBooking> = new Schema(
       type: String,
       enum: ["Pending", "Booked", "Cancelled", "Completed"],
       required: true,
+    },
+    cancellationReason: {
+      type: String,
+    },
+    cancelledBy: {
+      type: String,
+      enum: ["user", "technician"],
+    },
+    cancellationDate: {
+      type: Date,
+    },
+    isRated: {
+      type: Boolean,
+      default: false,
     },
   },
   {

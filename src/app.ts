@@ -7,12 +7,20 @@ import { AdminRoutes } from "./routes/adminRoutes";
 import { TechnicianRoutes } from "./routes/technicianRoutes";
 import { AuthRoutes } from "./routes/authRoutes";
 import LoggerMiddleware from "./middlewares/LoggerMiddleware";
+import { createServer, Server as HttpServer } from "http";
+import { initializeSocket } from "../src/utils/socket";
+import { Server as SocketIOServer } from "socket.io";
+
 export class App {
   public app: Express;
+  public server: HttpServer;
+  public io!: SocketIOServer;
 
   constructor() {
     this.app = express();
+    this.server = createServer(this.app);
     this.setupMiddlewares();
+    this.setupSocket();
     this.setupRoutes();
   }
 
@@ -28,8 +36,16 @@ export class App {
     this.app.use(cors(corsOptions));
 
     this.app.use(express.json());
-
     this.app.use(cookieparser());
+  }
+
+  private setupSocket(): void {
+    this.io = initializeSocket(this.server);
+
+    this.app.use((req, res, next) => {
+      (req as any).io = this.io;
+      next();
+    });
   }
 
   private setupRoutes(): void {
@@ -44,7 +60,7 @@ export class App {
     this.app.use("/api", authRoutes.getRouter());
   }
 
-  public getServer(): Express {
-    return this.app;
+  public getServer(): HttpServer {
+    return this.server;
   }
 }

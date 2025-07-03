@@ -26,6 +26,8 @@ import { IjobsService } from "../interfaces/Iservices/IjobsService";
 import { JobService } from "../services/jobService";
 import { TechnicianService } from "../services/technicianService";
 import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
+import { IbookingService } from "../interfaces/Iservices/IbookingService";
+import { BookingService } from "../services/bookingService";
 
 container.registerSingleton<IadminService>("IadminService", AdminService);
 container.registerSingleton<IadminRepository>("IadminRepository", AdminRepository);
@@ -40,3 +42,4 @@ container.registerSingleton<ICategoryRepository>("ICategoryRepository",CategoryR
 container.registerSingleton<IserviceRepository>("IserviceRepository",ServiceRepository);
 container.registerSingleton<IServiceService>("IServiceService",ServiceServices);
 container.registerSingleton<ItechnicianService>("ItechnicianService",TechnicianService);
+container.registerSingleton<IbookingService>("IbookingService",BookingService)

@@ -19,11 +19,15 @@ export class WalletRepository
     super(wallet);
   }
 
-  async createWallet(userId: string): Promise<IWallet> {
+  async createWallet(
+    ownerId: string,
+    ownerType: "user" | "technician"
+  ): Promise<IWallet> {
     try {
-      console.log("creating new wallet for an user");
+      console.log("creating new wallet for:", ownerType, ownerId);
       const newWallet = await this.create({
-        userId: new Types.ObjectId(userId),
+        ownerId: new Types.ObjectId(ownerId),
+        ownerType: ownerType,
         balance: 0,
       });
       console.log("newly created wallet in the walletrepository:", newWallet);
@@ -34,14 +38,18 @@ export class WalletRepository
     }
   }
 
-  async getWalletByUserId(userId: string): Promise<IWallet | null> {
+  async getWalletByOwnerId(
+    ownerId: string,
+    ownerType: "user" | "technician"
+  ): Promise<IWallet | null> {
     try {
-      console.log("getting wallet for user:", userId);
-      const userWallet = await this.findOne({
-        userId: new Types.ObjectId(userId),
+      console.log("getting wallet for:", ownerType, ownerId);
+      const ownerWallet = await this.findOne({
+        ownerId: new Types.ObjectId(ownerId),
+        ownerType: ownerType,
       });
-      console.log("found wallet:", userWallet);
-      return userWallet;
+      console.log("found wallet:", ownerWallet);
+      return ownerWallet;
     } catch (error) {
       console.log("error occurred while getting wallet:", error);
       throw error;
@@ -50,14 +58,20 @@ export class WalletRepository
 
   async addMoney(
     amount: number,
-    userId: string,
+    ownerId: string,
+    ownerType: "user" | "technician",
     sessionId: string
   ): Promise<{
     wallet: IWallet | null;
     transaction: IWalletTransaction | null;
   }> {
     try {
-      console.log("Adding money to wallet:", { amount, userId, sessionId });
+      console.log("Adding money to wallet:", {
+        amount,
+        ownerId,
+        ownerType,
+        sessionId,
+      });
 
       const existingTransaction =
         await this.walletTransactionRepository.findByReferenceId(
@@ -68,7 +82,8 @@ export class WalletRepository
       if (existingTransaction) {
         console.log("Transaction already processed for session:", sessionId);
         const wallet = await this.findOne({
-          userId: new Types.ObjectId(userId),
+          ownerId: new Types.ObjectId(ownerId),
+          ownerType: ownerType,
         });
         return {
           wallet,
@@ -76,11 +91,12 @@ export class WalletRepository
         };
       }
 
-      const userWallet = await this.findOne({
-        userId: new Types.ObjectId(userId),
+      const ownerWallet = await this.findOne({
+        ownerId: new Types.ObjectId(ownerId),
+        ownerType: ownerType,
       });
 
-      if (!userWallet) {
+      if (!ownerWallet) {
         throw new Error("Wallet not found");
       }
 
@@ -90,14 +106,15 @@ export class WalletRepository
         await session.startTransaction();
 
         const updatedWallet = await this.updateOne(
-          { userId: new Types.ObjectId(userId) },
+          { ownerId: new Types.ObjectId(ownerId), ownerType: ownerType },
           { $inc: { balance: amount } }
         );
 
         const newTransaction =
           await this.walletTransactionRepository.createTransaction({
-            userId: new Types.ObjectId(userId),
-            walletId: userWallet._id as Types.ObjectId,
+            ownerId: new Types.ObjectId(ownerId),
+            ownerType: ownerType,
+            walletId: ownerWallet._id as Types.ObjectId,
             type: "Credit",
             description: "Wallet top-up via Stripe",
             amount: amount,
@@ -124,7 +141,8 @@ export class WalletRepository
   }
 
   async updateWalletBalanceWithTransaction(
-    userId: string,
+    ownerId: string,
+    ownerType: "user" | "technician",
     amount: number,
     type: "Credit" | "Debit",
     description: string,
@@ -138,21 +156,22 @@ export class WalletRepository
     try {
       await session.startTransaction();
 
-      const userWallet = await this.findOne({
-        userId: new Types.ObjectId(userId),
+      const ownerWallet = await this.findOne({
+        ownerId: new Types.ObjectId(ownerId),
+        ownerType: ownerType,
       });
 
-      if (!userWallet) {
+      if (!ownerWallet) {
         throw new Error("Wallet not found");
       }
 
-      if (type === "Debit" && userWallet.balance < amount) {
+      if (type === "Debit" && ownerWallet.balance < amount) {
         throw new Error("Insufficient wallet balance");
       }
 
       const balanceChange = type === "Credit" ? amount : -amount;
       const updatedWallet = await this.updateOne(
-        { _id: userWallet._id },
+        { _id: ownerWallet._id },
         { $inc: { balance: balanceChange } }
       );
 
@@ -161,13 +180,14 @@ export class WalletRepository
       }
 
       const walletId =
-        userWallet._id instanceof Types.ObjectId
-          ? userWallet._id
-          : new Types.ObjectId(userWallet._id);
+        ownerWallet._id instanceof Types.ObjectId
+          ? ownerWallet._id
+          : new Types.ObjectId(ownerWallet._id);
 
       const newTransaction =
         await this.walletTransactionRepository.createTransaction({
-          userId: userId,
+          ownerId: ownerId,
+          ownerType: ownerType,
           walletId: walletId.toString(),
           type: type,
           description: description,

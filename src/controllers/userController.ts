@@ -8,6 +8,7 @@ import { HTTP_STATUS } from "../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
 import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
 import { IbookingService } from "../interfaces/Iservices/IbookingService";
+import { IchatService } from "../interfaces/Iservices/IchatService";
 
 @injectable()
 export class UserController implements IuserController {
@@ -17,7 +18,8 @@ export class UserController implements IuserController {
     @inject("IAddressService") private addressService: IAddressService,
     @inject("ItechnicianService") private technicianService: ItechnicianService,
     @inject("ITimeSlotService") private timeSlotService: ITimeSlotService,
-    @inject("IbookingService") private bookingService: IbookingService
+    @inject("IbookingService") private bookingService: IbookingService,
+    @inject("IchatService") private chatService: IchatService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {
@@ -186,29 +188,6 @@ export class UserController implements IuserController {
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: "Internal Server Error" });
-    }
-  }
-
-  async logout(req: Request, res: Response): Promise<void> {
-    try {
-      console.log("entering the logout function from the user auth controller");
-      const role = (req as any).user?.role;
-      console.log("role in the user auth controller:", role);
-      res.clearCookie(`${role}_refresh_token`, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-      });
-      res.status(HTTP_STATUS.OK).json({
-        success: true,
-        message: "Logged out successfully",
-      });
-    } catch (error) {
-      console.log("error occured while user logging out:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: true,
-        message: "Internal server error occured",
-      });
     }
   }
 
@@ -622,10 +601,9 @@ export class UserController implements IuserController {
 
       console.log("Fetching booking details for:", bookingId, "User:", userId);
 
-      const response = await this.bookingService.getBookingById(
-        bookingId,
-        userId
-      );
+      const response = await this.bookingService.getBookingById(bookingId, {
+        userId: userId,
+      });
 
       res.status(response.status).json(response);
     } catch (error) {
@@ -752,6 +730,132 @@ export class UserController implements IuserController {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: "Internal Server Error",
+      });
+    }
+  }
+
+  async getChatHistory(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("Fetching chat history for booking");
+      const { bookingId } = req.params;
+
+      const response = await this.chatService.getChatHistory(bookingId);
+
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("Error fetching chat history:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
+  async sendChat(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("Sending chat message to the technician");
+      const userId = (req as any).user?.id;
+      const { bookingId } = req.params;
+      const { messageText, technicianId } = req.body;
+      const io = (req as any).io;
+
+      const chatData = {
+        userId,
+        technicianId,
+        bookingId,
+        messageText,
+        senderType: "user" as const,
+      };
+
+      const response = await this.chatService.sendChat(chatData);
+
+      if (response.success && io && response.data) {
+        io.to(`booking_${bookingId}`).emit("new_message", response.data);
+        console.log(`Message broadcasted to booking_${bookingId} room`);
+      }
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("Error sending chat:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
+  async cancelBooking(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering to the user controller that cancells the booking");
+      const { bookingId } = req.params;
+      const userId = (req as any).user?.id;
+      const { cancellationReason } = req.body;
+      console.log("received Data:", cancellationReason);
+
+      const response = await this.bookingService.cancelBookingByUser(
+        userId,
+        bookingId,
+        cancellationReason
+      );
+
+      console.log(
+        "response from the booking service after cancelling the booking by user:",
+        response
+      );
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while user cancelling the booking:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Servor Error",
+        success: false,
+      });
+    }
+  }
+
+  async rateService(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering the user controller which rate the services");
+      const { bookingId } = req.params;
+      const userId = (req as any).user?.id;
+      const { rating, review } = req.body;
+
+      console.log("received data:", { bookingId, userId, rating, review });
+
+      const response = await this.bookingService.rateService(
+        userId,
+        bookingId,
+        rating,
+        review || ""
+      );
+
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.error("Error in rateService controller:", error);
+      res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  }
+
+  async logout(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering the logout function from the user auth controller");
+      const role = (req as any).user?.role;
+      console.log("role in the user auth controller:", role);
+      res.clearCookie(`${role}_refresh_token`, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+      });
+      res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: "Logged out successfully",
+      });
+    } catch (error) {
+      console.log("error occured while user logging out:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: true,
+        message: "Internal server error occured",
       });
     }
   }

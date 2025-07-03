@@ -40,6 +40,8 @@ import { inject, injectable } from "tsyringe";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
 import { Itechnician } from "../interfaces/Models/Itechnician";
 import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
+import { IWalletTransaction } from "../interfaces/Models/IwalletTransaction";
+import { IWalletTransactionRepository } from "../interfaces/Irepositories/IwalletTransactionRepository";
 
 @injectable()
 export class TechnicianService implements ItechnicianService {
@@ -54,7 +56,9 @@ export class TechnicianService implements ItechnicianService {
     @inject("IjwtService") private jwtService: IjwtService,
     @inject("IredisService") private redisService: IredisService,
     @inject("IFileUploader") private fileUploader: IFileUploader,
-    @inject("IWalletRepository") private walletRepository: IWalletRepository
+    @inject("IWalletRepository") private walletRepository: IWalletRepository,
+    @inject("IWalletTransactionRepository")
+    private walletTransactionRepository: IWalletTransactionRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -222,7 +226,8 @@ export class TechnicianService implements ItechnicianService {
         console.log("new created technician:", newTechnician);
 
         const newWallet = await this.walletRepository.createWallet(
-          newTechnician._id.toString()
+          newTechnician._id.toString(),
+          "technician"
         );
 
         console.log("newly created wallet:", newWallet);
@@ -978,6 +983,130 @@ export class TechnicianService implements ItechnicianService {
         success: false,
         message: "An error occurred while toggling technician status",
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
+    }
+  }
+
+  async getWalletBalance(techncianId: string): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: { balance: number };
+  }> {
+    try {
+      console.log(
+        "entering to the user service function which fetches the wallet balance for the user"
+      );
+      console.log(
+        "userId in the user service function fetching the wallet balance:",
+        techncianId
+      );
+
+      let fetchedWallet = await this.walletRepository.getWalletByOwnerId(
+        techncianId,
+        "technician"
+      );
+
+      console.log(`fetched wallet with the ${techncianId}:`, fetchedWallet);
+
+      if (!fetchedWallet) {
+        console.log(`Wallet not found for user ${techncianId}, creating new wallet`);
+        try {
+          fetchedWallet = await this.walletRepository.createWallet(
+            techncianId,
+            "user"
+          );
+          console.log(`Created new wallet for user ${techncianId}:`, fetchedWallet);
+        } catch (createError) {
+          console.log("Error creating wallet:", createError);
+          return {
+            success: false,
+            message: "Failed to create wallet",
+            status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          };
+        }
+      }
+
+      return {
+        success: true,
+        message: "Wallet balance fetched successfully",
+        status: HTTP_STATUS.OK,
+        data: {
+          balance: fetchedWallet.balance,
+        },
+      };
+    } catch (error) {
+      console.log(
+        "error occured while fetching the user wallet balance:",
+        error
+      );
+      return {
+        success: false,
+        message: "Internal Server Error",
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
+    }
+  }
+
+  async getAllWalletTransactions(options: {
+    page?: number;
+    limit?: number;
+    technicianId: string;
+  }): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      transactions: IWalletTransaction[];
+      pagination: {
+        total: number;
+        page: number;
+        pages: number;
+        limit: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    };
+  }> {
+    try {
+      console.log(
+        "entered to the user service fetching all the wallet transactions for the user"
+      );
+      const page = options.page || 1;
+      const limit = options.limit || 5;
+      const userId = options.technicianId;
+
+      const result =
+        await this.walletTransactionRepository.getOwnerWalletTransactions({
+          page,
+          limit,
+          ownerId: userId,
+          ownerType: "technician",
+        });
+
+      console.log("fetched wallet transactions for the user:", result);
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: "User transactions fetched successfully",
+        data: {
+          transactions: result.data,
+          pagination: {
+            total: result.total,
+            page: result.page,
+            pages: result.pages,
+            limit: limit,
+            hasNextPage: result.page < result.pages,
+            hasPrevPage: page > 1,
+          },
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching user wallet transactions:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Something went wrong while fetching user wallet transactions",
       };
     }
   }

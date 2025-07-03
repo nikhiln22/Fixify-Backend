@@ -1,17 +1,20 @@
 import { IWalletTransaction } from "../interfaces/Models/IwalletTransaction";
 import mongoose, { Schema, Types } from "mongoose";
 
-
 const WalletTransactionSchema: Schema<IWalletTransaction> = new Schema(
   {
-    userId: {
+    ownerId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
       required: true,
     },
     walletId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "wallet",
+      required: true,
+    },
+    ownerType: {
+      type: String,
+      enum: ["user", "technician"],
       required: true,
     },
     type: {

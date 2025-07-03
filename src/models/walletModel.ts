@@ -3,10 +3,14 @@ import mongoose, { Schema } from "mongoose";
 
 const walletSchema: Schema<IWallet> = new Schema(
   {
-    userId: {
+    ownerId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
       required: true,
+    },
+    ownerType: {
+      type: String,
+      enum: ["user", "technician"],
+      required: true
     },
     balance: {
       type: Number,
@@ -15,6 +19,8 @@ const walletSchema: Schema<IWallet> = new Schema(
   },
   { timestamps: true }
 );
+
+
 
 const wallet = mongoose.model<IWallet>("wallet", walletSchema);
 

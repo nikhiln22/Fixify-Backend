@@ -1,12 +1,10 @@
-
-
-
 export enum OtpPurpose {
-    REGISTRATION = "REGISTRATION",
-    PASSWORD_RESET = "PASSWORD_RESET",
-  }
-  
+  REGISTRATION = "REGISTRATION",
+  PASSWORD_RESET = "PASSWORD_RESET",
+  BOOKING_COMPLETION = "BOOKING_COMPLETION",
+}
 
-  export const OTP_EXPIRY_SECONDS = 60;
-  export const TEMP_USER_EXPIRY_SECONDS = 15 * 60; 
-  export const OTP_PREFIX = "otp:";
+export const OTP_EXPIRY_SECONDS = 60;
+export const TEMP_USER_EXPIRY_SECONDS = 15 * 60;
+export const OTP_PREFIX = "otp:";
+export const BOOKING_OTP_EXPIRATION_SECONDS = 120 * 60;

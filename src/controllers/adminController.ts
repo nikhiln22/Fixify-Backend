@@ -5,6 +5,7 @@ import { inject, injectable } from "tsyringe";
 import { IuserService } from "../interfaces/Iservices/IuserService";
 import { IadminService } from "../interfaces/Iservices/IadminService";
 import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
+import { IbookingService } from "../interfaces/Iservices/IbookingService";
 
 @injectable()
 export class AdminController implements IadminController {
@@ -14,7 +15,8 @@ export class AdminController implements IadminController {
     @inject("IadminService")
     private adminService: IadminService,
     @inject("ItechnicianService")
-    private technicianService: ItechnicianService
+    private technicianService: ItechnicianService,
+    @inject("IbookingService") private bookingService: IbookingService
   ) {}
 
   async login(req: Request, res: Response): Promise<void> {
@@ -243,6 +245,65 @@ export class AdminController implements IadminController {
     } catch (error) {
       console.error("Error in toggleTechnicianStatus controller:", error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal server error",
+      });
+    }
+  }
+
+async getAllBookings(req: Request, res: Response): Promise<void> {
+  try {
+    console.log("fetching all the bookings from the admin controller");
+    const page = parseInt(req.query.page as string) || undefined;
+    const limit = parseInt(req.query.limit as string) || undefined;
+    const search = (req.query.search as string) || undefined;
+    const filter = (req.query.filter as string) || undefined;
+    
+    console.log("filter status in the admin controller:", filter);
+    
+    const result = await this.bookingService.getAllBookings({
+      page,
+      limit,
+      search,
+      filter,
+      role: 'admin'
+    });
+    
+    res.status(HTTP_STATUS.OK).json(result);
+    console.log(
+      "result from fetching all the bookings for the admin controller:",
+      result
+    );
+  } catch (error) {
+    console.log("error occured while fetchning the bookings for the admin");
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      message: "Internal server error",
+    });
+  }
+}
+
+  async getBookingDetails(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("Controller: Getting booking details");
+
+      const { bookingId } = req.params;
+
+      if (!bookingId) {
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "Booking ID is required",
+        });
+        return;
+      }
+
+      console.log("Fetching booking details for admin:", bookingId);
+
+      const response = await this.bookingService.getBookingById(bookingId, {});
+
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.error("Error in getBookingDetails controller:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
         message: "Internal server error",
       });
     }

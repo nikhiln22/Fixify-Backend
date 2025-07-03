@@ -12,6 +12,9 @@ export interface IbookingRepository {
     page?: number;
     limit?: number;
     technicianId?: string;
+    search?: string;
+    filter?: string;
+    role?: string;
   }): Promise<{
     data: IBooking[];
     total: number;
@@ -24,9 +27,9 @@ export interface IbookingRepository {
     paymentStatus: string,
     bookingStatus: string
   ): Promise<IBooking | null>;
-  cancelBooking(bookingId: string): Promise<IBooking | null>;
   getBookingDetailsById(
     bookingId: string,
-    userId?: string
+    userId?: string,
+    technicianId?: string
   ): Promise<IBooking | null>;
 }
