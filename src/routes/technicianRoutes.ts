@@ -99,10 +99,46 @@ export class TechnicianRoutes {
       technicianController.getBookingDetails.bind(technicianController)
     );
 
+    this.router.get(
+      "/chatmessages/:bookingId",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      technicianController.getChatHistory.bind(technicianController)
+    );
+
+    this.router.post(
+      "/sendchatmessages/:bookingId",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      technicianController.sendChat.bind(technicianController)
+    );
+
     this.router.post(
       "/generatecompletionotp/:bookingId",
       this.authMiddleware.authenticate(Roles.TECHNICIAN),
       technicianController.generateCompletionOtp.bind(technicianController)
+    );
+
+    this.router.post(
+      "/verifycompletionotp/:bookingId",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      technicianController.verifyCompletionOtp.bind(technicianController)
+    );
+
+    this.router.get(
+      "/walletbalance",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      technicianController.getWalletBalance.bind(technicianController)
+    );
+
+    this.router.get(
+      "/wallettransactions",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      technicianController.getWalletTransactions.bind(technicianController)
+    );
+
+    this.router.put(
+      "/cancelbooking/:bookingId",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      technicianController.cancelBooking.bind(technicianController)
     );
 
     this.router.get(

@@ -1,6 +1,7 @@
 import { Types, Document } from "mongoose";
 
 export interface IPayment extends Document {
+  _id: Types.ObjectId;
   userId: Types.ObjectId;
   technicianId: Types.ObjectId;
   bookingId: Types.ObjectId;
@@ -12,5 +13,6 @@ export interface IPayment extends Document {
   technicianPaid: boolean;
   technicianPaidAt: Date;
   refundStatus: "Not Refunded" | "Refunded";
+  refundAmount: number;
   refundDate?: Date;
 }

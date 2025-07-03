@@ -31,11 +31,11 @@ export class WalletTransactionRepository
     return await this.findOne(filter);
   }
 
-  async getUserWalletTranasctions(options: {
+  async getOwnerWalletTransactions(options: {
     page?: number;
     limit?: number;
-    userId: string;
-    walletId: string;
+    ownerId: string;
+    ownerType: "user" | "technician";
   }): Promise<{
     data: IWalletTransaction[];
     total: number;
@@ -45,26 +45,25 @@ export class WalletTransactionRepository
   }> {
     try {
       console.log(
-        "fetching all the wallet transactions done by the user in wallet transaction repository"
+        "fetching wallet transactions for owner:",
+        options.ownerId,
+        options.ownerType
       );
 
       const page = options.page || 1;
       const limit = options.limit || 5;
 
-      const filter: FilterQuery<IWalletTransaction> = {};
-
-      if (options.userId) {
-        filter.userId = options.userId;
-      }
-
-      if (options.walletId) {
-        filter.walletId = options.walletId;
-      }
+      const filter: FilterQuery<IWalletTransaction> = {
+        ownerId: new Types.ObjectId(options.ownerId),
+        ownerType: options.ownerType,
+      };
 
       const result = (await this.find(filter, {
         pagination: { page, limit },
         sort: { createdAt: -1 },
       })) as { data: IWalletTransaction[]; total: number };
+
+      console.log("Found", result.total, "transactions for", options.ownerType);
 
       return {
         data: result.data,
@@ -74,8 +73,8 @@ export class WalletTransactionRepository
         pages: Math.ceil(result.total / limit),
       };
     } catch (error) {
-      console.log("error occurred while fetching the users:", error);
-      throw new Error("Failed to fetch the users");
+      console.log("error occurred while fetching wallet transactions:", error);
+      throw new Error("Failed to fetch wallet transactions");
     }
   }
 }

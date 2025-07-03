@@ -200,7 +200,10 @@ export class BookingRepository
         })
         .populate("addressId", "fullAddress landmark addressType")
         .populate("timeSlotId", "date startTime endTime")
-        .populate("paymentId", "paymentMethod paymentStatus amountPaid")
+        .populate(
+          "paymentId",
+          "paymentMethod paymentStatus amountPaid refundStatus refundDate refundAmount"
+        )
         .exec();
 
       if (!booking) {
@@ -233,13 +236,6 @@ export class BookingRepository
     return await this.updateOne(
       { _id: bookingId },
       { bookingStatus: status, completed: status === "completed" }
-    );
-  }
-
-  async cancelBooking(bookingId: string): Promise<IBooking | null> {
-    return await this.updateOne(
-      { _id: bookingId },
-      { bookingStatus: "cancelled", paymentStatus: "Failed" }
     );
   }
 }

@@ -51,4 +51,51 @@ export interface IbookingService {
       otp: string;
     };
   }>;
+
+  verifyCompletionOtp(
+    technicianId: string,
+    bookingId: string,
+    otp: string
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+  }>;
+  cancelBookingByUser(
+    userId: string,
+    bookingId: string,
+    cancellationReason: string
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      booking: IBooking;
+    };
+  }>;
+  cancelBookingByTechnician(
+    techncianId: string,
+    bookingId: string,
+    cancellationReason: string
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      booking: IBooking;
+    };
+  }>;
+  rateService(
+    userId: string,
+    bookingId: string,
+    rating: number,
+    review: string
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      booking: IBooking;
+    };
+  }>;
 }

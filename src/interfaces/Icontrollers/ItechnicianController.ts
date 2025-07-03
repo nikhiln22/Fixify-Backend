@@ -15,5 +15,11 @@ export interface ItechnicianController {
   getAllBookings(req: Request, res: Response): Promise<void>;
   getBookingDetails(req: Request, res: Response): Promise<void>;
   generateCompletionOtp(req: Request, res: Response): Promise<void>;
+  verifyCompletionOtp(req: Request, res: Response): Promise<void>;
+  getWalletBalance(req: Request, res: Response): Promise<void>;
+  getWalletTransactions(req: Request, res: Response): Promise<void>;
+  getChatHistory(req: Request, res: Response): Promise<void>;
+  sendChat(req: Request, res: Response): Promise<void>;
+  cancelBooking(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

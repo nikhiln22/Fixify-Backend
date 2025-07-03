@@ -6,6 +6,7 @@ import { Request, Response } from "express";
 import { HTTP_STATUS } from "../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
 import { IbookingService } from "../interfaces/Iservices/IbookingService";
+import { IchatService } from "../interfaces/Iservices/IchatService";
 
 @injectable()
 export class TechnicianController implements ItechnicianController {
@@ -16,7 +17,8 @@ export class TechnicianController implements ItechnicianController {
     private jobsService: IjobsService,
     @inject("ITimeSlotService")
     private timeSlotService: ITimeSlotService,
-    @inject("IbookingService") private bookingService: IbookingService
+    @inject("IbookingService") private bookingService: IbookingService,
+    @inject("IchatService") private chatService: IchatService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {
@@ -470,6 +472,55 @@ export class TechnicianController implements ItechnicianController {
     }
   }
 
+  async getChatHistory(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("Fetching chat history for booking");
+      const { bookingId } = req.params;
+
+      const response = await this.chatService.getChatHistory(bookingId);
+
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("Error fetching chat history:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
+  async sendChat(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("Sending chat message to the user");
+      const technicianId = (req as any).user?.id;
+      const { bookingId } = req.params;
+      const { messageText, userId } = req.body;
+      const io = (req as any).io;
+
+      const chatData = {
+        userId,
+        technicianId,
+        bookingId,
+        messageText,
+        senderType: "technician" as const,
+      };
+
+      const response = await this.chatService.sendChat(chatData);
+
+      if (response.success && io && response.data) {
+        io.to(`booking_${bookingId}`).emit("new_message", response.data);
+        console.log(`Message broadcasted to booking_${bookingId} room`);
+      }
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("Error sending chat:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
   async generateCompletionOtp(req: Request, res: Response): Promise<void> {
     try {
       console.log(
@@ -490,6 +541,137 @@ export class TechnicianController implements ItechnicianController {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: "Internal Server Error",
+      });
+    }
+  }
+
+  async verifyCompletionOtp(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering the controller that verify the work completion");
+      const { otp } = req.body;
+      const { bookingId } = req.params;
+      const technicianId = (req as any).user?.id;
+      console.log("bookingId and technicianId in the verify controller:", {
+        bookingId,
+        technicianId,
+      });
+
+      console.log("received data:", otp);
+
+      const response = await this.bookingService.verifyCompletionOtp(
+        technicianId,
+        bookingId,
+        otp
+      );
+      console.log(
+        "resposne after veryfying the otp from the booking service:",
+        response
+      );
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while veryfying the completion otp:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
+  async getWalletBalance(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "fetching the wallet balance for the technician in the technician controller function"
+      );
+      const technicianId = (req as any).user?.id;
+      console.log(
+        "userId in the getWalletBalance function in user controller:",
+        technicianId
+      );
+      const response = await this.technicianService.getWalletBalance(
+        technicianId
+      );
+      console.log(
+        "response in the technician controller for fetching the technician wallet balance:",
+        response
+      );
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log(
+        "error occured while fetching the technician wallet balance:",
+        error
+      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
+  async getWalletTransactions(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("fetching the wallet transactions by the technician:");
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+      const technicianId = (req as any).user?.id;
+      console.log(
+        "technicianId in the getwallet transactions in the technician controller:",
+        technicianId
+      );
+      const response = await this.technicianService.getAllWalletTransactions({
+        page,
+        limit,
+        technicianId,
+      });
+
+      console.log("response in the getWalletTransactions:", response);
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log(
+        "error occured while fetching all the wallet transactions of the technician:",
+        error
+      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
+  async cancelBooking(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "technician controller which cancels the booking from the technician controller"
+      );
+      const technicianId = (req as any).user?.id;
+      const { bookingId } = req.params;
+      const { cancellationReason } = req.body;
+      console.log(
+        "technicianId in the cancelbooking controller function:",
+        technicianId
+      );
+      console.log(
+        "bookingId in the cancelbooking controller function:",
+        bookingId
+      );
+
+      const response = await this.bookingService.cancelBookingByTechnician(
+        technicianId,
+        bookingId,
+        cancellationReason
+      );
+      console.log(
+        "response from the booking service after technician is cancelling the booking:",
+        response
+      );
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log(
+        "error occured while technician is cancelling the booking:",
+        error
+      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server Error",
+        success: false,
       });
     }
   }

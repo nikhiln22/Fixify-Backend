@@ -21,6 +21,8 @@ import {
 } from "../config/otpConfig";
 import { IemailService } from "../interfaces/Iemail/Iemail";
 import { EmailType, APP_NAME } from "../config/emailConfig";
+import { ITimeSlot } from "../interfaces/Models/ItimeSlot";
+import { IratingRepository } from "../interfaces/Irepositories/IratingRepository";
 
 @injectable()
 export class BookingService implements IbookingService {
@@ -31,7 +33,8 @@ export class BookingService implements IbookingService {
     @inject("IPaymentRepository") private paymentRepository: IPaymentRepository,
     @inject("IOTPService") private otpService: IOTPService,
     @inject("IredisService") private redisService: IredisService,
-    @inject("IemailService") private emailService: IemailService
+    @inject("IemailService") private emailService: IemailService,
+    @inject("IratingRepository") private ratingRepository: IratingRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -57,6 +60,41 @@ export class BookingService implements IbookingService {
       await this.emailService.sendOtpEmail(email, otp);
     }
     return otp;
+  }
+
+  private async verifyOtpGeneric(
+    key: string,
+    otp: string,
+    purpose: OtpPurpose
+  ): Promise<{
+    success: boolean;
+    message: string;
+    status: number;
+  }> {
+    const redisKey = this.getOtpRedisKey(key, purpose);
+    const storedOtp = await this.redisService.get(redisKey);
+
+    if (!storedOtp) {
+      return {
+        success: false,
+        message: "OTP has expired or doesn't exist. Please request a new one",
+        status: HTTP_STATUS.BAD_REQUEST,
+      };
+    }
+
+    if (storedOtp !== otp) {
+      return {
+        success: false,
+        message: "Invalid OTP",
+        status: HTTP_STATUS.UNAUTHORIZED,
+      };
+    }
+
+    return {
+      success: true,
+      message: "OTP verified successfully",
+      status: HTTP_STATUS.OK,
+    };
   }
 
   async bookService(
@@ -147,8 +185,9 @@ export class BookingService implements IbookingService {
 
       if (data.paymentMethod === "Wallet") {
         try {
-          const userWallet = await this.walletRepository.getWalletByUserId(
-            userId
+          const userWallet = await this.walletRepository.getWalletByOwnerId(
+            userId,
+            "user"
           );
           console.log(
             "fetched user wallet in the booking by payment:",
@@ -198,6 +237,7 @@ export class BookingService implements IbookingService {
           const walletUpdate =
             await this.walletRepository.updateWalletBalanceWithTransaction(
               userId,
+              "user",
               data.bookingAmount,
               "Debit",
               `Payment for service booking #${newBookingId}`,
@@ -724,6 +764,656 @@ export class BookingService implements IbookingService {
         success: false,
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to generate completion OTP",
+      };
+    }
+  }
+
+  async verifyCompletionOtp(
+    technicianId: string,
+    bookingId: string,
+    otp: string
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+  }> {
+    try {
+      console.log("BookingService: Verifying completion OTP");
+      console.log("technicianId:", technicianId);
+      console.log("bookingId:", bookingId);
+      console.log("provided OTP:", otp);
+
+      if (!technicianId || !bookingId || !otp) {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "Technician ID, Booking ID, and OTP are required",
+        };
+      }
+
+      const booking = await this.bookingRepository.getBookingDetailsById(
+        bookingId
+      );
+
+      if (!booking) {
+        return {
+          success: false,
+          status: HTTP_STATUS.NOT_FOUND,
+          message: "Booking not found",
+        };
+      }
+
+      if (booking.technicianId._id.toString() !== technicianId) {
+        return {
+          success: false,
+          status: HTTP_STATUS.FORBIDDEN,
+          message: "You are not authorized to complete this booking",
+        };
+      }
+
+      if (booking.bookingStatus !== "Booked") {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: `Cannot complete booking with status: ${booking.bookingStatus}`,
+        };
+      }
+
+      const otpVerification = await this.verifyOtpGeneric(
+        bookingId,
+        otp,
+        OtpPurpose.BOOKING_COMPLETION
+      );
+
+      if (!otpVerification.success) {
+        return otpVerification;
+      }
+
+      const updatedBooking = await this.bookingRepository.updateBooking(
+        { _id: bookingId },
+        { bookingStatus: "Completed" }
+      );
+
+      if (!updatedBooking) {
+        return {
+          success: false,
+          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          message: "Failed to update booking status",
+        };
+      }
+
+      try {
+        const payment = await this.paymentRepository.findByBookingId(bookingId);
+        console.log("found payment in booking repository:", payment);
+
+        if (payment && !payment.technicianPaid) {
+          let technicianWallet = await this.walletRepository.getWalletByOwnerId(
+            technicianId,
+            "technician"
+          );
+
+          if (!technicianWallet) {
+            console.log("Technician wallet not found, creating new wallet");
+            technicianWallet = await this.walletRepository.createWallet(
+              technicianId,
+              "technician"
+            );
+            console.log("Created new wallet for technician:", technicianWallet);
+          }
+
+          await this.walletRepository.updateWalletBalanceWithTransaction(
+            technicianId,
+            "technician",
+            payment.technicianShare,
+            "Credit",
+            `Payment for completed service - Booking #${bookingId.slice(-8)}`,
+            bookingId
+          );
+
+          await this.paymentRepository.updatePayment(payment._id.toString(), {
+            technicianPaid: true,
+            technicianPaidAt: new Date(),
+          });
+
+          console.log(
+            `Technician paid ₹${payment.technicianShare} for booking ${bookingId}`
+          );
+        }
+      } catch (paymentError) {
+        console.error("Error paying technician:", paymentError);
+      }
+
+      const redisKey = this.getOtpRedisKey(
+        bookingId,
+        OtpPurpose.BOOKING_COMPLETION
+      );
+      await this.redisService.delete(redisKey);
+
+      console.log(
+        `Booking ${bookingId} completed successfully by technician ${technicianId}`
+      );
+
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: "Service completed successfully",
+      };
+    } catch (error) {
+      console.error("Error in verifyCompletionOtp:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Failed to verify completion OTP",
+      };
+    }
+  }
+
+  async cancelBookingByUser(
+    userId: string,
+    bookingId: string,
+    cancellationReason: string
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: {
+      booking: IBooking;
+    };
+  }> {
+    try {
+      console.log("BookingService: User cancelling booking");
+      console.log("userId:", userId);
+      console.log("bookingId:", bookingId);
+      console.log("cancellationReason:", cancellationReason);
+
+      if (!userId || !bookingId || !cancellationReason) {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "User ID, Booking ID, and cancellation reason are required",
+        };
+      }
+
+      const booking = await this.bookingRepository.getBookingDetailsById(
+        bookingId
+      );
+      if (!booking) {
+        return {
+          success: false,
+          status: HTTP_STATUS.NOT_FOUND,
+          message: "Booking not found",
+        };
+      }
+
+      if (booking.userId._id.toString() !== userId) {
+        return {
+          success: false,
+          status: HTTP_STATUS.FORBIDDEN,
+          message: "You are not authorized to cancel this booking",
+        };
+      }
+
+      if (booking.bookingStatus !== "Booked") {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: `Cannot cancel booking with status: ${booking.bookingStatus}`,
+        };
+      }
+
+      const timeSlot = booking.timeSlotId as ITimeSlot;
+      if (!timeSlot || !timeSlot.date || !timeSlot.startTime) {
+        return {
+          success: false,
+          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          message: "Booking time slot information not found",
+        };
+      }
+
+      const dateStr = timeSlot.date;
+      const timeStr = timeSlot.startTime;
+      const [day, month, year] = dateStr.split("-");
+      const jsDateStr = `${month}/${day}/${year} ${timeStr}`;
+      const scheduledDate = new Date(jsDateStr);
+      const now = new Date();
+      const hoursUntilService =
+        (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+      let refundPercentage = 0;
+      if (hoursUntilService >= 6) {
+        refundPercentage = 100;
+      } else if (hoursUntilService >= 2) {
+        refundPercentage = 50;
+      }
+
+      const refundAmount = (booking.bookingAmount * refundPercentage) / 100;
+
+      console.log("Cancellation details:", {
+        scheduledDate: scheduledDate.toISOString(),
+        hoursUntilService,
+        refundPercentage,
+        refundAmount,
+      });
+
+      const payment = await this.paymentRepository.findByBookingId(bookingId);
+      if (!payment) {
+        return {
+          success: false,
+          status: HTTP_STATUS.NOT_FOUND,
+          message: "Payment record not found",
+        };
+      }
+
+      const updatedBooking = await this.bookingRepository.updateBooking(
+        { _id: bookingId },
+        {
+          bookingStatus: "Cancelled",
+          cancellationReason: cancellationReason,
+          cancelledBy: "user",
+          cancellationDate: new Date(),
+        }
+      );
+
+      if (!updatedBooking) {
+        return {
+          success: false,
+          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          message: "Failed to update booking status",
+        };
+      }
+
+      await this.paymentRepository.updatePayment(payment._id.toString(), {
+        paymentStatus: refundAmount > 0 ? "Refunded" : "Paid",
+        refundStatus: refundAmount > 0 ? "Refunded" : "Not Refunded",
+        refundAmount: refundAmount,
+        refundDate: refundAmount > 0 ? new Date() : undefined,
+      });
+
+      if (refundAmount > 0) {
+        let userWallet = await this.walletRepository.getWalletByOwnerId(
+          userId,
+          "user"
+        );
+        if (!userWallet) {
+          console.log("User wallet not found, creating new wallet");
+          userWallet = await this.walletRepository.createWallet(userId, "user");
+        }
+
+        await this.walletRepository.updateWalletBalanceWithTransaction(
+          userId,
+          "user",
+          refundAmount,
+          "Credit",
+          `Refund for cancelled booking #${bookingId
+            .slice(-8)
+            .toUpperCase()} (${refundPercentage}% refund)`,
+          bookingId
+        );
+
+        console.log(
+          `Refunded ₹${refundAmount} to user ${userId} for booking ${bookingId}`
+        );
+      }
+
+      try {
+        const timeSlot = booking.timeSlotId as ITimeSlot;
+        await this.timeSlotService.updateSlotBookingStatus(
+          booking.technicianId._id.toString(),
+          timeSlot._id.toString(),
+          false
+        );
+        console.log("Time slot freed up successfully");
+      } catch (slotError) {
+        console.error("Error freeing up time slot:", slotError);
+      }
+
+      console.log(
+        `Booking ${bookingId} cancelled successfully by user ${userId}`
+      );
+
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message:
+          refundAmount > 0
+            ? `Booking cancelled successfully. ₹${refundAmount} refunded to your wallet.`
+            : "Booking cancelled successfully. No refund applicable.",
+        data: {
+          booking: updatedBooking,
+        },
+      };
+    } catch (error) {
+      console.error("Error in cancelBookingByUser:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Failed to cancel booking",
+      };
+    }
+  }
+
+  async cancelBookingByTechnician(
+    technicianId: string,
+    bookingId: string,
+    cancellationReason: string
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: { booking: IBooking };
+  }> {
+    try {
+      console.log("BookingService: Technician cancelling booking");
+      console.log("technicianId:", technicianId);
+      console.log("bookingId:", bookingId);
+      console.log("cancellationReason:", cancellationReason);
+
+      if (!technicianId || !bookingId || !cancellationReason) {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message:
+            "Technician ID, Booking ID, and cancellation reason are required",
+        };
+      }
+
+      const booking = await this.bookingRepository.getBookingDetailsById(
+        bookingId
+      );
+      if (!booking) {
+        return {
+          success: false,
+          status: HTTP_STATUS.NOT_FOUND,
+          message: "Booking not found",
+        };
+      }
+
+      if (booking.technicianId._id.toString() !== technicianId) {
+        return {
+          success: false,
+          status: HTTP_STATUS.FORBIDDEN,
+          message: "You are not authorized to cancel this booking",
+        };
+      }
+
+      if (booking.bookingStatus !== "Booked") {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: `Cannot cancel booking with status: ${booking.bookingStatus}`,
+        };
+      }
+
+      const timeSlot = booking.timeSlotId as ITimeSlot;
+      if (!timeSlot || !timeSlot.date || !timeSlot.startTime) {
+        return {
+          success: false,
+          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          message: "Booking time slot information not found",
+        };
+      }
+
+      const dateStr = timeSlot.date;
+      const timeStr = timeSlot.startTime;
+      const [day, month, year] = dateStr.split("-");
+      const jsDateStr = `${month}/${day}/${year} ${timeStr}`;
+      const scheduledDate = new Date(jsDateStr);
+      const now = new Date();
+      const hoursUntilService =
+        (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const bookingDate = new Date(scheduledDate);
+      bookingDate.setHours(0, 0, 0, 0);
+      const isToday = today.getTime() === bookingDate.getTime();
+
+      if (isToday) {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "Cannot cancel bookings scheduled for today",
+        };
+      }
+
+      if (hoursUntilService < 2) {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "Cannot cancel bookings with less than 2 hours notice",
+        };
+      }
+
+      console.log("Technician cancellation validation passed:", {
+        scheduledDate: scheduledDate.toISOString(),
+        hoursUntilService,
+        isToday,
+      });
+
+      const payment = await this.paymentRepository.findByBookingId(bookingId);
+      if (!payment) {
+        return {
+          success: false,
+          status: HTTP_STATUS.NOT_FOUND,
+          message: "Payment record not found",
+        };
+      }
+
+      const updatedBooking = await this.bookingRepository.updateBooking(
+        { _id: bookingId },
+        {
+          bookingStatus: "Cancelled",
+          cancellationReason: cancellationReason,
+          cancelledBy: "technician",
+          cancellationDate: new Date(),
+        }
+      );
+
+      if (!updatedBooking) {
+        return {
+          success: false,
+          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          message: "Failed to update booking status",
+        };
+      }
+
+      const fullRefundAmount = booking.bookingAmount;
+
+      await this.paymentRepository.updatePayment(payment._id.toString(), {
+        paymentStatus: "Refunded",
+        refundStatus: "Refunded",
+        refundAmount: fullRefundAmount,
+        refundDate: new Date(),
+      });
+
+      let userWallet = await this.walletRepository.getWalletByOwnerId(
+        booking.userId._id.toString(),
+        "user"
+      );
+
+      if (!userWallet) {
+        console.log("User wallet not found, creating new wallet");
+        userWallet = await this.walletRepository.createWallet(
+          booking.userId._id.toString(),
+          "user"
+        );
+      }
+
+      await this.walletRepository.updateWalletBalanceWithTransaction(
+        booking.userId._id.toString(),
+        "user",
+        fullRefundAmount,
+        "Credit",
+        `Full refund for technician cancelled booking #${bookingId
+          .slice(-8)
+          .toUpperCase()}`,
+        bookingId
+      );
+
+      console.log(
+        `Full refund of ₹${fullRefundAmount} processed to user ${booking.userId._id} for technician cancellation`
+      );
+
+      try {
+        await this.timeSlotService.updateSlotBookingStatus(
+          technicianId,
+          timeSlot._id.toString(),
+          false
+        );
+        console.log("Time slot freed up successfully");
+      } catch (slotError) {
+        console.error("Error freeing up time slot:", slotError);
+      }
+
+      console.log(
+        `Booking ${bookingId} cancelled successfully by technician ${technicianId}`
+      );
+
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: `Booking cancelled successfully. Customer will receive a full refund of ₹${fullRefundAmount}.`,
+        data: {
+          booking: updatedBooking,
+        },
+      };
+    } catch (error) {
+      console.error("Error in cancelBookingByTechnician:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Failed to cancel booking",
+      };
+    }
+  }
+
+  async rateService(
+    userId: string,
+    bookingId: string,
+    rating: number,
+    review: string
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: { booking: IBooking };
+  }> {
+    try {
+      console.log(
+        "entering the service function that rates the technician service"
+      );
+      console.log("userId:", userId);
+      console.log("bookingId:", bookingId);
+      console.log("rating:", rating);
+      console.log("review:", review);
+
+      if (!userId || !bookingId || rating === undefined || rating === null) {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "User ID, Booking ID, and rating are required",
+        };
+      }
+
+      if (rating < 1 || rating > 5 || !Number.isInteger(rating)) {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "Rating must be an integer between 1 and 5",
+        };
+      }
+
+      if (review && review.trim().length > 500) {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "Review cannot exceed 500 characters",
+        };
+      }
+
+      const booking = await this.bookingRepository.getBookingDetailsById(
+        bookingId,
+        userId
+      );
+
+      if (!booking) {
+        return {
+          success: false,
+          status: HTTP_STATUS.NOT_FOUND,
+          message:
+            "Booking not found or you don't have permission to rate this service",
+        };
+      }
+
+      if (booking.bookingStatus !== "Completed") {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "You can only rate completed services",
+        };
+      }
+
+      if (booking.isRated) {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "This service has already been rated",
+        };
+      }
+
+      const existingRating = await this.ratingRepository.getRatingByBookingId(
+        bookingId
+      );
+      if (existingRating) {
+        return {
+          success: false,
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: "Rating already exists for this booking",
+        };
+      }
+
+      const newRating = await this.ratingRepository.createRating({
+        userId,
+        technicianId: booking.technicianId._id.toString(),
+        serviceId: booking.serviceId._id.toString(),
+        bookingId,
+        rating,
+        review,
+      });
+
+      console.log("newley created rating for the service:", newRating);
+
+      const updatedBooking = await this.bookingRepository.updateBooking(
+        { _id: bookingId },
+        { isRated: true }
+      );
+
+      if (!updatedBooking) {
+        return {
+          success: false,
+          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          message: "Failed to update booking status after rating",
+        };
+      }
+
+      console.log(
+        `Service rated successfully - Booking: ${bookingId}, Rating: ${rating}/5`
+      );
+
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: "Service rated successfully",
+        data: {
+          booking: updatedBooking,
+        },
+      };
+    } catch (error) {
+      console.error("Error in rateService:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Failed to rate service",
       };
     }
   }

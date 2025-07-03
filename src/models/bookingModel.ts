@@ -41,6 +41,20 @@ const bookingSchema: Schema<IBooking> = new Schema(
       enum: ["Pending", "Booked", "Cancelled", "Completed"],
       required: true,
     },
+    cancellationReason: {
+      type: String,
+    },
+    cancelledBy: {
+      type: String,
+      enum: ["user", "technician"],
+    },
+    cancellationDate: {
+      type: Date,
+    },
+    isRated: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

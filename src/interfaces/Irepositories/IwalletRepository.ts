@@ -2,18 +2,26 @@ import { IWallet } from "../Models/Iwallet";
 import { IWalletTransaction } from "../Models/IwalletTransaction";
 
 export interface IWalletRepository {
-  createWallet(userId: string): Promise<IWallet>;
-  getWalletByUserId(userId: string): Promise<IWallet | null>;
+  createWallet(
+    ownerId: string,
+    ownerType: "user" | "technician"
+  ): Promise<IWallet>;
+  getWalletByOwnerId(
+    ownerId: string,
+    ownerType: "user" | "technician"
+  ): Promise<IWallet | null>;
   addMoney(
     amount: number,
-    userId: string,
+    ownerId: string,
+    ownerType: "user" | "technician",
     sessionId: string
   ): Promise<{
     wallet: IWallet | null;
     transaction: IWalletTransaction | null;
   }>;
   updateWalletBalanceWithTransaction(
-    userId: string,
+    ownerId: string,
+    ownerType: "user" | "technician",
     amount: number,
     type: "Credit" | "Debit",
     description: string,

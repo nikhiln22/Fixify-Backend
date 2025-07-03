@@ -53,7 +53,7 @@ export class UserService implements IuserService {
     @inject("IemailService") private emailService: IemailService,
     @inject("IOTPService") private otpService: IOTPService,
     @inject("IPasswordHasher") private passwordService: IPasswordHasher,
-    @inject("IjwtService") private jwtService: IjwtService,  
+    @inject("IjwtService") private jwtService: IjwtService,
     @inject("IredisService") private redisService: IredisService,
     @inject("IFileUploader") private fileUploader: IFileUploader,
     @inject("IWalletRepository") private walletRepository: IWalletRepository,
@@ -213,9 +213,9 @@ export class UserService implements IuserService {
         console.log("new created user:", newUser);
 
         const newWallet = await this.walletRepository.createWallet(
-          newUser._id.toString()
+          newUser._id.toString(),
+          "user"
         );
-
         console.log("newly created wallet:", newWallet);
 
         const newUserObj = newUser.toObject
@@ -691,9 +691,12 @@ export class UserService implements IuserService {
         };
       }
 
-      let wallet = await this.walletRepository.getWalletByUserId(userId);
+      let wallet = await this.walletRepository.getWalletByOwnerId(
+        userId,
+        "user"
+      );
       if (!wallet) {
-        wallet = await this.walletRepository.createWallet(userId);
+        wallet = await this.walletRepository.createWallet(userId, "user");
       }
 
       const amountInCents = Math.round(amount * 100);
@@ -768,7 +771,10 @@ export class UserService implements IuserService {
 
       if (existingTransaction) {
         console.log("Session already processed:", sessionId);
-        const wallet = await this.walletRepository.getWalletByUserId(userId);
+        const wallet = await this.walletRepository.getWalletByOwnerId(
+          userId,
+          "user"
+        );
         return {
           success: true,
           status: HTTP_STATUS.OK,
@@ -813,6 +819,7 @@ export class UserService implements IuserService {
       const result = await this.walletRepository.addMoney(
         amount,
         userId,
+        "user",
         sessionId
       );
 
@@ -853,14 +860,20 @@ export class UserService implements IuserService {
         userId
       );
 
-      let fetchedWallet = await this.walletRepository.getWalletByUserId(userId);
+      let fetchedWallet = await this.walletRepository.getWalletByOwnerId(
+        userId,
+        "user"
+      );
 
       console.log(`fetched wallet with the ${userId}:`, fetchedWallet);
 
       if (!fetchedWallet) {
         console.log(`Wallet not found for user ${userId}, creating new wallet`);
         try {
-          fetchedWallet = await this.walletRepository.createWallet(userId);
+          fetchedWallet = await this.walletRepository.createWallet(
+            userId,
+            "user"
+          );
           console.log(`Created new wallet for user ${userId}:`, fetchedWallet);
         } catch (createError) {
           console.log("Error creating wallet:", createError);
@@ -915,48 +928,25 @@ export class UserService implements IuserService {
   }> {
     try {
       console.log(
-        "entered to the user service fetching all the wallet tranasctions for the user"
+        "entered to the user service fetching all the wallet transactions for the user"
       );
       const page = options.page || 1;
       const limit = options.limit || 5;
       const userId = options.userId;
-      console.log(
-        "userId in the userService fetching all the wallet transactions:",
-        userId
-      );
-
-      const fetchedWallet = await this.walletRepository.getWalletByUserId(
-        userId
-      );
-
-      console.log(
-        "fetched wallet in the user wallet transations fetching services:",
-        fetchedWallet
-      );
-
-      const walletId = fetchedWallet?._id?.toString();
-
-      if (!walletId) {
-        return {
-          success: false,
-          status: HTTP_STATUS.NOT_FOUND,
-          message: "Wallet not found for the user",
-        };
-      }
 
       const result =
-        await this.walletTransactionRepository.getUserWalletTranasctions({
+        await this.walletTransactionRepository.getOwnerWalletTransactions({
           page,
           limit,
-          userId,
-          walletId,
+          ownerId: userId,
+          ownerType: "user",
         });
 
       console.log("fetched wallet transactions for the user:", result);
       return {
         success: true,
         status: HTTP_STATUS.OK,
-        message: "Users fetched successfully",
+        message: "User transactions fetched successfully",
         data: {
           transactions: result.data,
           pagination: {

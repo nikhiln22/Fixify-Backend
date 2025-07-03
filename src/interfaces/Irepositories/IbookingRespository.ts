@@ -27,7 +27,6 @@ export interface IbookingRepository {
     paymentStatus: string,
     bookingStatus: string
   ): Promise<IBooking | null>;
-  cancelBooking(bookingId: string): Promise<IBooking | null>;
   getBookingDetailsById(
     bookingId: string,
     userId?: string,

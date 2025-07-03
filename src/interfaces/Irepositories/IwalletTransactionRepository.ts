@@ -8,11 +8,11 @@ export interface IWalletTransactionRepository {
     referenceId: string,
     type?: string
   ): Promise<IWalletTransaction | null>;
-  getUserWalletTranasctions(options: {
+  getOwnerWalletTransactions(options: {
     page?: number;
     limit?: number;
-    userId: string;
-    walletId: string;
+    ownerId: string;
+    ownerType: "user" | "technician";
   }): Promise<{
     data: IWalletTransaction[];
     total: number;
