@@ -142,6 +142,12 @@ export class TechnicianRoutes {
     );
 
     this.router.get(
+      "/reviews",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      technicianController.getReviews.bind(technicianController)
+    );
+
+    this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.TECHNICIAN),
       technicianController.logout.bind(technicianController)

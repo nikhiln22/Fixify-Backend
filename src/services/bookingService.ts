@@ -22,7 +22,7 @@ import {
 import { IemailService } from "../interfaces/Iemail/Iemail";
 import { EmailType, APP_NAME } from "../config/emailConfig";
 import { ITimeSlot } from "../interfaces/Models/ItimeSlot";
-import { IratingRepository } from "../interfaces/Irepositories/IratingRepository";
+import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
 
 @injectable()
 export class BookingService implements IbookingService {
@@ -34,7 +34,7 @@ export class BookingService implements IbookingService {
     @inject("IOTPService") private otpService: IOTPService,
     @inject("IredisService") private redisService: IredisService,
     @inject("IemailService") private emailService: IemailService,
-    @inject("IratingRepository") private ratingRepository: IratingRepository
+    @inject("IRatingRepository") private ratingRepository: IRatingRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -516,6 +516,7 @@ export class BookingService implements IbookingService {
     page?: number;
     limit?: number;
     technicianId?: string;
+    userId?: string;
     search?: string;
     filter?: string;
     role?: string;
@@ -542,12 +543,13 @@ export class BookingService implements IbookingService {
       const search = options.search;
       const filter = options.filter;
       const role = options.role || "admin";
-      const { technicianId } = options;
+      const { technicianId, userId } = options;
 
       const result = await this.bookingRepository.getAllBookings({
         page,
         limit,
         technicianId,
+        userId,
         search,
         filter,
         role,

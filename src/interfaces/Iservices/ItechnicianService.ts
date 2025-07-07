@@ -14,6 +14,7 @@ import {
   ToggleTechnicianStatusResponse,
   verifyOtpData,
 } from "../DTO/IServices/ItechnicianService";
+import { IRating} from "../Models/Irating";
 import { Itechnician } from "../Models/Itechnician";
 import { IWalletTransaction } from "../Models/IwalletTransaction";
 
@@ -126,5 +127,14 @@ export interface ItechnicianService {
         hasPrevPage: boolean;
       };
     };
+  }>;
+
+  getReviews(techncianId: string): Promise<{
+    success: boolean;
+    message: string;
+    status: number;
+    reviews?: IRating[];
+    averageRating?: number;
+    totalReviews?: number;
   }>;
 }

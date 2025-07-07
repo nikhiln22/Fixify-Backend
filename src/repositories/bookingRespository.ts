@@ -47,6 +47,7 @@ export class BookingRepository
     page?: number;
     limit?: number;
     technicianId?: string;
+    userId?: string;
     search?: string;
     filter?: string;
     role?: string;
@@ -61,9 +62,13 @@ export class BookingRepository
       console.log("entering the function which fetches all the bookings");
       const page = options.page || 1;
       const limit = options.limit || 5;
-      const { technicianId, filter, role } = options;
+      const { technicianId, userId, filter, role } = options;
 
       const query: FilterQuery<IBooking> = {};
+
+      if (userId) {
+        query.userId = userId;
+      }
 
       if (technicianId) {
         query.technicianId = technicianId;
@@ -84,15 +89,26 @@ export class BookingRepository
             case "upcoming":
               query.bookingStatus = "Booked";
               break;
-
             case "completed":
               query.bookingStatus = "Completed";
               break;
-
             case "cancelled":
               query.bookingStatus = "Cancelled";
               break;
-
+            default:
+              break;
+          }
+        } else if (role === "user") {
+          switch (filter) {
+            case "active":
+              query.bookingStatus = "Booked";
+              break;
+            case "completed":
+              query.bookingStatus = "Completed";
+              break;
+            case "cancelled":
+              query.bookingStatus = "Cancelled";
+              break;
             default:
               break;
           }
@@ -106,6 +122,7 @@ export class BookingRepository
           { path: "serviceId", select: "name" },
           { path: "paymentId", select: "paymentStatus" },
           { path: "timeSlotId", select: "startTime endTime date" },
+          { path: "technicianId", select: "username" },
         ],
       })) as { data: IBooking[]; total: number };
 

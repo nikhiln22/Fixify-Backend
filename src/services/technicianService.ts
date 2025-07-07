@@ -42,6 +42,8 @@ import { Itechnician } from "../interfaces/Models/Itechnician";
 import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
 import { IWalletTransaction } from "../interfaces/Models/IwalletTransaction";
 import { IWalletTransactionRepository } from "../interfaces/Irepositories/IwalletTransactionRepository";
+import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
+import { IRating } from "../interfaces/Models/Irating";
 
 @injectable()
 export class TechnicianService implements ItechnicianService {
@@ -58,7 +60,8 @@ export class TechnicianService implements ItechnicianService {
     @inject("IFileUploader") private fileUploader: IFileUploader,
     @inject("IWalletRepository") private walletRepository: IWalletRepository,
     @inject("IWalletTransactionRepository")
-    private walletTransactionRepository: IWalletTransactionRepository
+    private walletTransactionRepository: IWalletTransactionRepository,
+    @inject("IRatingRepository") private ratingRepository: IRatingRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -1010,13 +1013,18 @@ export class TechnicianService implements ItechnicianService {
       console.log(`fetched wallet with the ${techncianId}:`, fetchedWallet);
 
       if (!fetchedWallet) {
-        console.log(`Wallet not found for user ${techncianId}, creating new wallet`);
+        console.log(
+          `Wallet not found for user ${techncianId}, creating new wallet`
+        );
         try {
           fetchedWallet = await this.walletRepository.createWallet(
             techncianId,
             "user"
           );
-          console.log(`Created new wallet for user ${techncianId}:`, fetchedWallet);
+          console.log(
+            `Created new wallet for user ${techncianId}:`,
+            fetchedWallet
+          );
         } catch (createError) {
           console.log("Error creating wallet:", createError);
           return {
@@ -1107,6 +1115,61 @@ export class TechnicianService implements ItechnicianService {
         success: false,
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Something went wrong while fetching user wallet transactions",
+      };
+    }
+  }
+
+  async getReviews(technicianId: string): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    reviews?: IRating[];
+    averageRating?: number;
+    totalReviews?: number;
+  }> {
+    try {
+      console.log("Fetching reviews for technician ID:", technicianId);
+
+      if (!technicianId) {
+        return {
+          success: false,
+          message: "Technician ID is required",
+          status: HTTP_STATUS.BAD_REQUEST,
+        };
+      }
+
+      const technicianResult =
+        await this.technicianRepository.getTechnicianById(technicianId);
+      if (!technicianResult.success || !technicianResult.technicianData) {
+        return {
+          success: false,
+          message: "Technician not found",
+          status: HTTP_STATUS.NOT_FOUND,
+        };
+      }
+
+      const reviewsResult =
+        await this.ratingRepository.getRatingsByTechnicianId(technicianId);
+
+      console.log(
+        `Fetched ${reviewsResult.data.length} reviews for technician`
+      );
+      console.log(`Average rating: ${reviewsResult.averageRating}`);
+
+      return {
+        success: true,
+        message: "Reviews fetched successfully",
+        status: HTTP_STATUS.OK,
+        reviews: reviewsResult.data,
+        averageRating: reviewsResult.averageRating,
+        totalReviews: reviewsResult.total,
+      };
+    } catch (error) {
+      console.error("Error fetching technician reviews:", error);
+      return {
+        success: false,
+        message: "An error occurred while fetching reviews",
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }

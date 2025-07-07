@@ -676,6 +676,31 @@ export class TechnicianController implements ItechnicianController {
     }
   }
 
+  async getReviews(req: Request, res: Response): Promise<void> {
+    try {
+      const technicianId = (req as any).user?.id;
+      console.log(
+        "technicianId in the user controller fetching the reviews:",
+        technicianId
+      );
+      const response = await this.technicianService.getReviews(technicianId);
+      console.log(
+        "response from the service fetching the technician reviews:",
+        response
+      );
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log(
+        "error occured while fetching the technician reviews:",
+        error
+      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server Error",
+        success: false,
+      });
+    }
+  }
+
   async logout(req: Request, res: Response): Promise<void> {
     try {
       console.log(

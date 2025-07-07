@@ -556,10 +556,17 @@ export class UserController implements IuserController {
       console.log("entering to the all bookings fetching for the user");
       const page = parseInt(req.query.page as string) || undefined;
       const limit = parseInt(req.query.limit as string) || undefined;
+      const userId = (req as any).user?.id;
+      const search = req.query.search as string;
+      const filter = req.query.filter as string;
 
       const response = await this.bookingService.getAllBookings({
         page,
         limit,
+        userId,
+        search,
+        filter,
+        role: "user",
       });
       console.log(
         "result from the fetching all bookings for users controller:",
