@@ -28,6 +28,14 @@ import { TechnicianService } from "../services/technicianService";
 import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
 import { IbookingService } from "../interfaces/Iservices/IbookingService";
 import { BookingService } from "../services/bookingService";
+import { IOfferService } from "../interfaces/Iservices/IofferService";
+import { OfferService } from "../services/offerService";
+import { IOfferRepository } from "../interfaces/Irepositories/IofferRepository";
+import { OfferRepository } from "../repositories/offerRepository";
+import { ICouponService } from "../interfaces/Iservices/IcouponService";
+import { CouponService } from "../services/couponService";
+import { ICouponRepository } from "../interfaces/Irepositories/IcouponRepository";
+import { CouponRepository } from "../repositories/couponRepository";
 
 container.registerSingleton<IadminService>("IadminService", AdminService);
 container.registerSingleton<IadminRepository>("IadminRepository", AdminRepository);
@@ -42,4 +50,8 @@ container.registerSingleton<ICategoryRepository>("ICategoryRepository",CategoryR
 container.registerSingleton<IserviceRepository>("IserviceRepository",ServiceRepository);
 container.registerSingleton<IServiceService>("IServiceService",ServiceServices);
 container.registerSingleton<ItechnicianService>("ItechnicianService",TechnicianService);
-container.registerSingleton<IbookingService>("IbookingService",BookingService)
+container.registerSingleton<IbookingService>("IbookingService",BookingService);
+container.registerSingleton<IOfferService>("IOfferService",OfferService);
+container.registerSingleton<IOfferRepository>("IOfferRepository",OfferRepository);
+container.registerSingleton<ICouponService>("ICouponService",CouponService);
+container.registerSingleton<ICouponRepository>("ICouponRepository",CouponRepository);
