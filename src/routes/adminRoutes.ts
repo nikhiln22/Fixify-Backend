@@ -194,6 +194,18 @@ export class AdminRoutes {
       adminController.getAllCoupons.bind(adminController)
     );
 
+    this.router.patch(
+      "/blockcoupon/:id",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.blockCoupon.bind(adminController)
+    );
+
+    this.router.put(
+      "/updatecoupon/:couponId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.updateCoupon.bind(adminController)
+    );
+
     this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.ADMIN),

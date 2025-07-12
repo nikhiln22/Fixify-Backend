@@ -109,7 +109,7 @@ export class OfferService implements IOfferService {
     try {
       console.log("entering the service layer that blocks the offer:", id);
       const offer = await this.offerRepository.findOfferById(id);
-      console.log("User fetched from repository:", offer);
+      console.log("offer fetched from repository:", offer);
 
       if (!offer) {
         return {
@@ -121,19 +121,19 @@ export class OfferService implements IOfferService {
       const newStatus = !offer.status;
       let response = await this.offerRepository.blockOffer(id, newStatus);
       console.log(
-        "Response after toggling user status from the user repository:",
+        "Response after toggling offer status from the offer repository:",
         response
       );
 
       return {
-        message: `User successfully ${newStatus ? "unblocked" : "blocked"}`,
+        message: `Offer successfully ${newStatus ? "unblocked" : "blocked"}`,
         offer: { ...offer.toObject(), status: newStatus },
         status: HTTP_STATUS.OK,
       };
     } catch (error) {
-      console.error("Error toggling user status:", error);
+      console.error("Error toggling offer status:", error);
       return {
-        message: "Failed to toggle user status",
+        message: "Failed to toggle offer status",
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }

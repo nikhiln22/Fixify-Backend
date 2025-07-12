@@ -533,7 +533,7 @@ export class AdminController implements IadminController {
       const page = parseInt(req.query.page as string) || undefined;
       const limit = parseInt(req.query.limit as string) || undefined;
       const search = (req.query.search as string) || undefined;
-      const filterStatus = (req.query.filter as string) || undefined;
+      const filterStatus = (req.query.filterStatus as string) || undefined;
       const response = await this.couponService.getAllCoupons({
         page,
         limit,
@@ -543,6 +543,120 @@ export class AdminController implements IadminController {
       console.log("response in the fetching all coupons:", response);
       res.status(response.status).json(response);
     } catch (error) {
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server Error",
+        success: false,
+      });
+    }
+  }
+
+  async blockCoupon(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entering to the block coupon function in the admin controller"
+      );
+      const { id } = req.params;
+      console.log("couponId in the block offer function:", id);
+      const response = await this.couponService.blockCoupon(id);
+      console.log("response from the block coupon function:", response);
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while blocking the Coupon:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server Error",
+        success: false,
+      });
+    }
+  }
+
+  async updateCoupon(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("updating the existing coupon from the admin controller:");
+      const couponId = req.params.couponId;
+      console.log("couponId:", couponId);
+      if (!couponId) {
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "Coupon ID is required",
+        });
+        return;
+      }
+
+      console.log("req.body:", req.body);
+
+      const {
+        code,
+        title,
+        description,
+        discount_type,
+        discount_value,
+        max_discount,
+        min_booking_amount,
+        valid_until,
+      } = req.body;
+
+      const updateData: {
+        code?: string;
+        title?: string;
+        description?: string;
+        discount_type?: number;
+        discount_value?: number;
+        max_discount?: number;
+        min_booking_amount?: number;
+        valid_until?: Date;
+      } = {};
+
+      if (code !== undefined) {
+        updateData.code = code;
+      }
+
+      if (title !== undefined) {
+        updateData.title = title;
+      }
+
+      if (description !== undefined) {
+        updateData.description = description;
+      }
+
+      if (discount_type !== undefined) {
+        updateData.discount_type = discount_type;
+      }
+
+      if (discount_value !== undefined) {
+        updateData.discount_value = discount_value;
+      }
+
+      if (max_discount !== undefined) {
+        updateData.max_discount = max_discount;
+      }
+
+      if (min_booking_amount !== undefined) {
+        updateData.min_booking_amount = min_booking_amount;
+      }
+
+      if (valid_until !== undefined) {
+        updateData.valid_until = valid_until;
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "No update data provided",
+        });
+        return;
+      }
+
+      const response = await this.couponService.updateCoupon(
+        couponId,
+        updateData
+      );
+      console.log(
+        "after updating the coupon from the coupon service:",
+        response
+      );
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while updating the coupon:", error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         message: "Internal Server Error",
         success: false,

@@ -1010,13 +1010,18 @@ export class TechnicianService implements ItechnicianService {
       console.log(`fetched wallet with the ${techncianId}:`, fetchedWallet);
 
       if (!fetchedWallet) {
-        console.log(`Wallet not found for user ${techncianId}, creating new wallet`);
+        console.log(
+          `Wallet not found for user ${techncianId}, creating new wallet`
+        );
         try {
           fetchedWallet = await this.walletRepository.createWallet(
             techncianId,
             "user"
           );
-          console.log(`Created new wallet for user ${techncianId}:`, fetchedWallet);
+          console.log(
+            `Created new wallet for user ${techncianId}:`,
+            fetchedWallet
+          );
         } catch (createError) {
           console.log("Error creating wallet:", createError);
           return {

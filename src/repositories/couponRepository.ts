@@ -80,55 +80,55 @@ export class CouponRepository
     }
   }
 
-  //   async blockOffer(id: string, status: boolean): Promise<void> {
-  //     try {
-  //       let response = await this.updateOne({ _id: id }, { status: status });
-  //       console.log("blocking the offer in the offer repository:", response);
-  //     } catch (error) {
-  //       throw new Error("Failed to block offer: " + error);
-  //     }
-  //   }
+  async findCouponById(id: string): Promise<ICoupon | null> {
+    try {
+      const coupon = await this.findById(id);
+      console.log("fetched coupon from the coupon repository:", coupon);
+      return coupon;
+    } catch (error) {
+      console.log("error occured while fetching the coupon:", error);
+      return null;
+    }
+  }
 
-  //   async findOfferById(id: string): Promise<IOffer | null> {
-  //     try {
-  //       const offer = await this.findById(id);
-  //       console.log("fetched offer from the offer repository:", offer);
-  //       return offer;
-  //     } catch (error) {
-  //       console.log("error occured while fetching the offer:", error);
-  //       return null;
-  //     }
-  //   }
+  async blockCoupon(id: string, status: boolean): Promise<void> {
+    try {
+      let response = await this.updateOne({ _id: id }, { status: status });
+      console.log("blocking the coupon in the coupon repository:", response);
+    } catch (error) {
+      throw new Error("Failed to block coupon: " + error);
+    }
+  }
 
-  //   async updateOffer(
-  //     id: string,
-  //     updateData: {
-  //       title?: string;
-  //       description?: string;
-  //       offer_type?: string;
-  //       discount_type?: number;
-  //       discount_value?: number;
-  //       max_discount?: number;
-  //       min_booking_amount?: number;
-  //       service_id?: string;
-  //       valid_until?: Date;
-  //     }
-  //   ): Promise<IOffer | null> {
-  //     try {
-  //       console.log(
-  //         "entering to the offer repository that updates the offer data:",
-  //         updateData
-  //       );
+  async updateCoupon(
+    id: string,
+    updateData: {
+      title?: string;
+      description?: string;
+      offer_type?: string;
+      discount_type?: number;
+      discount_value?: number;
+      max_discount?: number;
+      min_booking_amount?: number;
+      service_id?: string;
+      valid_until?: Date;
+    }
+  ): Promise<ICoupon | null> {
+    try {
+      console.log(
+        "entering to the coupon repository that updates the coupon data:",
+        updateData
+      );
 
-  //       const updatedOffer = await this.updateOne(
-  //         { _id: id },
-  //         { $set: updateData }
-  //       );
-  //       console.log("updated offer in the offer repository:", updatedOffer);
-  //       return updatedOffer;
-  //     } catch (error) {
-  //       console.error(`Error updating service:`, error);
-  //       throw new Error(`Failed to update service: ${error}`);
-  //     }
-  //   }
+      const updatedCoupon = await this.updateOne(
+        { _id: id },
+        { $set: updateData }
+      );
+      console.log("updated coupon in the coupon repository:", updatedCoupon);
+      return updatedCoupon;
+    } catch (error) {
+      console.error(`Error updating coupon:`, error);
+      throw new Error(`Failed to update coupon: ${error}`);
+    }
+  }
 }

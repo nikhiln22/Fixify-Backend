@@ -102,4 +102,101 @@ export class CouponService implements ICouponService {
       };
     }
   }
+
+  async blockCoupon(
+    id: string
+  ): Promise<{ message: string; status: number; offer?: ICoupon }> {
+    try {
+      console.log("entering the service layer that blocks the coupon:", id);
+      const coupon = await this.couponRepository.findCouponById(id);
+      console.log("coupon fetched from repository:", coupon);
+
+      if (!coupon) {
+        return {
+          message: "coupon not found",
+          status: HTTP_STATUS.NOT_FOUND,
+        };
+      }
+
+      const newStatus = !coupon.status;
+      let response = await this.couponRepository.blockCoupon(id, newStatus);
+      console.log(
+        "Response after toggling coupon status from the coupon repository:",
+        response
+      );
+
+      return {
+        message: `Coupon successfully ${newStatus ? "unblocked" : "blocked"}`,
+        offer: { ...coupon.toObject(), status: newStatus },
+        status: HTTP_STATUS.OK,
+      };
+    } catch (error) {
+      console.error("Error toggling coupon status:", error);
+      return {
+        message: "Failed to toggle coupon status",
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      };
+    }
+  }
+
+  async updateCoupon(
+    couponId: string,
+    updateData: {
+      code?: string;
+      title?: string;
+      description?: string;
+      discount_type?: number;
+      discount_value?: number;
+      max_discount?: number;
+      min_booking_amount?: number;
+      valid_until?: Date;
+    }
+  ): Promise<{
+    status: number;
+    success: boolean;
+    message: string;
+    data?: ICoupon;
+  }> {
+    try {
+      console.log(
+        "entering the coupon service which updates the existing coupon added by the admin"
+      );
+
+      const offer = await this.couponRepository.findCouponById(couponId);
+      if (!offer) {
+        return {
+          success: false,
+          status: HTTP_STATUS.NOT_FOUND,
+          message: "coupon not found",
+        };
+      }
+
+      const updatedCoupon = await this.couponRepository.updateCoupon(
+        couponId,
+        updateData
+      );
+
+      if (!updatedCoupon) {
+        return {
+          success: false,
+          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          message: "Failed to update Coupon",
+        };
+      }
+
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: "Coupon updated successfully",
+        data: updatedCoupon,
+      };
+    } catch (error) {
+      console.error("Error updating coupon:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Failed to update coupon",
+      };
+    }
+  }
 }

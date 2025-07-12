@@ -15,20 +15,19 @@ export interface ICouponRepository {
     limit: number;
     pages: number;
   }>;
-  //   blockOffer(id: string, status: boolean): Promise<void>;
-  //   findOfferById(id: string): Promise<IOffer | null>;
-  //   updateOffer(
-  //     id: string,
-  //     updateData: {
-  //       title?: string;
-  //       description?: string;
-  //       offer_type?: string;
-  //       discount_type?: number;
-  //       discount_value?: number;
-  //       max_discount?: number;
-  //       min_booking_amount?: number;
-  //       service_id?: string;
-  //       valid_until?: Date;
-  //     }
-  //   ): Promise<IOffer | null>;
+  blockCoupon(id: string, status: boolean): Promise<void>;
+  findCouponById(id: string): Promise<ICoupon | null>;
+  updateCoupon(
+    id: string,
+    updateData: {
+      code?: string;
+      title?: string;
+      description?: string;
+      discount_type?: number;
+      discount_value?: number;
+      max_discount?: number;
+      min_booking_amount?: number;
+      valid_until?: Date;
+    }
+  ): Promise<ICoupon | null>;
 }

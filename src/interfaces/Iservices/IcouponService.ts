@@ -29,4 +29,27 @@ export interface ICouponService {
       };
     };
   }>;
+  blockCoupon(id: string): Promise<{
+    message: string;
+    status: number;
+    offer?: ICoupon;
+  }>;
+  updateCoupon(
+    couponId: string,
+    updateData: {
+      code?: string;
+      title?: string;
+      description?: string;
+      discount_type?: number;
+      discount_value?: number;
+      max_discount?: number;
+      min_booking_amount?: number;
+      valid_until?: Date;
+    }
+  ): Promise<{
+    status: number;
+    success: boolean;
+    message: string;
+    data?: ICoupon;
+  }>;
 }
