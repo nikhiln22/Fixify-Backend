@@ -34,7 +34,7 @@ import { IchatService } from "../interfaces/Iservices/IchatService";
 import { ChatService } from "../services/chatService";
 import { IWalletTransactionRepository } from "../interfaces/Irepositories/IwalletTransactionRepository";
 import { WalletTransactionRepository } from "../repositories/walletTransactionRepository";
-import { IratingRepository } from "../interfaces/Irepositories/IratingRepository";
+import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
 import { RatingRepository } from "../repositories/ratingRepository";
 
 
@@ -55,4 +55,4 @@ container.registerSingleton<ITimeSlotRepository>("ITimeSlotRepository",TimeSlotR
 container.registerSingleton<IWalletRepository>("IWalletRepository",WalletRepository);
 container.registerSingleton<IchatService>("IchatService",ChatService);
 container.registerSingleton<IWalletTransactionRepository>("IWalletTransactionRepository",WalletTransactionRepository);
-container.registerSingleton<IratingRepository>("IratingRepository",RatingRepository);
+container.registerSingleton<IRatingRepository>("IRatingRepository",RatingRepository);

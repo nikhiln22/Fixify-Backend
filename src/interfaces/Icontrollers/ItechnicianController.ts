@@ -21,5 +21,6 @@ export interface ItechnicianController {
   getChatHistory(req: Request, res: Response): Promise<void>;
   sendChat(req: Request, res: Response): Promise<void>;
   cancelBooking(req: Request, res: Response): Promise<void>;
+  getReviews(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

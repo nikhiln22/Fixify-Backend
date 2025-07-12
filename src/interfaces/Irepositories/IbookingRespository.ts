@@ -12,6 +12,7 @@ export interface IbookingRepository {
     page?: number;
     limit?: number;
     technicianId?: string;
+    userId?: string;
     search?: string;
     filter?: string;
     role?: string;

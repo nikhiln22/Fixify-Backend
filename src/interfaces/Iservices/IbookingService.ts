@@ -17,6 +17,7 @@ export interface IbookingService {
     page?: number;
     limit?: number;
     technicianId?: string;
+    userId?: string; // ✅ Add this
     search?: string;
     filter?: string;
     role?: string;

@@ -1,6 +1,6 @@
 import { IRating } from "../Models/Irating";
 
-export interface IratingRepository {
+export interface IRatingRepository {
   createRating(data: {
     userId: string;
     technicianId: string;
@@ -12,22 +12,9 @@ export interface IratingRepository {
 
   getRatingByBookingId(bookingId: string): Promise<IRating | null>;
 
-  //   getRatingsByTechnicianId(
-  //     technicianId: string,
-  //     options?: {
-  //       page?: number;
-  //       limit?: number;
-  //     }
-  //   ): Promise<{
-  //     data: IRating[];
-  //     total: number;
-  //     averageRating: number;
-  //   }>;
-
-  //   updateRating(
-  //     filter: FilterQuery<IRating>,
-  //     update: UpdateQuery<IRating>
-  //   ): Promise<IRating | null>;
-
-  //   deleteRating(ratingId: string): Promise<IRating | null>;
+  getRatingsByTechnicianId(technicianId: string): Promise<{
+    data: IRating[];
+    total: number;
+    averageRating: number;
+  }>;
 }
