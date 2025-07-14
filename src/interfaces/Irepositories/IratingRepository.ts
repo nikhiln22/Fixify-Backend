@@ -10,7 +10,9 @@ export interface IRatingRepository {
     review?: string;
   }): Promise<IRating>;
 
-  getRatingByBookingId(bookingId: string): Promise<IRating | null>;
+  getRatingByBookingId(
+    bookingId: string,
+  ): Promise<IRating | null>;
 
   getRatingsByTechnicianId(technicianId: string): Promise<{
     data: IRating[];

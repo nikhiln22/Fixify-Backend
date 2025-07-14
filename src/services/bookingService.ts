@@ -23,6 +23,7 @@ import { IemailService } from "../interfaces/Iemail/Iemail";
 import { EmailType, APP_NAME } from "../config/emailConfig";
 import { ITimeSlot } from "../interfaces/Models/ItimeSlot";
 import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
+import { IRating } from "../interfaces/Models/Irating";
 
 @injectable()
 export class BookingService implements IbookingService {
@@ -1416,6 +1417,39 @@ export class BookingService implements IbookingService {
         success: false,
         status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to rate service",
+      };
+    }
+  }
+
+  async getRating(
+    bookingId: string,
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: IRating | null;
+  }> {
+    try {
+      console.log(
+        "entering to the booking service getting the rating for the booking"
+      );
+      console.log("bookingId in the booking service:", bookingId);
+      const response = await this.ratingRepository.getRatingByBookingId(
+        bookingId,
+      );
+      console.log("response from the rating repository:", response);
+      return {
+        success: true,
+        status: HTTP_STATUS.OK,
+        message: "Rating fetched successfully",
+        data: response,
+      };
+    } catch (error) {
+      console.log("error occured while fetching the rating:", error);
+      return {
+        success: false,
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: "Failed to fetch the rating",
       };
     }
   }

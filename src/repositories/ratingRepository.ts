@@ -50,8 +50,7 @@ export class RatingRepository
 
       const rating = await this.model
         .findOne({ bookingId: new Types.ObjectId(bookingId) })
-        .populate("userId", "username email")
-        .populate("serviceId", "name")
+        .populate("userId", "username image")
         .exec();
 
       return rating;

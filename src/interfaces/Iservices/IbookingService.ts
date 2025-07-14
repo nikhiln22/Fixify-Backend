@@ -3,6 +3,7 @@ import {
   CreateBookingRequest,
 } from "../DTO/IServices/IuserService";
 import { IBooking } from "../Models/Ibooking";
+import { IRating } from "../Models/Irating";
 
 export interface IbookingService {
   bookService(
@@ -17,7 +18,7 @@ export interface IbookingService {
     page?: number;
     limit?: number;
     technicianId?: string;
-    userId?: string; // ✅ Add this
+    userId?: string;
     search?: string;
     filter?: string;
     role?: string;
@@ -98,5 +99,14 @@ export interface IbookingService {
     data?: {
       booking: IBooking;
     };
+  }>;
+
+  getRating(
+    bookingId: string,
+  ): Promise<{
+    success: boolean;
+    status: number;
+    message: string;
+    data?: IRating | null;
   }>;
 }
