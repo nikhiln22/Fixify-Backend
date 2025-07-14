@@ -701,6 +701,27 @@ export class TechnicianController implements ItechnicianController {
     }
   }
 
+  async getRating(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entered the function which fetched the booking rating for an specified booking in technician controller"
+      );
+      const { bookingId } = req.params;
+      console.log("bookingId in the technician controller:", bookingId);
+      const response = await this.bookingService.getRating(bookingId);
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log(
+        "error occured while fetching the rating for an booking:",
+        error
+      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
   async logout(req: Request, res: Response): Promise<void> {
     try {
       console.log(

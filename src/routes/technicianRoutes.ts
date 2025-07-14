@@ -148,6 +148,12 @@ export class TechnicianRoutes {
     );
 
     this.router.get(
+      "/rating/:bookingId",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
+      technicianController.getRating.bind(technicianController)
+    );
+
+    this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.TECHNICIAN),
       technicianController.logout.bind(technicianController)

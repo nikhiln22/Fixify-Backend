@@ -221,14 +221,9 @@ export class BookingRepository
         .populate("timeSlotId", "date startTime endTime")
         .populate(
           "paymentId",
-          "paymentMethod paymentStatus amountPaid refundStatus refundDate refundAmount"
+          "paymentMethod paymentStatus amountPaid refundStatus refundDate refundAmount fixifyShare technicianShare technicianPaid technicianPaidAt"
         )
         .exec();
-
-      if (!booking) {
-        console.log("Booking not found");
-        return null;
-      }
 
       console.log(
         "Booking details fetched successfully with populated timeSlot:",

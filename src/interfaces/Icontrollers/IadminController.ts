@@ -20,5 +20,6 @@ export interface IadminController {
   getAllCoupons(req: Request, res: Response): Promise<void>;
   blockCoupon(req: Request, res: Response): Promise<void>;
   updateCoupon(req: Request, res: Response): Promise<void>;
+  getRating(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

@@ -207,6 +207,12 @@ export class AdminRoutes {
     );
 
     this.router.get(
+      "/rating/:bookingId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.getRating.bind(adminController)
+    );
+
+    this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.ADMIN),
       adminController.logout.bind(adminController)

@@ -22,5 +22,6 @@ export interface ItechnicianController {
   sendChat(req: Request, res: Response): Promise<void>;
   cancelBooking(req: Request, res: Response): Promise<void>;
   getReviews(req: Request, res: Response): Promise<void>;
+  getRating(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }
