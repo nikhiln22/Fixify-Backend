@@ -21,7 +21,6 @@ export interface IServiceService {
     status?: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       services: IService[];
@@ -36,7 +35,7 @@ export interface IServiceService {
     };
   }>;
   toggleServiceStatus(
-    categoryId: String
+    categoryId: string
   ): Promise<ToggleServiceStatusResponse>;
   updateService(
     serviceId: string,
@@ -56,7 +55,6 @@ export interface IServiceService {
     status?: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       categories: Icategory[];
@@ -72,7 +70,7 @@ export interface IServiceService {
   }>;
 
   toggleCategoryStatus(
-    categoryId: String
+    categoryId: string
   ): Promise<ToggleCategoryStatusResponse>;
   updateCategory(
     categoryId: string,

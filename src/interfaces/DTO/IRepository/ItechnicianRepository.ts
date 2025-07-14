@@ -8,7 +8,7 @@ export interface findByEmailResponse {
 
 export interface createTempTechnicianResponse {
   success: boolean;
-  tempTechnicianId: String;
+  tempTechnicianId: string;
 }
 
 export interface findTempTechnicianById {

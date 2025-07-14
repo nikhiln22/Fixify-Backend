@@ -1,6 +1,5 @@
 import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
 import { ITimeSlotRepository } from "../interfaces/Irepositories/ItimeSlotRepository";
-import { HTTP_STATUS } from "../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
 import { ITimeSlot } from "../interfaces/Models/ItimeSlot";
 import { AddTimeSlotsResult } from "../interfaces/DTO/IServices/ItechnicianService";
@@ -42,7 +41,6 @@ export class TimeSlotService implements ITimeSlotService {
           return {
             success: false,
             message: `Time slot conflict detected. You already have availability from ${existingSlot.startTime} to ${existingSlot.endTime} on ${date}. Please choose a different time or date.`,
-            status: HTTP_STATUS.CONFLICT,
           };
         }
       }
@@ -68,14 +66,12 @@ export class TimeSlotService implements ITimeSlotService {
         return {
           success: true,
           message: "Timeslots created successfully",
-          status: HTTP_STATUS.CREATED,
           data: generatedSlots,
         };
       } else {
         return {
           success: false,
           message: "No new timeslots were created",
-          status: HTTP_STATUS.CONFLICT,
         };
       }
     } catch (error) {
@@ -84,7 +80,6 @@ export class TimeSlotService implements ITimeSlotService {
         success: false,
         message:
           error instanceof Error ? error.message : "An unknown error occurred",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -220,7 +215,6 @@ export class TimeSlotService implements ITimeSlotService {
   ): Promise<{
     success: boolean;
     message: string;
-    status: number;
     data?: ITimeSlot[];
   }> {
     try {
@@ -241,7 +235,6 @@ export class TimeSlotService implements ITimeSlotService {
       return {
         success: true,
         message: "Time slots fetched successfully",
-        status: HTTP_STATUS.OK,
         data: timeSlots,
       };
     } catch (error) {
@@ -249,7 +242,6 @@ export class TimeSlotService implements ITimeSlotService {
       return {
         success: false,
         message: "Failed to fetch time slots",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -260,7 +252,6 @@ export class TimeSlotService implements ITimeSlotService {
   ): Promise<{
     success: boolean;
     message: string;
-    status: number;
     data?: ITimeSlot;
   }> {
     try {
@@ -284,7 +275,6 @@ export class TimeSlotService implements ITimeSlotService {
           success: false,
           message:
             "Time slot not found or you don't have permission to modify this slot",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -292,7 +282,6 @@ export class TimeSlotService implements ITimeSlotService {
         return {
           success: false,
           message: "Cannot block/unblock a time slot that is already booked",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -305,7 +294,6 @@ export class TimeSlotService implements ITimeSlotService {
       return {
         success: true,
         message: `Time slot ${action} successfully`,
-        status: HTTP_STATUS.OK,
         data: updatedSlot,
       };
     } catch (error) {
@@ -313,7 +301,6 @@ export class TimeSlotService implements ITimeSlotService {
       return {
         success: false,
         message: "Failed to block/unblock time slot",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -324,7 +311,6 @@ export class TimeSlotService implements ITimeSlotService {
   ): Promise<{
     success: boolean;
     message: string;
-    status: number;
     data?: ITimeSlot;
   }> {
     try {
@@ -344,7 +330,6 @@ export class TimeSlotService implements ITimeSlotService {
       return {
         success: true,
         message: `Time slot ${action} successfully`,
-        status: HTTP_STATUS.OK,
         data: updatedSlot,
       };
     } catch (error: any) {
@@ -357,7 +342,6 @@ export class TimeSlotService implements ITimeSlotService {
           success: false,
           message:
             "Time slot not found or you don't have permission to modify this slot",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -365,7 +349,6 @@ export class TimeSlotService implements ITimeSlotService {
         return {
           success: false,
           message: "Time slot is already booked",
-          status: HTTP_STATUS.CONFLICT,
         };
       }
 
@@ -373,7 +356,6 @@ export class TimeSlotService implements ITimeSlotService {
         return {
           success: false,
           message: "Time slot is not currently booked",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -381,13 +363,11 @@ export class TimeSlotService implements ITimeSlotService {
         return {
           success: false,
           message: "Time slot is not available for booking",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
       return {
         success: false,
         message: "Failed to update slot booking status",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }

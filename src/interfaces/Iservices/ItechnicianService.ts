@@ -14,7 +14,7 @@ import {
   ToggleTechnicianStatusResponse,
   verifyOtpData,
 } from "../DTO/IServices/ItechnicianService";
-import { IRating} from "../Models/Irating";
+import { IRating } from "../Models/Irating";
 import { Itechnician } from "../Models/Itechnician";
 import { IWalletTransaction } from "../Models/IwalletTransaction";
 
@@ -40,7 +40,6 @@ export interface ItechnicianService {
   ): Promise<any>;
   getAllApplicants(options: { page?: number; limit?: number }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       applicants: Itechnician[];
@@ -56,7 +55,7 @@ export interface ItechnicianService {
   }>;
   verifyTechnician(
     technicianId: string
-  ): Promise<{ success: boolean; status: number; message: string }>;
+  ): Promise<{ success: boolean; message: string }>;
   rejectTechnician(
     technicianId: string,
     reason?: string
@@ -76,7 +75,6 @@ export interface ItechnicianService {
     radius?: number;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       technicians: Itechnician[];
@@ -97,24 +95,24 @@ export interface ItechnicianService {
     radius: number
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: Itechnician[];
   }>;
+
   toggleTechnicianStatus(id: string): Promise<ToggleTechnicianStatusResponse>;
+
   getWalletBalance(technicianId: string): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: { balance: number };
   }>;
+
   getAllWalletTransactions(options: {
     page?: number;
     limit?: number;
     technicianId: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       transactions: IWalletTransaction[];
@@ -132,7 +130,6 @@ export interface ItechnicianService {
   getReviews(techncianId: string): Promise<{
     success: boolean;
     message: string;
-    status: number;
     reviews?: IRating[];
     averageRating?: number;
     totalReviews?: number;

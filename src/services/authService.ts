@@ -24,7 +24,7 @@ export class AuthService implements IauthService {
         throw new Error("Invalid or expired refresh token");
       }
 
-      const tokenRole = payload.role
+      const tokenRole = payload.role;
 
       console.log("tokenRole:", tokenRole);
 
@@ -35,7 +35,7 @@ export class AuthService implements IauthService {
       if (tokenRole !== expectedRole) {
         throw new Error("Token role mismatch");
       }
-      console.log("payload from authaservice:",payload);
+      console.log("payload from authaservice:", payload);
       const newAccessToken = this.jwtService.generateAccessToken(
         payload.Id,
         payload.role

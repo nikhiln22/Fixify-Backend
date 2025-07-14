@@ -2,7 +2,6 @@ import { Iadmin } from "../../Models/Iadmin";
 
 export interface loginResponse {
   success: boolean;
-  status: number;
   message: string;
   data?: Iadmin;
   role?: string;

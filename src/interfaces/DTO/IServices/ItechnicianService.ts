@@ -5,7 +5,6 @@ export interface RegisterResponse {
   success: boolean;
   userData?: Itechnician;
   message: string;
-  status: number;
 }
 
 export interface SignupTechnicianData {
@@ -21,7 +20,6 @@ export interface tempTechnicianResponse {
   tempTechnicianId?: string;
   email?: string;
   success: boolean;
-  status: number;
   message?: string;
 }
 
@@ -30,7 +28,6 @@ export interface ResendOtpResponse {
   message: string;
   tempTechnicianId?: string;
   email?: string;
-  status: number;
 }
 
 export interface verifyOtpData {
@@ -42,7 +39,6 @@ export interface verifyOtpData {
 
 export interface loginResponse {
   success: boolean;
-  status: number;
   message: string;
   role?: string;
   access_token?: string;
@@ -63,7 +59,6 @@ export interface ForgotPasswordResponse {
   success: boolean;
   message: string;
   email?: string;
-  status: number;
 }
 
 export interface ResetPasswordData {
@@ -74,7 +69,6 @@ export interface ResetPasswordData {
 export interface ResetPasswordResponse {
   success: boolean;
   message: string;
-  status: number;
 }
 
 export interface TechnicianQualification {
@@ -91,7 +85,6 @@ export interface TechnicianQualification {
 
 export interface TechnicianQualificationUpdateResponse {
   success: boolean;
-  status: number;
   message: string;
   technician?: Pick<
     Itechnician,
@@ -107,7 +100,6 @@ export interface TechnicianQualificationUpdateResponse {
 export interface TechnicianProfileResponse {
   message: string;
   success: boolean;
-  status: number;
   technician?: {
     username?: string;
     email?: string;
@@ -125,25 +117,21 @@ export interface TechnicianProfileResponse {
 export interface VerifyTechnicianServiceResponse {
   success: boolean;
   message: string;
-  status: number;
 }
 
 export interface RejectTechnicianServiceResponse {
   success: boolean;
   message: string;
-  status: number;
 }
 
 export interface ToggleTechnicianStatusResponse {
   message: string;
   success: boolean;
-  status: number;
   technician?: Itechnician;
 }
 
 export interface AddTimeSlotsResult {
   success: boolean;
   message: string;
-  status: number;
   data?: ITimeSlot[];
 }

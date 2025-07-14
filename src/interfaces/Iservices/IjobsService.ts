@@ -10,7 +10,6 @@ export interface IjobsService {
     status?:string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       designations: IjobDesignation[];

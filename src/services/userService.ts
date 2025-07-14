@@ -28,7 +28,6 @@ import { IuserRepository } from "../interfaces/Irepositories/IuserRepository";
 import { IuserService } from "../interfaces/Iservices/IuserService";
 import { ItempUser } from "../interfaces/Models/ItempUser";
 import { IemailService } from "../interfaces/Iemail/Iemail";
-import { HTTP_STATUS } from "../utils/httpStatus";
 import { IjwtService } from "../interfaces/Ijwt/Ijwt";
 import { IOTPService } from "../interfaces/Iotp/IOTP";
 import { IPasswordHasher } from "../interfaces/IpasswordHasher/IpasswordHasher";
@@ -98,7 +97,6 @@ export class UserService implements IuserService {
       return {
         success: false,
         message: "OTP has expired or doesn't exist. Please request a new one",
-        status: HTTP_STATUS.BAD_REQUEST,
       };
     }
 
@@ -106,14 +104,12 @@ export class UserService implements IuserService {
       return {
         success: false,
         message: "Invalid OTP",
-        status: HTTP_STATUS.UNAUTHORIZED,
       };
     }
 
     return {
       success: true,
       message: "OTP verified successfully",
-      status: HTTP_STATUS.OK,
       email,
     };
   }
@@ -125,12 +121,11 @@ export class UserService implements IuserService {
       );
       console.log("data:", data);
       const { email, password } = data;
-      let result = await this.userRepository.findByEmail(email);
+      const result = await this.userRepository.findByEmail(email);
       if (result.success) {
         return {
           message: "user already exists",
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
       const hashedPassword = await this.passwordService.hash(password);
@@ -156,7 +151,6 @@ export class UserService implements IuserService {
         email,
         tempUserId: response.tempUserId.toString(),
         success: true,
-        status: HTTP_STATUS.CREATED,
       };
     } catch (error) {
       console.log("Error during user signup:", error);
@@ -182,7 +176,6 @@ export class UserService implements IuserService {
           return {
             success: false,
             message: "Temporary user not found or expired",
-            status: HTTP_STATUS.NOT_FOUND,
           };
         }
         const tempUser = tempUserResponse.tempUserData;
@@ -198,7 +191,6 @@ export class UserService implements IuserService {
           return {
             success: false,
             message: verificationResult.message,
-            status: verificationResult.status,
           };
         }
 
@@ -235,7 +227,6 @@ export class UserService implements IuserService {
         return {
           message: "OTP verified successfully, user registered",
           success: true,
-          status: HTTP_STATUS.CREATED,
           userData: safeUser,
         };
       } else if (OtpPurpose.PASSWORD_RESET === purpose && userEmail) {
@@ -246,7 +237,6 @@ export class UserService implements IuserService {
           return {
             success: false,
             message: "User not found with this email",
-            status: HTTP_STATUS.NOT_FOUND,
           };
         }
 
@@ -261,7 +251,6 @@ export class UserService implements IuserService {
         return {
           success: false,
           message: "Invalid verification request",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
     } catch (error) {
@@ -269,7 +258,6 @@ export class UserService implements IuserService {
       return {
         success: false,
         message: "An error occured during the otp verification",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -293,7 +281,6 @@ export class UserService implements IuserService {
         return {
           success: false,
           message: "User not found",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -308,14 +295,12 @@ export class UserService implements IuserService {
             ? "registration"
             : "password reset"
         }`,
-        status: HTTP_STATUS.OK,
       };
     } catch (error) {
       console.log("error occured while resending the otp", error);
       return {
         success: false,
         message: "Error occured while resending the otp",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -332,7 +317,6 @@ export class UserService implements IuserService {
         return {
           success: false,
           message: "User not found with this email",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -346,14 +330,12 @@ export class UserService implements IuserService {
         success: true,
         message: "Password reset OTP sent to your email",
         email,
-        status: HTTP_STATUS.OK,
       };
     } catch (error) {
       console.log("Error during forgot password:", error);
       return {
         success: false,
         message: "An error occurred during password reset process",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -369,7 +351,6 @@ export class UserService implements IuserService {
         return {
           success: false,
           message: "User not found with this email",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -384,7 +365,6 @@ export class UserService implements IuserService {
         return {
           success: false,
           message: "Failed to update password",
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         };
       }
 
@@ -394,14 +374,12 @@ export class UserService implements IuserService {
       return {
         success: true,
         message: "Password reset successful",
-        status: HTTP_STATUS.OK,
       };
     } catch (error) {
       console.log("Error during password reset:", error);
       return {
         success: false,
         message: "An error occurred during password reset",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -416,7 +394,6 @@ export class UserService implements IuserService {
         return {
           success: false,
           message: "user not found",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -429,7 +406,6 @@ export class UserService implements IuserService {
         return {
           success: false,
           message: "invalid password",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -437,7 +413,6 @@ export class UserService implements IuserService {
         return {
           success: false,
           message: "Your account has been blocked. Please contact support.",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -459,7 +434,6 @@ export class UserService implements IuserService {
         access_token,
         refresh_token,
         role: Roles.USER,
-        status: HTTP_STATUS.OK,
         user: {
           username: user.userData.username,
           email: user.userData.email,
@@ -468,11 +442,10 @@ export class UserService implements IuserService {
         },
       };
     } catch (error) {
-      console.log("error");
+      console.log("error", error);
       return {
         success: false,
         message: "error occured during the login",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -484,7 +457,6 @@ export class UserService implements IuserService {
     status?: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       users: Iuser[];
@@ -513,7 +485,6 @@ export class UserService implements IuserService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "Users fetched successfully",
         data: {
           users: result.data,
@@ -531,7 +502,6 @@ export class UserService implements IuserService {
       console.error("Error fetching users:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Something went wrong while fetching users",
       };
     }
@@ -544,24 +514,27 @@ export class UserService implements IuserService {
 
       if (!user) {
         return {
+          success: false,
           message: "User not found",
         };
       }
 
       const newStatus = !user.status;
-      let response = await this.userRepository.blockUser(id, newStatus);
+      const response = await this.userRepository.blockUser(id, newStatus);
       console.log(
         "Response after toggling user status from the user repository:",
         response
       );
 
       return {
+        success: true,
         message: `User successfully ${newStatus ? "unblocked" : "blocked"}`,
         user: { ...user.toObject(), status: newStatus },
       };
     } catch (error) {
       console.error("Error toggling user status:", error);
       return {
+        success: false,
         message: "Failed to toggle user status",
       };
     }
@@ -577,14 +550,12 @@ export class UserService implements IuserService {
         return {
           message: "User not found",
           success: false,
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
       return {
         message: "User profile fetched successfully",
         success: true,
-        status: HTTP_STATUS.OK,
         user: userData,
       };
     } catch (error) {
@@ -592,7 +563,6 @@ export class UserService implements IuserService {
       return {
         message: "Failed to fetch user profile",
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -610,7 +580,6 @@ export class UserService implements IuserService {
         return {
           success: false,
           message: "User not found",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -650,7 +619,6 @@ export class UserService implements IuserService {
       return {
         success: true,
         message: "Profile updated successfully",
-        status: HTTP_STATUS.OK,
         user: updatedUser,
       };
     } catch (error) {
@@ -658,7 +626,6 @@ export class UserService implements IuserService {
       return {
         success: false,
         message: "An error occurred while updating profile",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -670,7 +637,6 @@ export class UserService implements IuserService {
       if (!amount || amount <= 0) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "Invalid amount. Amount must be greater than 0",
         };
       }
@@ -678,7 +644,6 @@ export class UserService implements IuserService {
       if (amount < 100) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "Minimum amount to add is ₹100",
         };
       }
@@ -686,7 +651,6 @@ export class UserService implements IuserService {
       if (amount > 1000) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "Maximum amount to add is ₹1,000",
         };
       }
@@ -730,7 +694,6 @@ export class UserService implements IuserService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "Payment session created successfully",
         data: {
           checkoutUrl: session.url!,
@@ -743,7 +706,6 @@ export class UserService implements IuserService {
       return {
         success: false,
         message: "Failed to create payment session",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -753,7 +715,6 @@ export class UserService implements IuserService {
     userId: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       wallet: IWallet | null;
@@ -777,7 +738,6 @@ export class UserService implements IuserService {
         );
         return {
           success: true,
-          status: HTTP_STATUS.OK,
           message: "Transaction already processed successfully",
           data: {
             wallet,
@@ -791,7 +751,6 @@ export class UserService implements IuserService {
       if (!session || session.payment_status !== "paid") {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "Payment not completed or session not found",
         };
       }
@@ -803,7 +762,6 @@ export class UserService implements IuserService {
       if (!amount || amount <= 0) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "Invalid amount in session",
         };
       }
@@ -811,7 +769,6 @@ export class UserService implements IuserService {
       if (session.metadata?.userId !== userId) {
         return {
           success: false,
-          status: HTTP_STATUS.FORBIDDEN,
           message: "Session does not belong to this user",
         };
       }
@@ -828,7 +785,6 @@ export class UserService implements IuserService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "Money added to wallet successfully",
         data: {
           wallet: result.wallet,
@@ -839,7 +795,6 @@ export class UserService implements IuserService {
       console.log("Error verifying Stripe session:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Internal server error",
       };
     }
@@ -847,7 +802,6 @@ export class UserService implements IuserService {
 
   async getWalletBalance(userId: string): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: { balance: number };
   }> {
@@ -880,7 +834,6 @@ export class UserService implements IuserService {
           return {
             success: false,
             message: "Failed to create wallet",
-            status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           };
         }
       }
@@ -888,7 +841,6 @@ export class UserService implements IuserService {
       return {
         success: true,
         message: "Wallet balance fetched successfully",
-        status: HTTP_STATUS.OK,
         data: {
           balance: fetchedWallet.balance,
         },
@@ -901,7 +853,6 @@ export class UserService implements IuserService {
       return {
         success: false,
         message: "Internal Server Error",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -912,7 +863,6 @@ export class UserService implements IuserService {
     userId: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       transactions: IWalletTransaction[];
@@ -945,7 +895,6 @@ export class UserService implements IuserService {
       console.log("fetched wallet transactions for the user:", result);
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "User transactions fetched successfully",
         data: {
           transactions: result.data,
@@ -963,7 +912,6 @@ export class UserService implements IuserService {
       console.error("Error fetching user wallet transactions:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Something went wrong while fetching user wallet transactions",
       };
     }

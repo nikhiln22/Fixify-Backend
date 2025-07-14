@@ -4,7 +4,6 @@ import { ICoupon } from "../Models/Icoupon";
 export interface ICouponService {
   addCoupon(data: couponData): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: ICoupon;
   }>;
@@ -15,7 +14,6 @@ export interface ICouponService {
     filterStatus?: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       offers: ICoupon[];
@@ -31,8 +29,8 @@ export interface ICouponService {
   }>;
   blockCoupon(id: string): Promise<{
     message: string;
-    status: number;
-    offer?: ICoupon;
+    success: boolean;
+    coupon?: ICoupon;
   }>;
   updateCoupon(
     couponId: string,
@@ -47,7 +45,6 @@ export interface ICouponService {
       valid_until?: Date;
     }
   ): Promise<{
-    status: number;
     success: boolean;
     message: string;
     data?: ICoupon;

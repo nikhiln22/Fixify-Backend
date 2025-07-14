@@ -8,7 +8,7 @@ import { ItempUser } from "../Models/ItempUser";
 
 export interface ItempUserRepository {
   createTempUser(userData: ItempUser): Promise<createTempUserResponseDTO>;
-  findTempUserById(tempUserId: String): Promise<findTempUserByIdDTO>;
+  findTempUserById(tempUserId: string): Promise<findTempUserByIdDTO>;
   findTempUserByEmail(email: string): Promise<findTempUserByEmailDTO>;
   updateTempUser(
       tempUserId: string,

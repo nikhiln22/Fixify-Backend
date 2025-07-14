@@ -30,7 +30,7 @@ export class TempUserRepository
         "savedTemporaryUser from userRepository:",
         savedTemporaryUser
       );
-      let tempUserId = (
+      const tempUserId = (
         savedTemporaryUser._id as mongoose.Types.ObjectId
       ).toString();
       if (!savedTemporaryUser) {

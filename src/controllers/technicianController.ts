@@ -7,6 +7,10 @@ import { HTTP_STATUS } from "../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
 import { IbookingService } from "../interfaces/Iservices/IbookingService";
 import { IchatService } from "../interfaces/Iservices/IchatService";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+} from "../utils/responseHelper";
 
 @injectable()
 export class TechnicianController implements ItechnicianController {
@@ -28,25 +32,36 @@ export class TechnicianController implements ItechnicianController {
       );
       const data = req.body;
       console.log("data:", data);
-      const response = await this.technicianService.technicianSignUp(data);
-      console.log("response in technician register:", response);
-      if (response.success) {
-        res.status(response.status).json({
-          success: response.success,
-          message: response.message,
-          email: response.email,
-          tempTechnicianId: response.tempTechnicianId,
-        });
+
+      const serviceResponse = await this.technicianService.technicianSignUp(
+        data
+      );
+      console.log("response in technician register:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res.status(HTTP_STATUS.CREATED).json(
+          createSuccessResponse(
+            {
+              email: serviceResponse.email,
+              tempTechnicianId: serviceResponse.tempTechnicianId,
+            },
+            serviceResponse.message
+          )
+        );
       } else {
         res
-          .status(response.status)
-          .json({ success: response.success, message: response.message });
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Registration failed"
+            )
+          );
       }
     } catch (error) {
-      console.log("error occured", error);
+      console.log("error occurred", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ success: false, message: "Internal Server Error" });
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -57,20 +72,44 @@ export class TechnicianController implements ItechnicianController {
       );
       const data = req.body;
       console.log("technicianData in verifyOtp controller:", data);
-      const response = await this.technicianService.verifyOtp(data);
-      console.log("response in verifyOtp controller in technician:", response);
-      if (response.success) {
-        res.status(response.status).json(response);
-      } else {
+
+      const serviceResponse = await this.technicianService.verifyOtp(data);
+      console.log(
+        "response in verifyOtp controller in technician:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success) {
         res
-          .status(response.status)
-          .json({ success: response.success, message: response.message });
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(
+              serviceResponse.userData || null,
+              serviceResponse.message
+            )
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("expired")
+          ? HTTP_STATUS.BAD_REQUEST
+          : serviceResponse.message?.includes("Invalid OTP")
+          ? HTTP_STATUS.UNAUTHORIZED
+          : HTTP_STATUS.BAD_REQUEST;
+
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "OTP verification failed"
+            )
+          );
       }
     } catch (error) {
-      console.log("error occured:", error);
+      console.log("error occurred:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ success: false, message: "Internal Server Error" });
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -80,67 +119,96 @@ export class TechnicianController implements ItechnicianController {
         "entering into the resend otp functionality in the technicianAuthController"
       );
       const { email } = req.body;
-      const response = await this.technicianService.resendOtp(email);
+
+      const serviceResponse = await this.technicianService.resendOtp(email);
       console.log(
         "response from the technician resendotp controller:",
-        response
+        serviceResponse
       );
-      if (response.success) {
-        res.status(response.status).json({
-          success: response.success,
-          message: response.message,
-          email: response.email,
-          tempTechnicianId: response.tempTechnicianId,
-        });
+
+      if (serviceResponse.success) {
+        res.status(HTTP_STATUS.OK).json(
+          createSuccessResponse(
+            {
+              email: serviceResponse.email,
+              tempTechnicianId: serviceResponse.tempTechnicianId,
+            },
+            serviceResponse.message
+          )
+        );
       } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
         res
-          .status(response.status)
-          .json({ success: response.success, message: response.message });
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to resend OTP"
+            )
+          );
       }
     } catch (error) {
       console.log("error in the resendOtp controller", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ success: false, message: "Internal Server Error" });
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
   async login(req: Request, res: Response): Promise<void> {
     try {
       console.log(
-        "entering the user login function in technicianAuthController"
+        "entering the technician login function in technicianAuthController"
       );
       const data = req.body;
-      const response = await this.technicianService.login(data);
-      console.log("response from the technician login controller", response);
 
-      res.cookie(
-        `${response.role?.toLowerCase()}_refresh_token`,
-        response.refresh_token,
-        {
-          httpOnly: true,
-          secure: true,
-          sameSite: "strict",
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        }
+      const serviceResponse = await this.technicianService.login(data);
+      console.log(
+        "response from the technician login controller",
+        serviceResponse
       );
 
-      if (response.success) {
-        res.status(response.status).json({
-          success: response.success,
-          message: response.message,
-          data: response,
-        });
+      if (serviceResponse.success) {
+        res.cookie(
+          `${serviceResponse.role?.toLowerCase()}_refresh_token`,
+          serviceResponse.refresh_token,
+          {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+          }
+        );
+
+        res.status(HTTP_STATUS.OK).json(
+          createSuccessResponse(
+            {
+              technician: serviceResponse.technician,
+              access_token: serviceResponse.access_token,
+              role: serviceResponse.role,
+            },
+            serviceResponse.message
+          )
+        );
       } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("invalid password")
+          ? HTTP_STATUS.UNAUTHORIZED
+          : serviceResponse.message?.includes("blocked")
+          ? HTTP_STATUS.FORBIDDEN
+          : HTTP_STATUS.BAD_REQUEST;
+
         res
-          .status(response.status)
-          .json({ success: response.success, message: response.message });
+          .status(statusCode)
+          .json(createErrorResponse(serviceResponse.message || "Login failed"));
       }
     } catch (error) {
       console.log("error:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ success: false, message: "Internal server error" });
+        .json(createErrorResponse("Internal server error"));
     }
   }
 
@@ -151,30 +219,40 @@ export class TechnicianController implements ItechnicianController {
       );
       const { email } = req.body;
 
-      const response = await this.technicianService.forgotPassword({
+      const serviceResponse = await this.technicianService.forgotPassword({
         email,
       });
       console.log(
         "Response from forgotPassword service in technician:",
-        response
+        serviceResponse
       );
 
-      if (response.success) {
-        res.status(response.status).json({
-          success: response.success,
-          message: response.message,
-          email: response.email,
-        });
+      if (serviceResponse.success) {
+        res.status(HTTP_STATUS.OK).json(
+          createSuccessResponse(
+            {
+              email: serviceResponse.email,
+            },
+            serviceResponse.message
+          )
+        );
       } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
         res
-          .status(response.status)
-          .json({ success: response.success, message: response.message });
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to send reset email"
+            )
+          );
       }
     } catch (error) {
       console.log("Error in forgotPassword controller:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ success: false, message: "Internal Server Error" });
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -185,28 +263,34 @@ export class TechnicianController implements ItechnicianController {
       );
       const { email, password } = req.body;
 
-      const response = await this.technicianService.resetPassword({
+      const serviceResponse = await this.technicianService.resetPassword({
         email,
         password,
       });
 
-      console.log("Response from resetPassword service:", response);
+      console.log("Response from resetPassword service:", serviceResponse);
 
-      if (response.success) {
-        res.status(response.status).json({
-          success: response.success,
-          message: response.message,
-        });
-      } else {
+      if (serviceResponse.success) {
         res
-          .status(response.status)
-          .json({ success: response.success, message: response.message });
+          .status(HTTP_STATUS.OK)
+          .json(createSuccessResponse(null, serviceResponse.message));
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to reset password"
+            )
+          );
       }
     } catch (error) {
       console.log("Error in resetPassword controller:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ success: false, message: "Internal Server Error" });
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -217,7 +301,6 @@ export class TechnicianController implements ItechnicianController {
       console.log("Received data:", data);
 
       const technicianId = (req as any).user?.id;
-
       console.log("technicianId:", technicianId);
 
       const files = req.files as
@@ -239,19 +322,35 @@ export class TechnicianController implements ItechnicianController {
 
       console.log("Processing qualification data:", qualificationData);
 
-      const response =
+      const serviceResponse =
         await this.technicianService.submitTechnicianQualifications(
           technicianId,
           qualificationData
         );
 
-      res.status(response.status).json(response);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(
+              serviceResponse.technician,
+              serviceResponse.message
+            )
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to submit qualifications"
+            )
+          );
+      }
     } catch (error) {
       console.log("Some error occurred:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server Error",
-        success: false,
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -261,25 +360,42 @@ export class TechnicianController implements ItechnicianController {
       const technicianId = (req as any).user?.id;
 
       if (!technicianId) {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json({
-          message: "Unauthorized access",
-          success: false,
-          status: HTTP_STATUS.UNAUTHORIZED,
-        });
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Unauthorized access"));
         return;
       }
 
-      const response = await this.technicianService.getTechnicianProfile(
+      const serviceResponse = await this.technicianService.getTechnicianProfile(
         technicianId
       );
-      res.status(response.status).json(response);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(
+              serviceResponse.technician,
+              serviceResponse.message
+            )
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch profile"
+            )
+          );
+      }
     } catch (error) {
       console.log("Error fetching technician profile:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server Error",
-        success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -289,14 +405,32 @@ export class TechnicianController implements ItechnicianController {
         "entering to the job designations fetching function from the technician controller"
       );
 
-      let response = await this.jobsService.getAllDesignations({});
-      console.log("respone from the job designations controller:", response);
-      res.status(response.status).json(response);
+      const serviceResponse = await this.jobsService.getAllDesignations({});
+      console.log(
+        "response from the job designations controller:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch job designations"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured:", error);
+      console.log("error occurred:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ message: "Internal server error occured" });
+        .json(createErrorResponse("Internal server error occurred"));
     }
   }
 
@@ -309,20 +443,36 @@ export class TechnicianController implements ItechnicianController {
       const data = req.body;
       console.log("data in the addtime slot controller:", data);
       console.log("technicianId from the addtimeslot function:", technicianId);
-      const response = await this.timeSlotService.addTimeSlots(
+
+      const serviceResponse = await this.timeSlotService.addTimeSlots(
         technicianId,
         data
       );
       console.log(
         "response from the technician controller adding time Slots:",
-        response
+        serviceResponse
       );
-      res.status(response.status).json(response);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.CREATED)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to add time slots"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while adding the time slots:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server error",
-      });
+      console.log("error occurred while adding the time slots:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server error"));
     }
   }
 
@@ -335,23 +485,39 @@ export class TechnicianController implements ItechnicianController {
         "technicianId from the getTimeSlots function in technician controller:",
         technicianId
       );
-      const response = await this.timeSlotService.getTimeSlots(
+
+      const serviceResponse = await this.timeSlotService.getTimeSlots(
         technicianId,
         includePast
       );
       console.log(
         "response from the technician controller getting time slots:",
-        response
+        serviceResponse
       );
-      res.status(response.status).json(response);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch time slots"
+            )
+          );
+      }
     } catch (error) {
       console.log(
-        "error occured while fetching the time slots for the controller:",
+        "error occurred while fetching the time slots for the controller:",
         error
       );
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server error"));
     }
   }
 
@@ -367,18 +533,36 @@ export class TechnicianController implements ItechnicianController {
       );
       const slotId = req.params.slotId;
       console.log("slotId in the blocktime slots function:", slotId);
-      const response = await this.timeSlotService.blockTimeSlot(
+
+      const serviceResponse = await this.timeSlotService.blockTimeSlot(
         technicianId,
         slotId
       );
-      console.log("response from the blockslotId Service:", response);
-      res.status(response.status).json(response);
+      console.log("response from the blockslotId Service:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to block time slot"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while blocking the slots:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      console.log("error occurred while blocking the slots:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -397,10 +581,9 @@ export class TechnicianController implements ItechnicianController {
         "technicianId in the fetching booking in the technician controller:",
         technicianId
       );
-
       console.log("filter in technician controller:", filter);
 
-      const response = await this.bookingService.getAllBookings({
+      const serviceResponse = await this.bookingService.getAllBookings({
         page,
         limit,
         technicianId,
@@ -408,19 +591,31 @@ export class TechnicianController implements ItechnicianController {
         filter,
         role: "technician",
       });
-      console.log("result from the booking service:", response);
+      console.log("result from the booking service:", serviceResponse);
 
-      res.status(response.status).json(response);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch bookings"
+            )
+          );
+      }
     } catch (error) {
       console.error(
         "Error in getAllBookings for technician controller:",
         error
       );
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Error fetching Bookings",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Error fetching bookings"));
     }
   }
 
@@ -436,18 +631,16 @@ export class TechnicianController implements ItechnicianController {
       const { bookingId } = req.params;
 
       if (!technicianId) {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json({
-          success: false,
-          message: "User not authenticated",
-        });
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("technician not authenticated"));
         return;
       }
 
       if (!bookingId) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json({
-          success: false,
-          message: "Booking ID is required",
-        });
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("Booking ID is required"));
         return;
       }
 
@@ -458,17 +651,36 @@ export class TechnicianController implements ItechnicianController {
         technicianId
       );
 
-      const response = await this.bookingService.getBookingById(bookingId, {
-        technicianId: technicianId,
-      });
+      const serviceResponse = await this.bookingService.getBookingById(
+        bookingId,
+        {
+          technicianId: technicianId,
+        }
+      );
 
-      res.status(response.status).json(response);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch booking details"
+            )
+          );
+      }
     } catch (error) {
       console.error("Error in getBookingDetails controller:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal server error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error"));
     }
   }
 
@@ -477,15 +689,28 @@ export class TechnicianController implements ItechnicianController {
       console.log("Fetching chat history for booking");
       const { bookingId } = req.params;
 
-      const response = await this.chatService.getChatHistory(bookingId);
+      const serviceResponse = await this.chatService.getChatHistory(bookingId);
 
-      res.status(response.status).json(response);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch chat history"
+            )
+          );
+      }
     } catch (error) {
       console.log("Error fetching chat history:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -505,19 +730,33 @@ export class TechnicianController implements ItechnicianController {
         senderType: "technician" as const,
       };
 
-      const response = await this.chatService.sendChat(chatData);
+      const serviceResponse = await this.chatService.sendChat(chatData);
 
-      if (response.success && io && response.data) {
-        io.to(`booking_${bookingId}`).emit("new_message", response.data);
+      if (serviceResponse.success && io && serviceResponse.data) {
+        io.to(`booking_${bookingId}`).emit("new_message", serviceResponse.data);
         console.log(`Message broadcasted to booking_${bookingId} room`);
       }
-      res.status(response.status).json(response);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to send chat message"
+            )
+          );
+      }
     } catch (error) {
       console.log("Error sending chat:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -529,19 +768,36 @@ export class TechnicianController implements ItechnicianController {
       const technicianId = (req as any).user?.id;
       const bookingId = req.params.bookingId;
 
-      const response = await this.bookingService.generateCompletionOtp(
+      const serviceResponse = await this.bookingService.generateCompletionOtp(
         technicianId,
         bookingId
       );
 
-      console.log("response in the generate otp controller:", response);
-      res.status(response.status).json(response);
+      console.log("response in the generate otp controller:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to generate completion OTP"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while generating the completion otp:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      console.log("error occurred while generating the completion otp:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -558,22 +814,39 @@ export class TechnicianController implements ItechnicianController {
 
       console.log("received data:", otp);
 
-      const response = await this.bookingService.verifyCompletionOtp(
+      const serviceResponse = await this.bookingService.verifyCompletionOtp(
         technicianId,
         bookingId,
         otp
       );
       console.log(
-        "resposne after veryfying the otp from the booking service:",
-        response
+        "response after verifying the otp from the booking service:",
+        serviceResponse
       );
-      res.status(response.status).json(response);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(createSuccessResponse(serviceResponse.message));
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("Invalid OTP")
+          ? HTTP_STATUS.UNAUTHORIZED
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to verify completion OTP"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while veryfying the completion otp:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      console.log("error occurred while verifying the completion otp:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -584,26 +857,41 @@ export class TechnicianController implements ItechnicianController {
       );
       const technicianId = (req as any).user?.id;
       console.log(
-        "userId in the getWalletBalance function in user controller:",
+        "technicianId in the getWalletBalance function in technician controller:",
         technicianId
       );
-      const response = await this.technicianService.getWalletBalance(
+
+      const serviceResponse = await this.technicianService.getWalletBalance(
         technicianId
       );
       console.log(
         "response in the technician controller for fetching the technician wallet balance:",
-        response
+        serviceResponse
       );
-      res.status(response.status).json(response);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch wallet balance"
+            )
+          );
+      }
     } catch (error) {
       console.log(
-        "error occured while fetching the technician wallet balance:",
+        "error occurred while fetching the technician wallet balance:",
         error
       );
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -617,23 +905,39 @@ export class TechnicianController implements ItechnicianController {
         "technicianId in the getwallet transactions in the technician controller:",
         technicianId
       );
-      const response = await this.technicianService.getAllWalletTransactions({
-        page,
-        limit,
-        technicianId,
-      });
 
-      console.log("response in the getWalletTransactions:", response);
-      res.status(response.status).json(response);
+      const serviceResponse =
+        await this.technicianService.getAllWalletTransactions({
+          page,
+          limit,
+          technicianId,
+        });
+
+      console.log("response in the getWalletTransactions:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch wallet transactions"
+            )
+          );
+      }
     } catch (error) {
       console.log(
-        "error occured while fetching all the wallet transactions of the technician:",
+        "error occurred while fetching all the wallet transactions of the technician:",
         error
       );
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -654,25 +958,43 @@ export class TechnicianController implements ItechnicianController {
         bookingId
       );
 
-      const response = await this.bookingService.cancelBookingByTechnician(
-        technicianId,
-        bookingId,
-        cancellationReason
-      );
+      const serviceResponse =
+        await this.bookingService.cancelBookingByTechnician(
+          technicianId,
+          bookingId,
+          cancellationReason
+        );
       console.log(
         "response from the booking service after technician is cancelling the booking:",
-        response
+        serviceResponse
       );
-      res.status(response.status).json(response);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to cancel booking"
+            )
+          );
+      }
     } catch (error) {
       console.log(
-        "error occured while technician is cancelling the booking:",
+        "error occurred while technician is cancelling the booking:",
         error
       );
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server Error",
-        success: false,
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -680,45 +1002,88 @@ export class TechnicianController implements ItechnicianController {
     try {
       const technicianId = (req as any).user?.id;
       console.log(
-        "technicianId in the user controller fetching the reviews:",
+        "technicianId in the technician controller fetching the reviews:",
         technicianId
       );
-      const response = await this.technicianService.getReviews(technicianId);
+
+      const serviceResponse = await this.technicianService.getReviews(
+        technicianId
+      );
       console.log(
         "response from the service fetching the technician reviews:",
-        response
+        serviceResponse
       );
-      res.status(response.status).json(response);
+
+      if (serviceResponse.success) {
+        res.status(HTTP_STATUS.OK).json(
+          createSuccessResponse(
+            {
+              reviews: serviceResponse.reviews,
+              averageRating: serviceResponse.averageRating,
+              totalReviews: serviceResponse.totalReviews,
+            },
+            serviceResponse.message
+          )
+        );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch reviews"
+            )
+          );
+      }
     } catch (error) {
       console.log(
-        "error occured while fetching the technician reviews:",
+        "error occurred while fetching the technician reviews:",
         error
       );
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server Error",
-        success: false,
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
   async getRating(req: Request, res: Response): Promise<void> {
     try {
       console.log(
-        "entered the function which fetched the booking rating for an specified booking in technician controller"
+        "entered the function which fetched the booking rating for a specified booking in technician controller"
       );
       const { bookingId } = req.params;
       console.log("bookingId in the technician controller:", bookingId);
-      const response = await this.bookingService.getRating(bookingId);
-      res.status(response.status).json(response);
+
+      const serviceResponse = await this.bookingService.getRating(bookingId);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch rating"
+            )
+          );
+      }
     } catch (error) {
       console.log(
-        "error occured while fetching the rating for an booking:",
+        "error occurred while fetching the rating for a booking:",
         error
       );
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -729,21 +1094,21 @@ export class TechnicianController implements ItechnicianController {
       );
       const role = (req as any).user?.role;
       console.log("role in the technician auth controller:", role);
+
       res.clearCookie(`${role}_refresh_token`, {
         httpOnly: true,
         secure: true,
         sameSite: "strict",
       });
-      res.status(HTTP_STATUS.OK).json({
-        success: true,
-        message: "Logged out successfully",
-      });
+
+      res
+        .status(HTTP_STATUS.OK)
+        .json(createSuccessResponse(null, "Logged out successfully"));
     } catch (error) {
-      console.log("error occured while technician logging out:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: true,
-        message: "Internal server error occured",
-      });
+      console.log("error occurred while technician logging out:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error occurred"));
     }
   }
 }

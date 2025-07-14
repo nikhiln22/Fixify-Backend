@@ -3,6 +3,10 @@ import { injectable, inject } from "tsyringe";
 import { IjobsService } from "../interfaces/Iservices/IjobsService";
 import { IjobController } from "../interfaces/Icontrollers/IjobController";
 import { HTTP_STATUS } from "../utils/httpStatus";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+} from "../utils/responseHelper";
 
 @injectable()
 export class JobController implements IjobController {
@@ -15,42 +19,62 @@ export class JobController implements IjobController {
     try {
       const { designation } = req.body;
 
-      const result = await this.jobService.addDesignation(
-        designation
-      );
+      const serviceResponse = await this.jobService.addDesignation(designation);
+      console.log("result in the adddesignation controller:", serviceResponse);
 
-      console.log("result in the adddesignation controller:", result);
-
-      res.status(result.status).json({
-        message: result.message,
-        designation: result.data || null,
-      });
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.CREATED)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to add designation"
+            )
+          );
+      }
     } catch (error) {
       console.error("Error adding designation:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Error adding designation.",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Error adding designation"));
     }
   }
 
   async toggleDesignationStatus(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      console.log("id from the block designation control:", id);
+      console.log("id from the toggle designation control:", id);
 
-      const result = await this.jobService.toggleDesignationStatus(
-        id
-      );
+      const serviceResponse = await this.jobService.toggleDesignationStatus(id);
 
-      res.status(result.status).json({
-        message: result.message,
-        data: result.data,
-      });
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to toggle designation status"
+            )
+          );
+      }
     } catch (error) {
-      console.error("Error blocking designation:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Error blocking designation.",
-      });
+      console.error("Error toggling designation status:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Error toggling designation status"));
     }
   }
 
@@ -62,25 +86,38 @@ export class JobController implements IjobController {
       const search = (req.query.search as string) || undefined;
       const status = (req.query.status as string) || undefined;
 
-      const result = await this.jobService.getAllDesignations({
+      const serviceResponse = await this.jobService.getAllDesignations({
         page,
         limit,
         search,
-        status
+        status,
       });
 
       console.log(
         "result from the fetching all designations controller:",
-        result
+        serviceResponse
       );
-      res.status(result.status).json(result);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch designations"
+            )
+          );
+      }
     } catch (error) {
       console.error("Error in getAllDesignations controller:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Error fetching designations",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Error fetching designations"));
     }
   }
 
@@ -88,19 +125,31 @@ export class JobController implements IjobController {
     try {
       const { name } = req.params;
 
-      const result = await this.jobService.findDesignationByName(
-        name
-      );
+      const serviceResponse = await this.jobService.findDesignationByName(name);
 
-      res.status(result.status).json({
-        message: result.message,
-        designation: result.data || null,
-      });
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to find designation"
+            )
+          );
+      }
     } catch (error) {
       console.error("Error finding designation by name:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Error finding designation by name.",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Error finding designation by name"));
     }
   }
 }

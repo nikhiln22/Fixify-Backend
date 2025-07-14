@@ -4,7 +4,6 @@ import { IOffer } from "../Models/Ioffers";
 export interface IOfferService {
   addOffer(data: offerData): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: IOffer;
   }>;
@@ -15,7 +14,6 @@ export interface IOfferService {
     filterStatus?: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       offers: IOffer[];
@@ -31,7 +29,7 @@ export interface IOfferService {
   }>;
   blockOffer(id: string): Promise<{
     message: string;
-    status: number;
+    success?: boolean;
     offer?: IOffer;
   }>;
   updateOffer(
@@ -48,7 +46,6 @@ export interface IOfferService {
       valid_until?: Date;
     }
   ): Promise<{
-    status: number;
     success: boolean;
     message: string;
     data?: IOffer;

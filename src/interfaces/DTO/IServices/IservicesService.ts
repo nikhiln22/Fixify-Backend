@@ -6,27 +6,24 @@ export interface ServiceData {
   price: number;
   description: string;
   categoryId: string;
-  designationId:string;
+  designationId: string;
   imageFile?: string;
   serviceId?: string;
 }
 
 export interface AddServiceResponse {
   success: boolean;
-  status: number;
   message: string;
   data?: IService;
 }
 
 export interface ToggleServiceStatusResponse {
-  status: number;
   success: boolean;
   message: string;
   data?: IService;
 }
 
 export interface UpdatedServiceResponse {
-  status: number;
   success: boolean;
   message: string;
   data?: IService;
@@ -34,13 +31,11 @@ export interface UpdatedServiceResponse {
 
 export interface AddCategoryResponse {
   success: boolean;
-  status: number;
   message: string;
   data?: Icategory;
 }
 
 export interface getCategoriesResponse {
-  status: number;
   message: string;
   categories?: Icategory[];
   total?: number;
@@ -48,21 +43,18 @@ export interface getCategoriesResponse {
 }
 
 export interface ToggleCategoryStatusResponse {
-  status: number;
   success: boolean;
   message: string;
   data?: Icategory;
 }
 
 export interface UpdatedCategoryResponse {
-  status: number;
   success: boolean;
   message: string;
   data?: Icategory;
 }
 
 export interface getServiceDetailsResponse {
-  status: number;
   success: boolean;
   message: string;
   data?: {

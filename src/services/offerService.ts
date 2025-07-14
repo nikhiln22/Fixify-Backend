@@ -1,7 +1,6 @@
 import { offerData } from "../interfaces/DTO/IServices/IofferService";
 import { IOfferService } from "../interfaces/Iservices/IofferService";
 import { IOffer } from "../interfaces/Models/Ioffers";
-import { HTTP_STATUS } from "../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
 import { IOfferRepository } from "../interfaces/Irepositories/IofferRepository";
 
@@ -13,7 +12,6 @@ export class OfferService implements IOfferService {
 
   async addOffer(data: offerData): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: IOffer;
   }> {
@@ -29,7 +27,6 @@ export class OfferService implements IOfferService {
 
       return {
         success: true,
-        status: HTTP_STATUS.CREATED,
         message: "Offer created successfully",
         data: response,
       };
@@ -37,7 +34,6 @@ export class OfferService implements IOfferService {
       console.log("error occured while add new offer:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to create offer",
       };
     }
@@ -50,7 +46,6 @@ export class OfferService implements IOfferService {
     filterStatus?: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       offers: IOffer[];
@@ -79,7 +74,6 @@ export class OfferService implements IOfferService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "Offers fetched successfully",
         data: {
           offers: result.data,
@@ -97,15 +91,12 @@ export class OfferService implements IOfferService {
       console.error("Error fetching offers:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Something went wrong while fetching offers",
       };
     }
   }
 
-  async blockOffer(
-    id: string
-  ): Promise<{ message: string; status: number; offer?: IOffer }> {
+  async blockOffer(id: string): Promise<{ message: string; offer?: IOffer }> {
     try {
       console.log("entering the service layer that blocks the offer:", id);
       const offer = await this.offerRepository.findOfferById(id);
@@ -114,12 +105,11 @@ export class OfferService implements IOfferService {
       if (!offer) {
         return {
           message: "offer not found",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
       const newStatus = !offer.status;
-      let response = await this.offerRepository.blockOffer(id, newStatus);
+      const response = await this.offerRepository.blockOffer(id, newStatus);
       console.log(
         "Response after toggling offer status from the offer repository:",
         response
@@ -128,13 +118,11 @@ export class OfferService implements IOfferService {
       return {
         message: `Offer successfully ${newStatus ? "unblocked" : "blocked"}`,
         offer: { ...offer.toObject(), status: newStatus },
-        status: HTTP_STATUS.OK,
       };
     } catch (error) {
       console.error("Error toggling offer status:", error);
       return {
         message: "Failed to toggle offer status",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -153,7 +141,6 @@ export class OfferService implements IOfferService {
       valid_until?: Date;
     }
   ): Promise<{
-    status: number;
     success: boolean;
     message: string;
     data?: IOffer;
@@ -167,7 +154,6 @@ export class OfferService implements IOfferService {
       if (!offer) {
         return {
           success: false,
-          status: HTTP_STATUS.NOT_FOUND,
           message: "Offer not found",
         };
       }
@@ -180,14 +166,12 @@ export class OfferService implements IOfferService {
       if (!updatedOffer) {
         return {
           success: false,
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           message: "Failed to update Offer",
         };
       }
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "Offer updated successfully",
         data: updatedOffer,
       };
@@ -195,7 +179,6 @@ export class OfferService implements IOfferService {
       console.error("Error updating offer:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to update offer",
       };
     }

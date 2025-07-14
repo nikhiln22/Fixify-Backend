@@ -8,7 +8,7 @@ export interface findByEmailResponseDTO {
 
 export interface createTempUserResponseDTO {
   success: boolean;
-  tempUserId: String;
+  tempUserId: string;
 }
 
 export interface findTempUserByIdDTO {

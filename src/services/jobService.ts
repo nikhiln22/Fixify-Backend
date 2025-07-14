@@ -2,7 +2,6 @@ import { injectable, inject } from "tsyringe";
 import { IjobsService } from "../interfaces/Iservices/IjobsService";
 import { IjobDesignationRepository } from "../interfaces/Irepositories/IjobDesignationRepository";
 import { DesignationResponse } from "../interfaces/DTO/IServices/IjobService";
-import { HTTP_STATUS } from "../utils/httpStatus";
 import { IjobDesignation } from "../interfaces/Models/IjobDesignation";
 
 @injectable()
@@ -17,7 +16,7 @@ export class JobService implements IjobsService {
       const existing = await this.designationRepository.findByName(designation);
       if (existing) {
         return {
-          status: HTTP_STATUS.CONFLICT,
+          success: false,
           message: "Designation already exists",
         };
       }
@@ -27,14 +26,14 @@ export class JobService implements IjobsService {
       );
       console.log("added new designation from the service:", newDesignation);
       return {
-        status: HTTP_STATUS.CREATED,
+        success: true,
         message: "Designation added successfully",
         data: newDesignation,
       };
     } catch (error) {
       console.error("Error adding designation:", error);
       return {
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        success: false,
         message: "Something went wrong while adding designation",
       };
     }
@@ -49,14 +48,14 @@ export class JobService implements IjobsService {
       );
       if (!designation) {
         return {
-          status: HTTP_STATUS.NOT_FOUND,
+          success: false,
           message: "Designation not found",
         };
       }
 
       const newStatus = !designation.status;
 
-      let updatedDesignation =
+      const updatedDesignation =
         await this.designationRepository.blockDesignation(id, newStatus);
       console.log(
         "response after blocking the job designation from the designation repository:",
@@ -64,7 +63,7 @@ export class JobService implements IjobsService {
       );
 
       return {
-        status: HTTP_STATUS.OK,
+        success: true,
         message: `Designation successfully ${
           newStatus ? "unblocked" : "blocked"
         }`,
@@ -73,7 +72,7 @@ export class JobService implements IjobsService {
     } catch (error) {
       console.error("Error blocking designation:", error);
       return {
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        success: false,
         message: "Failed to block designation",
       };
     }
@@ -83,10 +82,9 @@ export class JobService implements IjobsService {
     page?: number;
     limit?: number;
     search?: string;
-    status?:string;
+    status?: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       designations: IjobDesignation[];
@@ -109,14 +107,13 @@ export class JobService implements IjobsService {
         page,
         limit,
         search: options.search,
-        status:options.status
+        status: options.status,
       });
 
       console.log("result from the designation service:", result);
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "Designations fetched successfully",
         data: {
           designations: result.data,
@@ -134,7 +131,6 @@ export class JobService implements IjobsService {
       console.error("Error fetching designations:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Something went wrong while fetching designations",
       };
     }
@@ -145,20 +141,20 @@ export class JobService implements IjobsService {
       const designation = await this.designationRepository.findByName(name);
       if (!designation) {
         return {
-          status: HTTP_STATUS.NOT_FOUND,
+          success: false,
           message: "Designation not found",
         };
       }
 
       return {
-        status: HTTP_STATUS.OK,
+        success: true,
         message: "Designation found",
         data: designation,
       };
     } catch (error) {
       console.error("Error finding designation:", error);
       return {
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        success: false,
         message: "Failed to find designation",
       };
     }

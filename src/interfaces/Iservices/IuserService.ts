@@ -33,7 +33,6 @@ export interface IuserService {
     status?: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       users: Iuser[];
@@ -56,7 +55,6 @@ export interface IuserService {
     userId: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       wallet: IWallet | null;
@@ -65,7 +63,6 @@ export interface IuserService {
   }>;
   getWalletBalance(userId: string): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: { balance: number };
   }>;
@@ -75,7 +72,6 @@ export interface IuserService {
     userId: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       transactions: IWalletTransaction[];

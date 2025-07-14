@@ -7,7 +7,7 @@ import { HTTP_STATUS } from "../utils/httpStatus";
 @injectable()
 export class AuthController implements IauthController {
   constructor(
-    @inject("IauthService") private refreshService: IauthService
+    @inject("IauthService") private authService: IauthService
   ) {}
 
   async refreshAccessToken(req: Request, res: Response): Promise<void> {
@@ -32,7 +32,7 @@ export class AuthController implements IauthController {
         return;
       }
 
-      const newAccessToken = await this.refreshService.refreshAccessToken(
+      const newAccessToken = await this.authService.refreshAccessToken(
         refreshToken,
         role
       );

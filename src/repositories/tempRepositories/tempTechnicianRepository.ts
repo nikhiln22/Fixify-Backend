@@ -31,7 +31,7 @@ export class TempTechnicianRepository
         "savedTemporaryUser from userRepository:",
         savedTemporaryTechnician
       );
-      let tempTechnicianId = (
+      const tempTechnicianId = (
         savedTemporaryTechnician._id as mongoose.Types.ObjectId
       ).toString();
       if (!savedTemporaryTechnician) {

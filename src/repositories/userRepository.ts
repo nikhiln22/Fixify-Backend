@@ -126,7 +126,7 @@ export class UserRepository
 
   async blockUser(id: string, status: boolean): Promise<void> {
     try {
-      let response = await this.updateOne({ _id: id }, { status: status });
+      const response = await this.updateOne({ _id: id }, { status: status });
       console.log("blocking the user in the user repository:", response);
     } catch (error) {
       throw new Error("Failed to block designation: " + error);

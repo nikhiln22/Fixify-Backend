@@ -5,7 +5,6 @@ export interface RegisterResponse {
   success: boolean;
   userData?: Iuser;
   message: string;
-  status: number;
 }
 
 export interface SignupUserData {
@@ -23,7 +22,6 @@ export interface tempUserResponse {
   tempUserId?: string;
   email?: string;
   success: boolean;
-  status: number;
   message?: string;
 }
 
@@ -32,7 +30,6 @@ export interface ResendOtpResponse {
   message: string;
   tempUserId?: string;
   email?: string;
-  status: number;
 }
 
 export interface verifyOtpData {
@@ -44,7 +41,6 @@ export interface verifyOtpData {
 
 export interface loginResponse {
   success: boolean;
-  status: number;
   message: string;
   role?: string;
   user?: Pick<Iuser, "username" | "email" | "phone" | "image">;
@@ -65,7 +61,6 @@ export interface ForgotPasswordResponse {
   success: boolean;
   message: string;
   email?: string;
-  status: number;
 }
 
 export interface ResetPasswordData {
@@ -76,10 +71,10 @@ export interface ResetPasswordData {
 export interface ResetPasswordResponse {
   success: boolean;
   message: string;
-  status: number;
 }
 
 export interface ToggleUserStatusResponse {
+  success: boolean;
   message: string;
   user?: Iuser;
 }
@@ -87,14 +82,12 @@ export interface ToggleUserStatusResponse {
 export interface UserProfileResponse {
   message: string;
   success: boolean;
-  status: number;
   user?: Iuser;
 }
 
 export interface EditProfileResponse {
   success: boolean;
   message: string;
-  status: number;
   user?: Iuser;
 }
 
@@ -116,14 +109,12 @@ export interface CreateBookingRequest {
 
 export interface BookServiceResponse {
   success: boolean;
-  status: number;
   message: string;
   data?: IBooking | null;
 }
 
 export interface AddMoneyResponse {
   success: boolean;
-  status: number;
   message: string;
   data?: {
     checkoutUrl: string;

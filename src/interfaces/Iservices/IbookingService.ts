@@ -24,7 +24,6 @@ export interface IbookingService {
     role?: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       bookings: IBooking[];
@@ -47,7 +46,6 @@ export interface IbookingService {
     bookingId: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       otp: string;
@@ -60,7 +58,6 @@ export interface IbookingService {
     otp: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
   }>;
   cancelBookingByUser(
@@ -69,7 +66,6 @@ export interface IbookingService {
     cancellationReason: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       booking: IBooking;
@@ -81,7 +77,6 @@ export interface IbookingService {
     cancellationReason: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       booking: IBooking;
@@ -94,18 +89,14 @@ export interface IbookingService {
     review: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       booking: IBooking;
     };
   }>;
 
-  getRating(
-    bookingId: string,
-  ): Promise<{
+  getRating(bookingId: string): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: IRating | null;
   }>;

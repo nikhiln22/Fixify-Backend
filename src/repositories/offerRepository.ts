@@ -82,7 +82,7 @@ export class OfferRepository
 
   async blockOffer(id: string, status: boolean): Promise<void> {
     try {
-      let response = await this.updateOne({ _id: id }, { status: status });
+      const response = await this.updateOne({ _id: id }, { status: status });
       console.log("blocking the offer in the offer repository:", response);
     } catch (error) {
       throw new Error("Failed to block offer: " + error);

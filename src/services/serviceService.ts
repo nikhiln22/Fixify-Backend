@@ -1,6 +1,5 @@
 import { IServiceService } from "../interfaces/Iservices/IserviceService";
 import { inject, injectable } from "tsyringe";
-import { HTTP_STATUS } from "../utils/httpStatus";
 import {
   ServiceData,
   AddServiceResponse,
@@ -36,7 +35,6 @@ export class ServiceServices implements IServiceService {
       if (existingService) {
         return {
           success: false,
-          status: HTTP_STATUS.OK,
           message: "Service already exists",
         };
       }
@@ -54,7 +52,6 @@ export class ServiceServices implements IServiceService {
         if (!uploadResult) {
           return {
             success: false,
-            status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
             message: "Failed to upload image",
           };
         }
@@ -75,7 +72,6 @@ export class ServiceServices implements IServiceService {
       console.log("response from the services adding service:", newService);
 
       return {
-        status: HTTP_STATUS.CREATED,
         success: true,
         message: "service added successfully",
         data: newService,
@@ -83,7 +79,6 @@ export class ServiceServices implements IServiceService {
     } catch (error) {
       console.log("error occurred while adding the service", error);
       return {
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         success: false,
         message: "something went wrong while adding the service",
       };
@@ -98,7 +93,6 @@ export class ServiceServices implements IServiceService {
     status?: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       services: IService[];
@@ -130,7 +124,6 @@ export class ServiceServices implements IServiceService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "Services fetched successfully",
         data: {
           services: result.data,
@@ -148,7 +141,6 @@ export class ServiceServices implements IServiceService {
       console.error("Error fetching services:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Something went wrong while fetching services",
       };
     }
@@ -164,7 +156,6 @@ export class ServiceServices implements IServiceService {
       if (!service) {
         return {
           success: false,
-          status: HTTP_STATUS.OK,
           message: "Service not found",
         };
       }
@@ -179,7 +170,6 @@ export class ServiceServices implements IServiceService {
       if (!updatedService) {
         return {
           success: false,
-          status: HTTP_STATUS.OK,
           message: "Failed to update service",
         };
       }
@@ -191,7 +181,6 @@ export class ServiceServices implements IServiceService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: `Service successfully ${
           newStatus ? "activated" : "deactivated"
         }`,
@@ -201,7 +190,6 @@ export class ServiceServices implements IServiceService {
       console.error("Error toggling service status:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to toggle service status",
       };
     }
@@ -225,7 +213,6 @@ export class ServiceServices implements IServiceService {
       if (!service) {
         return {
           success: false,
-          status: HTTP_STATUS.NOT_FOUND,
           message: "Service not found",
         };
       }
@@ -263,7 +250,6 @@ export class ServiceServices implements IServiceService {
         if (!newImageUrl) {
           return {
             success: false,
-            status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
             message: "Failed to upload image to cloud storage",
           };
         }
@@ -274,7 +260,6 @@ export class ServiceServices implements IServiceService {
       if (Object.keys(updatedFields).length === 0) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "No update data provided",
         };
       }
@@ -287,14 +272,12 @@ export class ServiceServices implements IServiceService {
       if (!updatedService) {
         return {
           success: false,
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           message: "Failed to update Service",
         };
       }
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "Service updated successfully",
         data: updatedService,
       };
@@ -302,7 +285,6 @@ export class ServiceServices implements IServiceService {
       console.error("Error updating service:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to update service",
       };
     }
@@ -319,7 +301,6 @@ export class ServiceServices implements IServiceService {
       if (existingCategory) {
         return {
           success: false,
-          status: HTTP_STATUS.OK,
           message: "Category already exists",
         };
       }
@@ -333,7 +314,6 @@ export class ServiceServices implements IServiceService {
       if (!imageUrl) {
         return {
           success: false,
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           message: "Failed to upload image",
         };
       }
@@ -344,15 +324,13 @@ export class ServiceServices implements IServiceService {
       );
       console.log("response from the category adding service:", newCategory);
       return {
-        status: HTTP_STATUS.CREATED,
         success: true,
         message: "Category addedd successfully",
         data: newCategory,
       };
     } catch (error) {
-      console.log("error occured while adding the category");
+      console.log("error occured while adding the category", error);
       return {
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         success: false,
         message: "something went wrong while adding the category",
       };
@@ -366,7 +344,6 @@ export class ServiceServices implements IServiceService {
     status?: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       categories: Icategory[];
@@ -397,7 +374,6 @@ export class ServiceServices implements IServiceService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "categories fetched successfully",
         data: {
           categories: result.data,
@@ -415,7 +391,6 @@ export class ServiceServices implements IServiceService {
       console.log("error fetching the categories:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "failed to fetch the categories",
       };
     }
@@ -433,7 +408,6 @@ export class ServiceServices implements IServiceService {
       if (!category) {
         return {
           success: false,
-          status: HTTP_STATUS.NOT_FOUND,
           message: "Category not found",
         };
       }
@@ -449,7 +423,6 @@ export class ServiceServices implements IServiceService {
       if (!updatedCategory) {
         return {
           success: false,
-          status: HTTP_STATUS.NOT_FOUND,
           message: "Failed to update category",
         };
       }
@@ -461,7 +434,6 @@ export class ServiceServices implements IServiceService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: `Category successfully ${
           newStatus ? "activated" : "deactivated"
         }`,
@@ -471,7 +443,6 @@ export class ServiceServices implements IServiceService {
       console.error("Error toggling category status:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to toggle category status",
       };
     }
@@ -491,7 +462,6 @@ export class ServiceServices implements IServiceService {
       if (!category) {
         return {
           success: false,
-          status: HTTP_STATUS.NOT_FOUND,
           message: "Category not found",
         };
       }
@@ -511,7 +481,6 @@ export class ServiceServices implements IServiceService {
         if (!newImageUrl) {
           return {
             success: false,
-            status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
             message: "Failed to upload image to cloud storage",
           };
         }
@@ -522,7 +491,6 @@ export class ServiceServices implements IServiceService {
       if (Object.keys(updatedFields).length === 0) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "No update data provided",
         };
       }
@@ -535,14 +503,12 @@ export class ServiceServices implements IServiceService {
       if (!updatedCategory) {
         return {
           success: false,
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           message: "Failed to update category",
         };
       }
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "Category updated successfully",
         data: updatedCategory,
       };
@@ -550,7 +516,6 @@ export class ServiceServices implements IServiceService {
       console.error("Error updating category:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to update category",
       };
     }
@@ -571,7 +536,6 @@ export class ServiceServices implements IServiceService {
 
       if (!service) {
         return {
-          status: HTTP_STATUS.OK,
           success: false,
           message: "Service not found",
         };
@@ -593,7 +557,6 @@ export class ServiceServices implements IServiceService {
       return {
         success: true,
         message: "service details fetched successfully",
-        status: HTTP_STATUS.OK,
         data: {
           service: service,
           relatedService: relatedServices,
@@ -603,7 +566,6 @@ export class ServiceServices implements IServiceService {
       console.log("error occured while fetching the service Details:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to update category",
       };
     }

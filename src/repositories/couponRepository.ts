@@ -93,7 +93,7 @@ export class CouponRepository
 
   async blockCoupon(id: string, status: boolean): Promise<void> {
     try {
-      let response = await this.updateOne({ _id: id }, { status: status });
+      const response = await this.updateOne({ _id: id }, { status: status });
       console.log("blocking the coupon in the coupon repository:", response);
     } catch (error) {
       throw new Error("Failed to block coupon: " + error);

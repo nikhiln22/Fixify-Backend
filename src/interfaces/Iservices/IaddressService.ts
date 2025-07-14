@@ -7,14 +7,12 @@ export interface IAddressService {
   ): Promise<{
     success: boolean;
     message: string;
-    status: number;
     data?: IUserAddress;
   }>;
 
   getUserAddresses(userId: string): Promise<{
     success: boolean;
     message: string;
-    status: number;
     data?: IUserAddress[];
   }>;
 
@@ -35,7 +33,6 @@ export interface IAddressService {
   ): Promise<{
     success: boolean;
     message: string;
-    status: number;
   }>;
 
   //   getAddressById(
