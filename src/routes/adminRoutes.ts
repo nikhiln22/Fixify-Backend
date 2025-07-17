@@ -158,6 +158,54 @@ export class AdminRoutes {
       adminController.getBookingDetails.bind(adminController)
     );
 
+    this.router.post(
+      "/addoffer",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.addOffer.bind(adminController)
+    );
+
+    this.router.get(
+      "/offers",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.getAllOffers.bind(adminController)
+    );
+
+    this.router.patch(
+      "/blockoffer/:id",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.blockOffer.bind(adminController)
+    );
+
+    this.router.put(
+      "/updateoffer/:offerId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.updateOffer.bind(adminController)
+    );
+
+    this.router.post(
+      "/addcoupon",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.addCoupon.bind(adminController)
+    );
+
+    this.router.get(
+      "/coupons",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.getAllCoupons.bind(adminController)
+    );
+
+    this.router.patch(
+      "/blockcoupon/:id",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.blockCoupon.bind(adminController)
+    );
+
+    this.router.put(
+      "/updatecoupon/:couponId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.updateCoupon.bind(adminController)
+    );
+
     this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.ADMIN),

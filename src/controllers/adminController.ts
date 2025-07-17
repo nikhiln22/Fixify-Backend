@@ -6,6 +6,8 @@ import { IuserService } from "../interfaces/Iservices/IuserService";
 import { IadminService } from "../interfaces/Iservices/IadminService";
 import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
 import { IbookingService } from "../interfaces/Iservices/IbookingService";
+import { IOfferService } from "../interfaces/Iservices/IofferService";
+import { ICouponService } from "../interfaces/Iservices/IcouponService";
 
 @injectable()
 export class AdminController implements IadminController {
@@ -16,7 +18,9 @@ export class AdminController implements IadminController {
     private adminService: IadminService,
     @inject("ItechnicianService")
     private technicianService: ItechnicianService,
-    @inject("IbookingService") private bookingService: IbookingService
+    @inject("IbookingService") private bookingService: IbookingService,
+    @inject("IOfferService") private offerService: IOfferService,
+    @inject("ICouponService") private couponService: ICouponService
   ) {}
 
   async login(req: Request, res: Response): Promise<void> {
@@ -250,36 +254,36 @@ export class AdminController implements IadminController {
     }
   }
 
-async getAllBookings(req: Request, res: Response): Promise<void> {
-  try {
-    console.log("fetching all the bookings from the admin controller");
-    const page = parseInt(req.query.page as string) || undefined;
-    const limit = parseInt(req.query.limit as string) || undefined;
-    const search = (req.query.search as string) || undefined;
-    const filter = (req.query.filter as string) || undefined;
-    
-    console.log("filter status in the admin controller:", filter);
-    
-    const result = await this.bookingService.getAllBookings({
-      page,
-      limit,
-      search,
-      filter,
-      role: 'admin'
-    });
-    
-    res.status(HTTP_STATUS.OK).json(result);
-    console.log(
-      "result from fetching all the bookings for the admin controller:",
-      result
-    );
-  } catch (error) {
-    console.log("error occured while fetchning the bookings for the admin");
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      message: "Internal server error",
-    });
+  async getAllBookings(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("fetching all the bookings from the admin controller");
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+      const search = (req.query.search as string) || undefined;
+      const filter = (req.query.filter as string) || undefined;
+
+      console.log("filter status in the admin controller:", filter);
+
+      const result = await this.bookingService.getAllBookings({
+        page,
+        limit,
+        search,
+        filter,
+        role: "admin",
+      });
+
+      res.status(HTTP_STATUS.OK).json(result);
+      console.log(
+        "result from fetching all the bookings for the admin controller:",
+        result
+      );
+    } catch (error) {
+      console.log("error occured while fetchning the bookings for the admin");
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal server error",
+      });
+    }
   }
-}
 
   async getBookingDetails(req: Request, res: Response): Promise<void> {
     try {
@@ -305,6 +309,357 @@ async getAllBookings(req: Request, res: Response): Promise<void> {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: "Internal server error",
+      });
+    }
+  }
+
+  async addOffer(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entering to the offer controller function that adds the offer"
+      );
+      console.log("received Data:", req.body);
+
+      const offerData = {
+        title: req.body.title,
+        description: req.body.description,
+        offer_type: req.body.offer_type,
+        discount_type: req.body.discount_type,
+        discount_value: req.body.discount_value,
+        max_discount: req.body.max_discount,
+        min_booking_amount: req.body.min_booking_amount,
+        service_id: req.body.service_id,
+        valid_until: req.body.valid_until
+          ? new Date(req.body.valid_until)
+          : undefined,
+      };
+
+      console.log("processed offer data:", offerData);
+
+      const response = await this.offerService.addOffer(offerData);
+
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.error("Error in addOffer controller:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Internal Server Error",
+      });
+    }
+  }
+
+  async getAllOffers(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("fetching the offers for the admin");
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+      const search = (req.query.search as string) || undefined;
+      const filterStatus = (req.query.filterStatus as string) || undefined;
+      console.log("filterStatus in adminController:", filterStatus);
+      const response = await this.offerService.getAllOffers({
+        page,
+        limit,
+        search,
+        filterStatus,
+      });
+      console.log("response in the fetching all offers:", response);
+      res.status(response.status).json(response);
+    } catch (error) {
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server Error",
+        success: false,
+      });
+    }
+  }
+
+  async blockOffer(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entering to the block offer function in the admin controller"
+      );
+      const { id } = req.params;
+      console.log("offerId in the block offer function:", id);
+      const response = await this.offerService.blockOffer(id);
+      console.log("response from the block offer function:", response);
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while blocking the offer:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server Error",
+        success: false,
+      });
+    }
+  }
+
+  async updateOffer(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("updating the existing offer from the admin controller:");
+      const offerId = req.params.offerId;
+      console.log("offerId:", offerId);
+      if (!offerId) {
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "Offer ID is required",
+        });
+        return;
+      }
+
+      console.log("req.body:", req.body);
+
+      const {
+        title,
+        description,
+        offer_type,
+        discount_type,
+        discount_value,
+        max_discount,
+        min_booking_amount,
+        service_id,
+        valid_until,
+      } = req.body;
+
+      console.log("offer_type:", offer_type);
+
+      const updateData: {
+        title?: string;
+        description?: string;
+        offer_type?: string;
+        discount_type?: number;
+        discount_value?: number;
+        max_discount?: number;
+        min_booking_amount?: number;
+        service_id?: string;
+        valid_until?: Date;
+      } = {};
+
+      if (title !== undefined) {
+        updateData.title = title;
+      }
+
+      if (description !== undefined) {
+        updateData.description = description;
+      }
+
+      if (offer_type !== undefined) {
+        updateData.offer_type = offer_type;
+      }
+
+      if (discount_type !== undefined) {
+        updateData.discount_type = discount_type;
+      }
+
+      if (discount_value !== undefined) {
+        updateData.discount_value = discount_value;
+      }
+
+      if (max_discount !== undefined) {
+        updateData.max_discount = max_discount;
+      }
+
+      if (min_booking_amount !== undefined) {
+        updateData.min_booking_amount = min_booking_amount;
+      }
+
+      if (service_id !== undefined) {
+        updateData.service_id = service_id;
+      }
+
+      if (valid_until !== undefined) {
+        updateData.valid_until = valid_until;
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "No update data provided",
+        });
+        return;
+      }
+
+      const response = await this.offerService.updateOffer(offerId, updateData);
+      console.log("after updating the offer from the offer service:", response);
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while updating the offer:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server Error",
+        success: false,
+      });
+    }
+  }
+
+  async addCoupon(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entering to the add coupon function in the admin controller"
+      );
+      console.log("received Data:", req.body);
+
+      const couponData = {
+        code: req.body.code,
+        title: req.body.title,
+        description: req.body.description,
+        discount_type: req.body.discount_type,
+        discount_value: req.body.discount_value,
+        max_discount: req.body.max_discount,
+        min_booking_amount: req.body.min_booking_amount,
+        valid_until: req.body.valid_until
+          ? new Date(req.body.valid_until)
+          : undefined,
+      };
+
+      console.log("processed offer data:", couponData);
+
+      const response = await this.couponService.addCoupon(couponData);
+
+      console.log(
+        "response after adding the coupon in admin controller:",
+        response
+      );
+
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while adding the coupon:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server Error",
+        success: false,
+      });
+    }
+  }
+
+  async getAllCoupons(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("fetching the coupons for the admin");
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+      const search = (req.query.search as string) || undefined;
+      const filterStatus = (req.query.filterStatus as string) || undefined;
+      const response = await this.couponService.getAllCoupons({
+        page,
+        limit,
+        search,
+        filterStatus,
+      });
+      console.log("response in the fetching all coupons:", response);
+      res.status(response.status).json(response);
+    } catch (error) {
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server Error",
+        success: false,
+      });
+    }
+  }
+
+  async blockCoupon(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entering to the block coupon function in the admin controller"
+      );
+      const { id } = req.params;
+      console.log("couponId in the block offer function:", id);
+      const response = await this.couponService.blockCoupon(id);
+      console.log("response from the block coupon function:", response);
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while blocking the Coupon:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server Error",
+        success: false,
+      });
+    }
+  }
+
+  async updateCoupon(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("updating the existing coupon from the admin controller:");
+      const couponId = req.params.couponId;
+      console.log("couponId:", couponId);
+      if (!couponId) {
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "Coupon ID is required",
+        });
+        return;
+      }
+
+      console.log("req.body:", req.body);
+
+      const {
+        code,
+        title,
+        description,
+        discount_type,
+        discount_value,
+        max_discount,
+        min_booking_amount,
+        valid_until,
+      } = req.body;
+
+      const updateData: {
+        code?: string;
+        title?: string;
+        description?: string;
+        discount_type?: number;
+        discount_value?: number;
+        max_discount?: number;
+        min_booking_amount?: number;
+        valid_until?: Date;
+      } = {};
+
+      if (code !== undefined) {
+        updateData.code = code;
+      }
+
+      if (title !== undefined) {
+        updateData.title = title;
+      }
+
+      if (description !== undefined) {
+        updateData.description = description;
+      }
+
+      if (discount_type !== undefined) {
+        updateData.discount_type = discount_type;
+      }
+
+      if (discount_value !== undefined) {
+        updateData.discount_value = discount_value;
+      }
+
+      if (max_discount !== undefined) {
+        updateData.max_discount = max_discount;
+      }
+
+      if (min_booking_amount !== undefined) {
+        updateData.min_booking_amount = min_booking_amount;
+      }
+
+      if (valid_until !== undefined) {
+        updateData.valid_until = valid_until;
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "No update data provided",
+        });
+        return;
+      }
+
+      const response = await this.couponService.updateCoupon(
+        couponId,
+        updateData
+      );
+      console.log(
+        "after updating the coupon from the coupon service:",
+        response
+      );
+      res.status(response.status).json(response);
+    } catch (error) {
+      console.log("error occured while updating the coupon:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        message: "Internal Server Error",
+        success: false,
       });
     }
   }

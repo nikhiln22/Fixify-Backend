@@ -185,6 +185,8 @@ export class BookingRepository
         filter.technicianId = new Types.ObjectId(technicianId);
       }
 
+      console.log("filter object in the booking repository:", filter);
+
       const booking = await this.model
         .findOne(filter)
         .populate("serviceId", "name price description image")
