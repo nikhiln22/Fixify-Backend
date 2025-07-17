@@ -1,5 +1,5 @@
-import { findByEmailResponseDTO } from "../DTO/IRepository/adminRepositoryDTO";
+import { FindByEmailResponse } from "../DTO/IRepository/adminRepository";
 
-export interface IadminRepository {
-  findByEmail(email: string): Promise<findByEmailResponseDTO>;
+export interface IAdminRepository {
+  findByEmail(email: string): Promise<FindByEmailResponse>;
 }

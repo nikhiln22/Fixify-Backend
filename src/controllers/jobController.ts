@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { injectable, inject } from "tsyringe";
-import { IjobsService } from "../interfaces/Iservices/IjobsService";
-import { IjobController } from "../interfaces/Icontrollers/IjobController";
+import { IJobsService } from "../interfaces/Iservices/IjobsService";
+import { IJobController } from "../interfaces/Icontrollers/IjobController";
 import { HTTP_STATUS } from "../utils/httpStatus";
 import {
   createErrorResponse,
@@ -9,10 +9,10 @@ import {
 } from "../utils/responseHelper";
 
 @injectable()
-export class JobController implements IjobController {
+export class JobController implements IJobController {
   constructor(
-    @inject("IjobsService")
-    private jobService: IjobsService
+    @inject("IJobsService")
+    private jobService: IJobsService
   ) {}
 
   async addDesignation(req: Request, res: Response): Promise<void> {

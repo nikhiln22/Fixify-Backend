@@ -1,7 +1,7 @@
-import { Icategory } from "../interfaces/Models/Icategory";
 import mongoose, { Schema } from "mongoose";
+import { ICategory } from "../interfaces/Models/Icategory";
 
-const categorySchema: Schema<Icategory> = new Schema(
+const categorySchema: Schema<ICategory> = new Schema(
   {
     name: {
       type: String,
@@ -18,6 +18,6 @@ const categorySchema: Schema<Icategory> = new Schema(
   { timestamps: true }
 );
 
-const category = mongoose.model<Icategory>("category", categorySchema);
+const category = mongoose.model<ICategory>("category", categorySchema);
 
 export default category;

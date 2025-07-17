@@ -3,7 +3,7 @@ import { BaseRepository } from "./baseRepository";
 import { IRating } from "../interfaces/Models/Irating";
 import Rating from "../models/ratingModel";
 import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
-import { FilterQuery, Types } from "mongoose";
+import { Types } from "mongoose";
 
 @injectable()
 export class RatingRepository

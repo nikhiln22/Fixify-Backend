@@ -1,5 +1,5 @@
 import { IService } from "../../Models/Iservice";
-import { Icategory } from "../../Models/Icategory";
+import { ICategory } from "../../Models/ICategory";
 
 export interface ServiceData {
   name: string;
@@ -32,12 +32,12 @@ export interface UpdatedServiceResponse {
 export interface AddCategoryResponse {
   success: boolean;
   message: string;
-  data?: Icategory;
+  data?: ICategory;
 }
 
-export interface getCategoriesResponse {
+export interface GetCategoriesResponse {
   message: string;
-  categories?: Icategory[];
+  categories?: ICategory[];
   total?: number;
   totalPages?: number;
 }
@@ -45,16 +45,16 @@ export interface getCategoriesResponse {
 export interface ToggleCategoryStatusResponse {
   success: boolean;
   message: string;
-  data?: Icategory;
+  data?: ICategory;
 }
 
 export interface UpdatedCategoryResponse {
   success: boolean;
   message: string;
-  data?: Icategory;
+  data?: ICategory;
 }
 
-export interface getServiceDetailsResponse {
+export interface GetServiceDetailsResponse {
   success: boolean;
   message: string;
   data?: {

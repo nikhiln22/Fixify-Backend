@@ -1,8 +1,8 @@
 import {
   ForgotPasswordRequest,
   ForgotPasswordResponse,
-  loginData,
-  loginResponse,
+  LoginData,
+  LoginResponse,
   RegisterResponse,
   RejectTechnicianServiceResponse,
   ResendOtpResponse,
@@ -10,21 +10,21 @@ import {
   ResetPasswordResponse,
   SignupTechnicianData,
   TechnicianProfileResponse,
-  tempTechnicianResponse,
+  TempTechnicianResponse,
   ToggleTechnicianStatusResponse,
-  verifyOtpData,
+  VerifyOtpData,
 } from "../DTO/IServices/ItechnicianService";
 import { IRating } from "../Models/Irating";
-import { Itechnician } from "../Models/Itechnician";
+import { ITechnician } from "../Models/Itechnician";
 import { IWalletTransaction } from "../Models/IwalletTransaction";
 
-export interface ItechnicianService {
-  technicianSignUp(data: SignupTechnicianData): Promise<tempTechnicianResponse>;
-  verifyOtp(data: verifyOtpData): Promise<RegisterResponse>;
+export interface ITechnicianService {
+  technicianSignUp(data: SignupTechnicianData): Promise<TempTechnicianResponse>;
+  verifyOtp(data: VerifyOtpData): Promise<RegisterResponse>;
   resendOtp(data: string): Promise<ResendOtpResponse>;
   forgotPassword(data: ForgotPasswordRequest): Promise<ForgotPasswordResponse>;
   resetPassword(data: ResetPasswordData): Promise<ResetPasswordResponse>;
-  login(data: loginData): Promise<loginResponse>;
+  login(data: LoginData): Promise<LoginResponse>;
   submitTechnicianQualifications(
     technicianId: string,
     qualificationData: {
@@ -42,7 +42,7 @@ export interface ItechnicianService {
     success: boolean;
     message: string;
     data?: {
-      applicants: Itechnician[];
+      applicants: ITechnician[];
       pagination: {
         total: number;
         page: number;
@@ -77,7 +77,7 @@ export interface ItechnicianService {
     success: boolean;
     message: string;
     data?: {
-      technicians: Itechnician[];
+      technicians: ITechnician[];
       pagination: {
         total: number;
         page: number;
@@ -96,7 +96,7 @@ export interface ItechnicianService {
   ): Promise<{
     success: boolean;
     message: string;
-    data?: Itechnician[];
+    data?: ITechnician[];
   }>;
 
   toggleTechnicianStatus(id: string): Promise<ToggleTechnicianStatusResponse>;

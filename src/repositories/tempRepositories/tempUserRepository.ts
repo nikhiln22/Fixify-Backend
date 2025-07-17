@@ -1,26 +1,26 @@
-import { ItempUserRepository } from "../../interfaces/Irepositories/ItempUserRepository";
-import { ItempUser } from "../../interfaces/Models/ItempUser";
+import { ITempUserRepository } from "../../interfaces/Irepositories/ItempUserRepository";
+import { ITempUser } from "../../interfaces/Models/ItempUser";
 import mongoose from "mongoose";
 import tempUser from "../../models/tempUserModel";
 import { BaseRepository } from "../baseRepository";
 import {
-  createTempUserResponseDTO,
-  findTempUserByEmailDTO,
-  findTempUserByIdDTO,
-  updateTempUserDTO,
-} from "../../interfaces/DTO/IRepository/userRepositoryDTO";
+  CreateTempUserResponse,
+  FindTempUserByEmail,
+  FindTempUserById,
+  UpdateTempUser,
+} from "../../interfaces/DTO/IRepository/IuserRepository";
 
 export class TempUserRepository
-  extends BaseRepository<ItempUser>
-  implements ItempUserRepository
+  extends BaseRepository<ITempUser>
+  implements ITempUserRepository
 {
   constructor() {
     super(tempUser);
   }
 
   async createTempUser(
-    tempUserData: ItempUser
-  ): Promise<createTempUserResponseDTO> {
+    tempUserData: ITempUser
+  ): Promise<CreateTempUserResponse> {
     try {
       console.log("entering into the temporary user creating function");
       const temporaryUser = await this.create(tempUserData);
@@ -43,7 +43,7 @@ export class TempUserRepository
     }
   }
 
-  async findTempUserById(tempUserId: string): Promise<findTempUserByIdDTO> {
+  async findTempUserById(tempUserId: string): Promise<FindTempUserById> {
     try {
       const tempSavedUser = await this.findById(tempUserId);
       console.log("tempSavedUser:", tempSavedUser);
@@ -61,7 +61,7 @@ export class TempUserRepository
     }
   }
 
-  async findTempUserByEmail(email: string): Promise<findTempUserByEmailDTO> {
+  async findTempUserByEmail(email: string): Promise<FindTempUserByEmail> {
     try {
       const tempSavedUser = await this.findOne({
         email,
@@ -84,8 +84,8 @@ export class TempUserRepository
 
   async updateTempUser(
     tempUserId: string,
-    updateData: Partial<ItempUser>
-  ): Promise<updateTempUserDTO> {
+    updateData: Partial<ITempUser>
+  ): Promise<UpdateTempUser> {
     try {
       const updatedUser = await this.updateOne(
         { _id: tempUserId },

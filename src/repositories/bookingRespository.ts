@@ -3,14 +3,14 @@ import { BaseRepository } from "./baseRepository";
 import { IBooking } from "../interfaces/Models/Ibooking";
 import Booking from "../models/bookingModel";
 import { CreateBookingRequest } from "../interfaces/DTO/IServices/IuserService";
-import { IbookingRepository } from "../interfaces/Irepositories/IbookingRespository";
+import { IBookingRepository } from "../interfaces/Irepositories/IbookingRespository";
 import { FilterQuery, Types, UpdateQuery } from "mongoose";
 import { ITimeSlot } from "../interfaces/Models/ItimeSlot";
 
 @injectable()
 export class BookingRepository
   extends BaseRepository<IBooking>
-  implements IbookingRepository
+  implements IBookingRepository
 {
   constructor() {
     super(Booking);
@@ -122,7 +122,8 @@ export class BookingRepository
           { path: "serviceId", select: "name" },
           { path: "paymentId", select: "paymentStatus" },
           { path: "timeSlotId", select: "startTime endTime date" },
-          { path: "technicianId", select: "username" },
+          { path: "technicianId", select: "username image" },
+          { path: "userId", select: "username" },
         ],
       })) as { data: IBooking[]; total: number };
 

@@ -1,15 +1,15 @@
 import {
   AddCategoryResponse,
   AddServiceResponse,
-  getServiceDetailsResponse,
+  GetServiceDetailsResponse,
   ServiceData,
   ToggleCategoryStatusResponse,
   ToggleServiceStatusResponse,
   UpdatedCategoryResponse,
   UpdatedServiceResponse,
 } from "../DTO/IServices/IservicesService";
-import { IService } from "../Models/Iservice";
-import { Icategory } from "../Models/Icategory";
+import { IService } from "../../interfaces/Models/Iservice";
+import { ICategory } from "../../interfaces/Models/Icategory";
 
 export interface IServiceService {
   addService(data: ServiceData): Promise<AddServiceResponse>;
@@ -57,7 +57,7 @@ export interface IServiceService {
     success: boolean;
     message: string;
     data?: {
-      categories: Icategory[];
+      categories: ICategory[];
       pagination: {
         total: number;
         page: number;
@@ -76,5 +76,5 @@ export interface IServiceService {
     categoryId: string,
     updateData: { name?: string; image?: string }
   ): Promise<UpdatedCategoryResponse>;
-  getServiceDetails(serviceId:string):Promise<getServiceDetailsResponse>
+  getServiceDetails(serviceId:string):Promise<GetServiceDetailsResponse>
 }

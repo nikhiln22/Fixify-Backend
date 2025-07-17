@@ -1,14 +1,14 @@
 import { FilterQuery } from "mongoose";
-import { IjobDesignationRepository } from "../interfaces/Irepositories/IjobDesignationRepository";
-import { IjobDesignation } from "../interfaces/Models/IjobDesignation";
+import { IJobDesignationRepository } from "../interfaces/Irepositories/IjobDesignationRepository";
+import { IJobDesignation } from "../interfaces/Models/IjobDesignation";
 import jobDesignation from "../models/jobDesignationModel";
 import { BaseRepository } from "./baseRepository";
 import { injectable } from "tsyringe";
 
 @injectable()
 export class JobDesignationRepository
-  extends BaseRepository<IjobDesignation>
-  implements IjobDesignationRepository
+  extends BaseRepository<IJobDesignation>
+  implements IJobDesignationRepository
 {
   constructor() {
     super(jobDesignation);
@@ -20,7 +20,7 @@ export class JobDesignationRepository
     search?: string;
     status?:string;
   }): Promise<{
-    data: IjobDesignation[];
+    data: IJobDesignation[];
     total: number;
     page: number;
     limit: number;
@@ -31,7 +31,7 @@ export class JobDesignationRepository
       const page = options.page;
       const limit = options.limit;
 
-      const filter: FilterQuery<IjobDesignation> = {};
+      const filter: FilterQuery<IJobDesignation> = {};
 
       if (options.search) {
         filter.$or = [
@@ -51,7 +51,7 @@ export class JobDesignationRepository
         const result = (await this.find(filter, {
           pagination: { page: page, limit: limit },
           sort: { createdAt: -1 },
-        })) as { data: IjobDesignation[]; total: number };
+        })) as { data: IJobDesignation[]; total: number };
 
         console.log("job designations with pagination:", result);
         return {
@@ -82,7 +82,7 @@ export class JobDesignationRepository
     }
   }
 
-  async findByName(name: string): Promise<IjobDesignation | null> {
+  async findByName(name: string): Promise<IJobDesignation | null> {
     try {
       return await jobDesignation.findOne({ designation: name });
     } catch (error) {
@@ -90,7 +90,7 @@ export class JobDesignationRepository
     }
   }
 
-  async findById(id: string): Promise<IjobDesignation | null> {
+  async findById(id: string): Promise<IJobDesignation | null> {
     try {
       return await jobDesignation.findById(id).exec();
     } catch (error) {
@@ -98,7 +98,7 @@ export class JobDesignationRepository
     }
   }
 
-  async addDesignation(designation: string): Promise<IjobDesignation> {
+  async addDesignation(designation: string): Promise<IJobDesignation> {
     try {
       const newDesignation = await this.create({ designation });
       console.log(
@@ -114,7 +114,7 @@ export class JobDesignationRepository
   async blockDesignation(
     id: string,
     status: boolean
-  ): Promise<IjobDesignation | null> {
+  ): Promise<IJobDesignation | null> {
     try {
       const updatedDesignation = await this.updateOne(
         { _id: id },

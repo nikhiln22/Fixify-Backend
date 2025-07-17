@@ -1,7 +1,7 @@
 import { DesignationResponse } from "../DTO/IServices/IjobService";
-import { IjobDesignation } from "../Models/IjobDesignation";
+import { IJobDesignation } from "../Models/IjobDesignation";
 
-export interface IjobsService {
+export interface IJobsService {
   addDesignation(designation: string): Promise<DesignationResponse>;
   getAllDesignations(options: {
     page?: number;
@@ -12,7 +12,7 @@ export interface IjobsService {
     success: boolean;
     message: string;
     data?: {
-      designations: IjobDesignation[];
+      designations: IJobDesignation[];
       pagination: {
         total: number;
         page: number;

@@ -8,18 +8,18 @@ import {
   UpdatedCategoryResponse,
   ToggleServiceStatusResponse,
   UpdatedServiceResponse,
-  getServiceDetailsResponse,
+  GetServiceDetailsResponse,
 } from "../interfaces/DTO/IServices/IservicesService";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
-import { IserviceRepository } from "../interfaces/Irepositories/IserviceRepository";
+import { IServiceRepository } from "../interfaces/Irepositories/IserviceRepository";
 import { IService } from "../interfaces/Models/Iservice";
-import { Icategory } from "../interfaces/Models/Icategory";
+import { ICategory } from "../interfaces/Models/Icategory";
 import { ICategoryRepository } from "../interfaces/Irepositories/IcategoryRepository";
 
 @injectable()
 export class ServiceServices implements IServiceService {
   constructor(
-    @inject("IserviceRepository") private serviceRepository: IserviceRepository,
+    @inject("IServiceRepository") private serviceRepository: IServiceRepository,
     @inject("ICategoryRepository")
     private categoryRepository: ICategoryRepository,
     @inject("IFileUploader") private fileUploader: IFileUploader
@@ -346,7 +346,7 @@ export class ServiceServices implements IServiceService {
     success: boolean;
     message: string;
     data?: {
-      categories: Icategory[];
+      categories: ICategory[];
       pagination: {
         total: number;
         page: number;
@@ -523,7 +523,7 @@ export class ServiceServices implements IServiceService {
 
   async getServiceDetails(
     serviceId: string
-  ): Promise<getServiceDetailsResponse> {
+  ): Promise<GetServiceDetailsResponse> {
     try {
       console.log(
         "serviceId in the service service layer for getting service layers:",

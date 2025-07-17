@@ -1,28 +1,28 @@
-import { ItechnicianController } from "../interfaces/Icontrollers/ItechnicianController";
-import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
-import { IjobsService } from "../interfaces/Iservices/IjobsService";
+import { ITechnicianController } from "../interfaces/Icontrollers/ItechnicianController";
+import { ITechnicianService } from "../interfaces/Iservices/ItechnicianService";
+import { IJobsService } from "../interfaces/Iservices/IjobsService";
 import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
-import { IbookingService } from "../interfaces/Iservices/IbookingService";
-import { IchatService } from "../interfaces/Iservices/IchatService";
+import { IBookingService } from "../interfaces/Iservices/IbookingService";
+import { IChatService } from "../interfaces/Iservices/IchatService";
 import {
   createErrorResponse,
   createSuccessResponse,
 } from "../utils/responseHelper";
 
 @injectable()
-export class TechnicianController implements ItechnicianController {
+export class TechnicianController implements ITechnicianController {
   constructor(
-    @inject("ItechnicianService")
-    private technicianService: ItechnicianService,
-    @inject("IjobsService")
-    private jobsService: IjobsService,
+    @inject("ITechnicianService")
+    private technicianService: ITechnicianService,
+    @inject("IJobsService")
+    private jobsService: IJobsService,
     @inject("ITimeSlotService")
     private timeSlotService: ITimeSlotService,
-    @inject("IbookingService") private bookingService: IbookingService,
-    @inject("IchatService") private chatService: IchatService
+    @inject("IBookingService") private bookingService: IBookingService,
+    @inject("IChatService") private chatService: IChatService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {

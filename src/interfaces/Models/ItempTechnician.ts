@@ -1,6 +1,6 @@
 import { Document } from "mongoose";
 
-export interface ItempTechnician extends Document {
+export interface ITempTechnician extends Document {
   username: string;
   email: string;
   password: string;

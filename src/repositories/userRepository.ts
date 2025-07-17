@@ -1,24 +1,24 @@
-import { IuserRepository } from "../interfaces/Irepositories/IuserRepository";
-import { Iuser } from "../interfaces/Models/Iuser";
+import { IUserRepository } from "../interfaces/Irepositories/IuserRepository";
+import { IUser } from "../interfaces/Models/Iuser";
 import user from "../models/userModel";
 import {
-  findByEmailResponseDTO,
-  createUserDTO,
-  UpdatePasswordResponseDTO,
-} from "../interfaces/DTO/IRepository/userRepositoryDTO";
+  FindByEmailResponse,
+  CreateUser,
+  UpdatePasswordResponse,
+} from "../interfaces/DTO/IRepository/IuserRepository";
 import { BaseRepository } from "./baseRepository";
 import { injectable } from "tsyringe";
 import { FilterQuery } from "mongoose";
 
 @injectable()
 export class UserRepository
-  extends BaseRepository<Iuser>
-  implements IuserRepository
+  extends BaseRepository<IUser>
+  implements IUserRepository
 {
   constructor() {
     super(user);
   }
-  async createUser(userData: createUserDTO): Promise<Iuser> {
+  async createUser(userData: CreateUser): Promise<IUser> {
     try {
       const newUser = await this.create(userData);
       console.log("savedUser from userRepository:", newUser);
@@ -31,7 +31,7 @@ export class UserRepository
     }
   }
 
-  async findByEmail(email: string): Promise<findByEmailResponseDTO> {
+  async findByEmail(email: string): Promise<FindByEmailResponse> {
     try {
       const userData = await this.findOne({ email });
       console.log("userData from user repository:", userData);
@@ -49,7 +49,7 @@ export class UserRepository
   async updatePassword(
     email: string,
     hashedPassword: string
-  ): Promise<UpdatePasswordResponseDTO> {
+  ): Promise<UpdatePasswordResponse> {
     try {
       const result = await this.updateOne(
         { email },
@@ -76,7 +76,7 @@ export class UserRepository
     search?: string;
     status?: string;
   }): Promise<{
-    data: Iuser[];
+    data: IUser[];
     total: number;
     page: number;
     limit: number;
@@ -85,9 +85,9 @@ export class UserRepository
     try {
       console.log("entering the function which fetches all the users");
       const page = options.page || 1;
-      const limit = options.limit || 5;
+      const limit = options.limit || 6;
 
-      const filter: FilterQuery<Iuser> = {};
+      const filter: FilterQuery<IUser> = {};
 
       if (options.search) {
         filter.$or = [
@@ -107,7 +107,7 @@ export class UserRepository
       const result = (await this.find(filter, {
         pagination: { page, limit },
         sort: { createdAt: -1 },
-      })) as { data: Iuser[]; total: number };
+      })) as { data: IUser[]; total: number };
 
       console.log("data fetched from the user repository:", result);
 
@@ -133,7 +133,7 @@ export class UserRepository
     }
   }
 
-  async findById(id: string): Promise<Iuser | null> {
+  async findById(id: string): Promise<IUser | null> {
     try {
       return await user.findById(id).exec();
     } catch (error) {
@@ -148,7 +148,7 @@ export class UserRepository
       phone?: string;
       image?: string;
     }
-  ): Promise<Iuser | undefined> {
+  ): Promise<IUser | undefined> {
     try {
       console.log("editing user profile in repository for ID:", userId);
       console.log("Profile data:", profileData);
@@ -160,15 +160,15 @@ export class UserRepository
             username: profileData.username,
             phone: profileData.phone,
             image: profileData.image,
-            },
           },
+        }
       );
 
       if (updatedUser) {
         const { password, ...safeUser } = updatedUser.toObject
           ? updatedUser.toObject()
           : updatedUser;
-        return safeUser as Iuser;
+        return safeUser as IUser;
       } else {
         return undefined;
       }

@@ -8,33 +8,33 @@ import {
 import {
   ForgotPasswordRequest,
   ForgotPasswordResponse,
-  loginData,
-  loginResponse,
+  LoginData,
+  LoginResponse,
   RegisterResponse,
   ResendOtpResponse,
   ResetPasswordData,
   ResetPasswordResponse,
   SignupUserData,
-  tempUserResponse,
-  verifyOtpData,
+  TempUserResponse,
+  VerifyOtpData,
   ToggleUserStatusResponse,
   UserProfileResponse,
   EditProfileResponse,
   UserProfileUpdateData,
   AddMoneyResponse,
 } from "../interfaces/DTO/IServices/IuserService";
-import { ItempUserRepository } from "../interfaces/Irepositories/ItempUserRepository";
-import { IuserRepository } from "../interfaces/Irepositories/IuserRepository";
-import { IuserService } from "../interfaces/Iservices/IuserService";
-import { ItempUser } from "../interfaces/Models/ItempUser";
-import { IemailService } from "../interfaces/Iemail/Iemail";
-import { IjwtService } from "../interfaces/Ijwt/Ijwt";
+import { ITempUserRepository } from "../interfaces/Irepositories/ItempUserRepository";
+import { IUserRepository } from "../interfaces/Irepositories/IuserRepository";
+import { IUserService } from "../interfaces/Iservices/IuserService";
+import { ITempUser } from "../interfaces/Models/ItempUser";
+import { IEmailService } from "../interfaces/Iemail/Iemail";
+import { IJwtService } from "../interfaces/Ijwt/Ijwt";
 import { IOTPService } from "../interfaces/Iotp/IOTP";
 import { IPasswordHasher } from "../interfaces/IpasswordHasher/IpasswordHasher";
-import { IredisService } from "../interfaces/Iredis/Iredis";
+import { IRedisService } from "../interfaces/Iredis/Iredis";
 import { OtpVerificationResult } from "../interfaces/Iotp/IOTP";
 import { inject, injectable } from "tsyringe";
-import { Iuser } from "../interfaces/Models/Iuser";
+import { IUser } from "../interfaces/Models/Iuser";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
 import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
 import { IWalletTransactionRepository } from "../interfaces/Irepositories/IwalletTransactionRepository";
@@ -44,16 +44,16 @@ import config from "../config/env";
 import { IWalletTransaction } from "../interfaces/Models/IwalletTransaction";
 
 @injectable()
-export class UserService implements IuserService {
+export class UserService implements IUserService {
   constructor(
-    @inject("IuserRepository") private userRepository: IuserRepository,
-    @inject("ItempUserRepository")
-    private tempUserRepository: ItempUserRepository,
-    @inject("IemailService") private emailService: IemailService,
+    @inject("IUserRepository") private userRepository: IUserRepository,
+    @inject("ITempUserRepository")
+    private tempUserRepository: ITempUserRepository,
+    @inject("IEmailService") private emailService: IEmailService,
     @inject("IOTPService") private otpService: IOTPService,
     @inject("IPasswordHasher") private passwordService: IPasswordHasher,
-    @inject("IjwtService") private jwtService: IjwtService,
-    @inject("IredisService") private redisService: IredisService,
+    @inject("IJwtService") private jwtService: IJwtService,
+    @inject("IRedisService") private redisService: IRedisService,
     @inject("IFileUploader") private fileUploader: IFileUploader,
     @inject("IWalletRepository") private walletRepository: IWalletRepository,
     @inject("IWalletTransactionRepository")
@@ -114,7 +114,7 @@ export class UserService implements IuserService {
     };
   }
 
-  async userSignUp(data: SignupUserData): Promise<tempUserResponse> {
+  async userSignUp(data: SignupUserData): Promise<TempUserResponse> {
     try {
       console.log(
         "entering to the usersignup function in the userauth service"
@@ -139,7 +139,7 @@ export class UserService implements IuserService {
         ...data,
         password: hashedPassword,
         expiresAt,
-      } as ItempUser;
+      } as ITempUser;
 
       const response = await this.tempUserRepository.createTempUser(
         tempUserData
@@ -158,7 +158,7 @@ export class UserService implements IuserService {
     }
   }
 
-  async verifyOtp(data: verifyOtpData): Promise<RegisterResponse> {
+  async verifyOtp(data: VerifyOtpData): Promise<RegisterResponse> {
     try {
       console.log("entering to the verifyotp function in userService");
 
@@ -384,7 +384,7 @@ export class UserService implements IuserService {
     }
   }
 
-  async login(data: loginData): Promise<loginResponse> {
+  async login(data: LoginData): Promise<LoginResponse> {
     try {
       console.log("entering to the login credentials verifying in service");
       const { email, password } = data;
@@ -459,7 +459,7 @@ export class UserService implements IuserService {
     success: boolean;
     message: string;
     data?: {
-      users: Iuser[];
+      users: IUser[];
       pagination: {
         total: number;
         page: number;

@@ -1,8 +1,8 @@
-import { offerData } from "../DTO/IServices/IofferService";
+import { OfferData } from "../DTO/IServices/IofferService";
 import { IOffer } from "../Models/Ioffers";
 
 export interface IOfferService {
-  addOffer(data: offerData): Promise<{
+  addOffer(data: OfferData): Promise<{
     success: boolean;
     message: string;
     data?: IOffer;

@@ -1,15 +1,15 @@
-import { Iadmin } from "../../Models/Iadmin";
+import { IAdmin } from "../../Models/Iadmin";
 
-export interface loginResponse {
+export interface LoginResponse {
   success: boolean;
   message: string;
-  data?: Iadmin;
+  data?: IAdmin;
   role?: string;
   access_token?: string;
   refresh_token?: string;
 }
 
-export interface loginData {
+export interface LoginData {
   email: string;
   password: string;
 }

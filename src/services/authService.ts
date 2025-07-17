@@ -1,10 +1,10 @@
-import { IjwtService } from "../interfaces/Ijwt/Ijwt";
-import { IauthService } from "../interfaces/Iservices/IauthService";
+import { IJwtService } from "../interfaces/Ijwt/Ijwt";
+import { IAuthService } from "../interfaces/Iservices/IauthService";
 import { inject, injectable } from "tsyringe";
 
 @injectable()
-export class AuthService implements IauthService {
-  constructor(@inject("IjwtService") private jwtService: IjwtService) {}
+export class AuthService implements IAuthService {
+  constructor(@inject("IJwtService") private jwtService: IJwtService) {}
 
   async refreshAccessToken(
     refreshToken: string,

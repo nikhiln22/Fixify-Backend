@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
-import { IjobDesignation } from "../interfaces/Models/IjobDesignation";
+import { IJobDesignation } from "../interfaces/Models/IjobDesignation";
 
-const jobDesignationSchema: Schema<IjobDesignation> = new Schema(
+const jobDesignationSchema: Schema<IJobDesignation> = new Schema(
   {
     designation: {
       type: String,
@@ -16,7 +16,7 @@ const jobDesignationSchema: Schema<IjobDesignation> = new Schema(
   { timestamps: true }
 );
 
-const jobDesignation = mongoose.model<IjobDesignation>(
+const jobDesignation = mongoose.model<IJobDesignation>(
   "jobDesignation",
   jobDesignationSchema
 );

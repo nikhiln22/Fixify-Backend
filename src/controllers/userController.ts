@@ -1,29 +1,29 @@
-import { IuserController } from "../interfaces/Icontrollers/IuserController";
-import { IuserService } from "../interfaces/Iservices/IuserService";
+import { IUserController } from "../interfaces/Icontrollers/IuserController";
+import { IUserService } from "../interfaces/Iservices/IuserService";
 import { IServiceService } from "../interfaces/Iservices/IserviceService";
 import { IAddressService } from "../interfaces/Iservices/IaddressService";
-import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
+import { ITechnicianService } from "../interfaces/Iservices/ItechnicianService";
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
 import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
-import { IbookingService } from "../interfaces/Iservices/IbookingService";
-import { IchatService } from "../interfaces/Iservices/IchatService";
+import { IBookingService } from "../interfaces/Iservices/IbookingService";
+import { IChatService } from "../interfaces/Iservices/IchatService";
 import {
   createSuccessResponse,
   createErrorResponse,
 } from "../utils/responseHelper";
 
 @injectable()
-export class UserController implements IuserController {
+export class UserController implements IUserController {
   constructor(
-    @inject("IuserService") private userService: IuserService,
+    @inject("IUserService") private userService: IUserService,
     @inject("IServiceService") private serviceService: IServiceService,
     @inject("IAddressService") private addressService: IAddressService,
-    @inject("ItechnicianService") private technicianService: ItechnicianService,
+    @inject("ITechnicianService") private technicianService: ITechnicianService,
     @inject("ITimeSlotService") private timeSlotService: ITimeSlotService,
-    @inject("IbookingService") private bookingService: IbookingService,
-    @inject("IchatService") private chatService: IchatService
+    @inject("IBookingService") private bookingService: IBookingService,
+    @inject("IChatService") private chatService: IChatService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {

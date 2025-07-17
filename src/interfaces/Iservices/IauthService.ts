@@ -1,3 +1,3 @@
-export interface IauthService {
+export interface IAuthService {
   refreshAccessToken(refreshToken: string, role: string): Promise<string>;
 }

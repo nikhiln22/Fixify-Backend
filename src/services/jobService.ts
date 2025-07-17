@@ -1,14 +1,14 @@
 import { injectable, inject } from "tsyringe";
-import { IjobsService } from "../interfaces/Iservices/IjobsService";
-import { IjobDesignationRepository } from "../interfaces/Irepositories/IjobDesignationRepository";
+import { IJobsService } from "../interfaces/Iservices/IjobsService";
+import { IJobDesignationRepository } from "../interfaces/Irepositories/IjobDesignationRepository";
 import { DesignationResponse } from "../interfaces/DTO/IServices/IjobService";
-import { IjobDesignation } from "../interfaces/Models/IjobDesignation";
+import { IJobDesignation } from "../interfaces/Models/IjobDesignation";
 
 @injectable()
-export class JobService implements IjobsService {
+export class JobService implements IJobsService {
   constructor(
-    @inject("IjobDesignationRepository")
-    private designationRepository: IjobDesignationRepository
+    @inject("IJobDesignationRepository")
+    private designationRepository: IJobDesignationRepository
   ) {}
 
   async addDesignation(designation: string): Promise<DesignationResponse> {
@@ -87,7 +87,7 @@ export class JobService implements IjobsService {
     success: boolean;
     message: string;
     data?: {
-      designations: IjobDesignation[];
+      designations: IJobDesignation[];
       pagination: {
         total: number;
         page: number;

@@ -1,13 +1,13 @@
-import { IchatService } from "../interfaces/Iservices/IchatService";
-import { IchatRepository } from "../interfaces/Irepositories/IchatRepository";
+import { IChatService } from "../interfaces/Iservices/IchatService";
+import { IChatRepository } from "../interfaces/Irepositories/IchatRepository";
 import { inject, injectable } from "tsyringe";
 import { IChat } from "../interfaces/Models/Ichat";
 import { CreateChatData } from "../interfaces/DTO/IRepository/IchatRepository";
 
 @injectable()
-export class ChatService implements IchatService {
+export class ChatService implements IChatService {
   constructor(
-    @inject("IchatRepository") private chatRepository: IchatRepository
+    @inject("IChatRepository") private chatRepository: IChatRepository
   ) {}
 
   async getChatHistory(bookingId: string): Promise<{

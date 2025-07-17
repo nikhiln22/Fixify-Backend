@@ -1,4 +1,4 @@
-import { Server as HttpServer, Server } from "http";
+import { Server as HttpServer} from "http";
 import { Server as SocketIOServer } from "socket.io";
 import config from "../config/env";
 

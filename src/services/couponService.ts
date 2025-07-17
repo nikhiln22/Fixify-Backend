@@ -1,7 +1,7 @@
 import { ICouponService } from "../interfaces/Iservices/IcouponService";
 import { inject, injectable } from "tsyringe";
 import { ICoupon } from "../interfaces/Models/Icoupon";
-import { couponData } from "../interfaces/DTO/IServices/IcouponService";
+import { CouponData } from "../interfaces/DTO/IServices/IcouponService";
 import { ICouponRepository } from "../interfaces/Irepositories/IcouponRepository";
 
 @injectable()
@@ -10,7 +10,7 @@ export class CouponService implements ICouponService {
     @inject("ICouponRepository") private couponRepository: ICouponRepository
   ) {}
 
-  async addCoupon(data: couponData): Promise<{
+  async addCoupon(data: CouponData): Promise<{
     success: boolean;
     message: string;
     data?: ICoupon;

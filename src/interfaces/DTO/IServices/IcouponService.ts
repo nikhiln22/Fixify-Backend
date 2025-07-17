@@ -1,5 +1,4 @@
-
-export interface couponData {
+export interface CouponData {
   code: string;
   title: string;
   description: string;

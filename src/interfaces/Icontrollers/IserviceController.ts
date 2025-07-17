@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 
-export interface IserviceController {
+export interface IServiceController {
   addCategory(req: Request, res: Response): Promise<void>;
   getAllCategory(req: Request, res: Response): Promise<void>;
   toggleCategoryStatus(req: Request, res: Response): Promise<void>;

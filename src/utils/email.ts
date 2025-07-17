@@ -2,13 +2,13 @@ import nodemailer, { Transporter } from "nodemailer";
 import config from "../config/env";
 import { EmailType, APP_NAME } from "../config/emailConfig";
 import { OtpPurpose, OTP_EXPIRY_SECONDS } from "../config/otpConfig";
-import { IemailService } from "../interfaces/Iemail/Iemail";
+import { IEmailService } from "../interfaces/Iemail/Iemail";
 import { IemailTemplateService } from "../interfaces/Iemail/IemailTemplate";
-import { EmailTemplate } from "../types/email.types";
+// import { EmailTemplate } from "../types/email.types";
 import { inject, injectable } from "tsyringe";
 
 @injectable()
-export class EmailService implements IemailService {
+export class EmailService implements IEmailService {
   private transporter: Transporter;
   private appName: string = APP_NAME;
 

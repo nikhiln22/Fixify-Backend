@@ -1,5 +1,5 @@
 import { IWalletTransaction } from "../interfaces/Models/IwalletTransaction";
-import mongoose, { Schema, Types } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const WalletTransactionSchema: Schema<IWalletTransaction> = new Schema(
   {

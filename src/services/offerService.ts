@@ -1,4 +1,4 @@
-import { offerData } from "../interfaces/DTO/IServices/IofferService";
+import { OfferData } from "../interfaces/DTO/IServices/IofferService";
 import { IOfferService } from "../interfaces/Iservices/IofferService";
 import { IOffer } from "../interfaces/Models/Ioffers";
 import { inject, injectable } from "tsyringe";
@@ -10,7 +10,7 @@ export class OfferService implements IOfferService {
     @inject("IOfferRepository") private offerRepository: IOfferRepository
   ) {}
 
-  async addOffer(data: offerData): Promise<{
+  async addOffer(data: OfferData): Promise<{
     success: boolean;
     message: string;
     data?: IOffer;

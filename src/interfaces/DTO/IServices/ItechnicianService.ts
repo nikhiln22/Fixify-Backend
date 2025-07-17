@@ -1,9 +1,9 @@
-import { Itechnician } from "../../../interfaces/Models/Itechnician";
+import { ITechnician } from "../../../interfaces/Models/Itechnician";
 import { ITimeSlot } from "../../Models/ItimeSlot";
 
 export interface RegisterResponse {
   success: boolean;
-  userData?: Itechnician;
+  userData?: ITechnician;
   message: string;
 }
 
@@ -16,7 +16,7 @@ export interface SignupTechnicianData {
   updatedAt?: Date;
 }
 
-export interface tempTechnicianResponse {
+export interface TempTechnicianResponse {
   tempTechnicianId?: string;
   email?: string;
   success: boolean;
@@ -30,23 +30,23 @@ export interface ResendOtpResponse {
   email?: string;
 }
 
-export interface verifyOtpData {
+export interface VerifyOtpData {
   tempTechnicianId?: string;
   otp: string;
   email?: string;
   purpose?: string;
 }
 
-export interface loginResponse {
+export interface LoginResponse {
   success: boolean;
   message: string;
   role?: string;
   access_token?: string;
   refresh_token?: string;
-  technician?: Itechnician;
+  technician?: ITechnician;
 }
 
-export interface loginData {
+export interface LoginData {
   email: string;
   password: string;
 }
@@ -87,7 +87,7 @@ export interface TechnicianQualificationUpdateResponse {
   success: boolean;
   message: string;
   technician?: Pick<
-    Itechnician,
+    ITechnician,
     | "yearsOfExperience"
     | "Designation"
     | "About"
@@ -127,7 +127,7 @@ export interface RejectTechnicianServiceResponse {
 export interface ToggleTechnicianStatusResponse {
   message: string;
   success: boolean;
-  technician?: Itechnician;
+  technician?: ITechnician;
 }
 
 export interface AddTimeSlotsResult {

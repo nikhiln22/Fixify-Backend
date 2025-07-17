@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 
-export interface IadminController {
+export interface IAdminController {
   login(req: Request, res: Response): Promise<void>;
   getAllUsers(req: Request, res: Response): Promise<void>;
   toggleUserStatus(req: Request, res: Response): Promise<void>;

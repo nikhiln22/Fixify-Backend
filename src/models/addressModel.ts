@@ -1,4 +1,4 @@
-import mongoose, { Schema, Types } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import { IUserAddress } from "../interfaces/Models/Iaddress";
 
 const userAddressSchema: Schema<IUserAddress> = new Schema(

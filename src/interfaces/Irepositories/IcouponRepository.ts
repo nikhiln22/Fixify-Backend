@@ -1,8 +1,8 @@
-import { couponData } from "../DTO/IServices/IcouponService";
+import { CouponData } from "../DTO/IServices/IcouponService";
 import { ICoupon } from "../Models/Icoupon";
 
 export interface ICouponRepository {
-  addCoupon(data: couponData): Promise<ICoupon>;
+  addCoupon(data: CouponData): Promise<ICoupon>;
   getAllCoupons(options: {
     page?: number;
     limit?: number;

@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
-import { ItempUser } from "../interfaces/Models/ItempUser";
+import { ITempUser } from "../interfaces/Models/ItempUser";
 
-const tempUserSchema: Schema<ItempUser> = new Schema(
+const tempUserSchema: Schema<ITempUser> = new Schema(
   {
     username: {
       type: String,
@@ -33,6 +33,6 @@ const tempUserSchema: Schema<ItempUser> = new Schema(
 
 tempUserSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 900 });
 
-const tempUser = mongoose.model<ItempUser>("tempUser", tempUserSchema);
+const tempUser = mongoose.model<ITempUser>("tempUser", tempUserSchema);
 
 export default tempUser;

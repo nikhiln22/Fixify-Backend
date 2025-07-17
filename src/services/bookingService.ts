@@ -2,9 +2,9 @@ import {
   CreateBookingRequest,
   BookServiceResponse,
 } from "../interfaces/DTO/IServices/IuserService";
-import { IbookingService } from "../interfaces/Iservices/IbookingService";
+import { IBookingService } from "../interfaces/Iservices/IbookingService";
 import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
-import { IbookingRepository } from "../interfaces/Irepositories/IbookingRespository";
+import { IBookingRepository } from "../interfaces/Irepositories/IbookingRespository";
 import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
 import { IPaymentRepository } from "../interfaces/Irepositories/IpaymentRepository";
 import { HTTP_STATUS } from "../utils/httpStatus";
@@ -13,28 +13,28 @@ import { IBooking } from "../interfaces/Models/Ibooking";
 import { stripe } from "../config/stripeConfig";
 import config from "../config/env";
 import { IOTPService } from "../interfaces/Iotp/IOTP";
-import { IredisService } from "../interfaces/Iredis/Iredis";
+import { IRedisService } from "../interfaces/Iredis/Iredis";
 import {
   OtpPurpose,
   BOOKING_OTP_EXPIRATION_SECONDS,
   OTP_PREFIX,
 } from "../config/otpConfig";
-import { IemailService } from "../interfaces/Iemail/Iemail";
+import { IEmailService } from "../interfaces/Iemail/Iemail";
 import { EmailType, APP_NAME } from "../config/emailConfig";
 import { ITimeSlot } from "../interfaces/Models/ItimeSlot";
 import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
 import { IRating } from "../interfaces/Models/Irating";
 
 @injectable()
-export class BookingService implements IbookingService {
+export class BookingService implements IBookingService {
   constructor(
-    @inject("IbookingRepository") private bookingRepository: IbookingRepository,
+    @inject("IBookingRepository") private bookingRepository: IBookingRepository,
     @inject("ITimeSlotService") private timeSlotService: ITimeSlotService,
     @inject("IWalletRepository") private walletRepository: IWalletRepository,
     @inject("IPaymentRepository") private paymentRepository: IPaymentRepository,
     @inject("IOTPService") private otpService: IOTPService,
-    @inject("IredisService") private redisService: IredisService,
-    @inject("IemailService") private emailService: IemailService,
+    @inject("IRedisService") private redisService: IRedisService,
+    @inject("IEmailService") private emailService: IEmailService,
     @inject("IRatingRepository") private ratingRepository: IRatingRepository
   ) {}
 

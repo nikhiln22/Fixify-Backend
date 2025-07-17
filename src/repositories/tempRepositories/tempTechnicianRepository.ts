@@ -1,27 +1,27 @@
-import { ItempTechnicianRepository } from "../../interfaces/Irepositories/ItempTechnicianRepository";
-import { ItempTechnician } from "../../interfaces/Models/ItempTechnician";
+import { ITempTechnicianRepository } from "../../interfaces/Irepositories/ItempTechnicianRepository";
+import { ITempTechnician } from "../../interfaces/Models/ItempTechnician";
 import mongoose from "mongoose";
 import tempTechnician from "../../models/tempTechnicianModel";
 import { BaseRepository } from "../baseRepository";
 import {
-  createTempTechnicianResponse,
-  findTempTechnicianByEmail,
-  findTempTechnicianById,
+  CreateTempTechnicianResponse,
+  FindTempTechnicianByEmail,
+  FindTempTechnicianById,
 } from "../../interfaces/DTO/IRepository/ItechnicianRepository";
 import { injectable } from "tsyringe";
 
 @injectable()
 export class TempTechnicianRepository
-  extends BaseRepository<ItempTechnician>
-  implements ItempTechnicianRepository
+  extends BaseRepository<ITempTechnician>
+  implements ITempTechnicianRepository
 {
   constructor() {
     super(tempTechnician);
   }
 
   async createTempTechnician(
-    technicianData: ItempTechnician
-  ): Promise< createTempTechnicianResponse> {
+    technicianData: ITempTechnician
+  ): Promise<CreateTempTechnicianResponse> {
     try {
       console.log("entering into the temporary technician creating function");
       const temporaryTechnician = await this.create(technicianData);
@@ -44,7 +44,9 @@ export class TempTechnicianRepository
     }
   }
 
-  async findTempTechnicianById(tempTechnicianId: string): Promise<findTempTechnicianById> {
+  async findTempTechnicianById(
+    tempTechnicianId: string
+  ): Promise<FindTempTechnicianById> {
     try {
       const tempSavedTechnician = await this.findById(tempTechnicianId);
       console.log("tempSavedTechnician:", tempSavedTechnician);
@@ -58,11 +60,15 @@ export class TempTechnicianRepository
       }
     } catch (error) {
       console.log("Error fetching temporary technician:", error);
-      throw new Error("An error occurred while retrieving the temporary technician");
+      throw new Error(
+        "An error occurred while retrieving the temporary technician"
+      );
     }
   }
 
-  async findTempTechnicianByEmail(email: string): Promise<findTempTechnicianByEmail> {
+  async findTempTechnicianByEmail(
+    email: string
+  ): Promise<FindTempTechnicianByEmail> {
     try {
       const tempSavedTechnician = await this.findOne({
         email,

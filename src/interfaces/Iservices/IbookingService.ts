@@ -5,7 +5,7 @@ import {
 import { IBooking } from "../Models/Ibooking";
 import { IRating } from "../Models/Irating";
 
-export interface IbookingService {
+export interface IBookingService {
   bookService(
     userId: string,
     data: CreateBookingRequest

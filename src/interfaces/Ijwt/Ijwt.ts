@@ -1,4 +1,4 @@
-export interface IjwtService {
+export interface IJwtService {
   generateAccessToken(Id: string, role: string): string;
   generateRefreshToken(Id: string, role: string): string;
   verifyAccessToken(token: string): any;

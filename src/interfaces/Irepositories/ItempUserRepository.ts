@@ -1,17 +1,17 @@
 import {
-  createTempUserResponseDTO,
-  findTempUserByEmailDTO,
-  findTempUserByIdDTO,
-  updateTempUserDTO,
-} from "../DTO/IRepository/userRepositoryDTO";
-import { ItempUser } from "../Models/ItempUser";
+  CreateTempUserResponse,
+  FindTempUserByEmail,
+  FindTempUserById,
+  UpdateTempUser,
+} from "../DTO/IRepository/IuserRepository";
+import { ITempUser } from "../Models/ItempUser";
 
-export interface ItempUserRepository {
-  createTempUser(userData: ItempUser): Promise<createTempUserResponseDTO>;
-  findTempUserById(tempUserId: string): Promise<findTempUserByIdDTO>;
-  findTempUserByEmail(email: string): Promise<findTempUserByEmailDTO>;
+export interface ITempUserRepository {
+  createTempUser(userData: ITempUser): Promise<CreateTempUserResponse>;
+  findTempUserById(tempUserId: string): Promise<FindTempUserById>;
+  findTempUserByEmail(email: string): Promise<FindTempUserByEmail>;
   updateTempUser(
-      tempUserId: string,
-      updateData: Partial<ItempUser>
-    ): Promise<updateTempUserDTO>
+    tempUserId: string,
+    updateData: Partial<ITempUser>
+  ): Promise<UpdateTempUser>;
 }

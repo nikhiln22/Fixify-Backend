@@ -1,6 +1,6 @@
 import { Types } from "mongoose";
 
-export interface offerData {
+export interface OfferData {
   title: string;
   description: string;
   offer_type: "global" | "service_category" | "first_time_user";

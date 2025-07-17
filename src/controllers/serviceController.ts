@@ -1,4 +1,4 @@
-import { IserviceController } from "../interfaces/Icontrollers/IserviceController";
+import { IServiceController } from "../interfaces/Icontrollers/IserviceController";
 import { HTTP_STATUS } from "../utils/httpStatus";
 import { injectable, inject } from "tsyringe";
 import { Request, Response } from "express";
@@ -9,7 +9,7 @@ import {
 } from "../utils/responseHelper";
 
 @injectable()
-export class ServiceController implements IserviceController {
+export class ServiceController implements IServiceController {
   constructor(
     @inject("IServiceService")
     private serviceService: IServiceService

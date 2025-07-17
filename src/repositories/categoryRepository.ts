@@ -1,4 +1,4 @@
-import { Icategory } from "../interfaces/Models/Icategory";
+import { ICategory } from "../interfaces/Models/Icategory";
 import { BaseRepository } from "./baseRepository";
 import { injectable } from "tsyringe";
 import category from "../models/categoryModel";
@@ -7,14 +7,14 @@ import { FilterQuery } from "mongoose";
 
 @injectable()
 export class CategoryRepository
-  extends BaseRepository<Icategory>
+  extends BaseRepository<ICategory>
   implements ICategoryRepository
 {
   constructor() {
     super(category);
   }
 
-  async addCategory(name: string, image: string): Promise<Icategory> {
+  async addCategory(name: string, image: string): Promise<ICategory> {
     try {
       console.log("adding the categories by the admin into the database");
       const newCategory = await this.create({ name, image });
@@ -25,7 +25,7 @@ export class CategoryRepository
     }
   }
 
-  async findCategoryByName(name: string): Promise<Icategory | null> {
+  async findCategoryByName(name: string): Promise<ICategory | null> {
     try {
       console.log("Checking if category already exists...");
       return await this.findOne({ name });
@@ -40,9 +40,9 @@ export class CategoryRepository
     limit?: number;
     search?: string;
     categoryId?: string;
-    status:string;
+    status: string;
   }): Promise<{
-    data: Icategory[];
+    data: ICategory[];
     total: number;
     page: number;
     limit: number;
@@ -53,17 +53,17 @@ export class CategoryRepository
       const page = options.page;
       const limit = options.limit;
 
-      const filter: FilterQuery<Icategory> = {};
+      const filter: FilterQuery<ICategory> = {};
 
       if (options.search) {
         filter.$or = [{ name: { $regex: options.search, $options: "i" } }];
       }
 
-        if(options.status){
-        if(options.status === "active"){
+      if (options.status) {
+        if (options.status === "active") {
           filter.status = true;
-        }else if(options.status === "blocked"){
-          filter.status = false
+        } else if (options.status === "blocked") {
+          filter.status = false;
         }
       }
 
@@ -71,7 +71,7 @@ export class CategoryRepository
         const result = (await this.find(filter, {
           pagination: { page: page, limit: limit },
           sort: { createdAt: -1 },
-        })) as { data: Icategory[]; total: number };
+        })) as { data: ICategory[]; total: number };
 
         console.log("categories with pagination:", result);
         return {
@@ -101,7 +101,7 @@ export class CategoryRepository
     }
   }
 
-  async findCategoryById(id: string): Promise<Icategory | null> {
+  async findCategoryById(id: string): Promise<ICategory | null> {
     try {
       return await this.findById(id);
     } catch (error) {
@@ -112,7 +112,7 @@ export class CategoryRepository
   async updateCategoryStatus(
     categoryId: string,
     newStatus: boolean
-  ): Promise<Icategory | null> {
+  ): Promise<ICategory | null> {
     try {
       console.log(
         `Updating category status to ${newStatus} for category ${categoryId}`
@@ -142,7 +142,7 @@ export class CategoryRepository
   async updateCategory(
     id: string,
     updateData: { name?: string; image?: string }
-  ): Promise<Icategory | null> {
+  ): Promise<ICategory | null> {
     try {
       console.log(`Updating category with ID: ${id}`, updateData);
 

@@ -2,7 +2,7 @@ import { FilterQuery, UpdateQuery } from "mongoose";
 import { CreateBookingRequest } from "../DTO/IServices/IuserService";
 import { IBooking } from "../Models/Ibooking";
 
-export interface IbookingRepository {
+export interface IBookingRepository {
   bookService(userId: string, data: CreateBookingRequest): Promise<IBooking>;
   updateBooking(
     filter: FilterQuery<IBooking>,

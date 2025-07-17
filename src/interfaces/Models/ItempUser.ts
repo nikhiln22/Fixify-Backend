@@ -1,6 +1,6 @@
-import mongoose, { Document } from "mongoose";
+import { Document } from "mongoose";
 
-export interface ItempUser extends Document {
+export interface ITempUser extends Document {
   username: string;
   email: string;
   password: string;

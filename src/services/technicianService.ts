@@ -9,8 +9,8 @@ import { EmailType, APP_NAME } from "../config/emailConfig";
 import {
   ForgotPasswordRequest,
   ForgotPasswordResponse,
-  loginData,
-  loginResponse,
+  LoginData,
+  LoginResponse,
   RegisterResponse,
   RejectTechnicianServiceResponse,
   ResendOtpResponse,
@@ -20,24 +20,24 @@ import {
   TechnicianProfileResponse,
   TechnicianQualification,
   TechnicianQualificationUpdateResponse,
-  tempTechnicianResponse,
+  TempTechnicianResponse,
   ToggleTechnicianStatusResponse,
-  verifyOtpData,
+  VerifyOtpData,
   VerifyTechnicianServiceResponse,
 } from "../interfaces/DTO/IServices/ItechnicianService";
-import { ItempTechnicianRepository } from "../interfaces/Irepositories/ItempTechnicianRepository";
-import { ItechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
-import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
-import { ItempTechnician } from "../interfaces/Models/ItempTechnician";
-import { IemailService } from "../interfaces/Iemail/Iemail";
-import { IjwtService } from "../interfaces/Ijwt/Ijwt";
+import { ITempTechnicianRepository } from "../interfaces/Irepositories/ItempTechnicianRepository";
+import { ITechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
+import { ITechnicianService } from "../interfaces/Iservices/ItechnicianService";
+import { ITempTechnician } from "../interfaces/Models/ItempTechnician";
+import { IEmailService } from "../interfaces/Iemail/Iemail";
+import { IJwtService } from "../interfaces/Ijwt/Ijwt";
 import { IOTPService } from "../interfaces/Iotp/IOTP";
 import { IPasswordHasher } from "../interfaces/IpasswordHasher/IpasswordHasher";
-import { IredisService } from "../interfaces/Iredis/Iredis";
+import { IRedisService } from "../interfaces/Iredis/Iredis";
 import { OtpVerificationResult } from "../interfaces/Iotp/IOTP";
 import { inject, injectable } from "tsyringe";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
-import { Itechnician } from "../interfaces/Models/Itechnician";
+import { ITechnician } from "../interfaces/Models/Itechnician";
 import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
 import { IWalletTransaction } from "../interfaces/Models/IwalletTransaction";
 import { IWalletTransactionRepository } from "../interfaces/Irepositories/IwalletTransactionRepository";
@@ -45,17 +45,17 @@ import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository
 import { IRating } from "../interfaces/Models/Irating";
 
 @injectable()
-export class TechnicianService implements ItechnicianService {
+export class TechnicianService implements ITechnicianService {
   constructor(
-    @inject("ItechnicianRepository")
-    private technicianRepository: ItechnicianRepository,
-    @inject("ItempTechnicianRepository")
-    private tempTechnicianRepository: ItempTechnicianRepository,
-    @inject("IemailService") private emailService: IemailService,
+    @inject("ITechnicianRepository")
+    private technicianRepository: ITechnicianRepository,
+    @inject("ITempTechnicianRepository")
+    private tempTechnicianRepository: ITempTechnicianRepository,
+    @inject("IEmailService") private emailService: IEmailService,
     @inject("IOTPService") private otpService: IOTPService,
     @inject("IPasswordHasher") private passwordService: IPasswordHasher,
-    @inject("IjwtService") private jwtService: IjwtService,
-    @inject("IredisService") private redisService: IredisService,
+    @inject("IJwtService") private jwtService: IJwtService,
+    @inject("IRedisService") private redisService: IRedisService,
     @inject("IFileUploader") private fileUploader: IFileUploader,
     @inject("IWalletRepository") private walletRepository: IWalletRepository,
     @inject("IWalletTransactionRepository")
@@ -119,7 +119,7 @@ export class TechnicianService implements ItechnicianService {
 
   async technicianSignUp(
     data: SignupTechnicianData
-  ): Promise<tempTechnicianResponse> {
+  ): Promise<TempTechnicianResponse> {
     try {
       console.log(
         "entering to the techniciansignup function in the technicianauth service"
@@ -144,7 +144,7 @@ export class TechnicianService implements ItechnicianService {
         ...data,
         password: hashedPassword,
         expiresAt,
-      } as ItempTechnician;
+      } as ITempTechnician;
 
       const response = await this.tempTechnicianRepository.createTempTechnician(
         tempTechnicianData
@@ -163,7 +163,7 @@ export class TechnicianService implements ItechnicianService {
     }
   }
 
-  async verifyOtp(data: verifyOtpData): Promise<RegisterResponse> {
+  async verifyOtp(data: VerifyOtpData): Promise<RegisterResponse> {
     try {
       console.log("entering to the verifyotp function in technicianService");
 
@@ -409,7 +409,7 @@ export class TechnicianService implements ItechnicianService {
     }
   }
 
-  async login(data: loginData): Promise<loginResponse> {
+  async login(data: LoginData): Promise<LoginResponse> {
     try {
       console.log("entering to the login credentials verifying in service");
       const { email, password } = data;
@@ -551,7 +551,7 @@ export class TechnicianService implements ItechnicianService {
     success: boolean;
     message: string;
     data?: {
-      applicants: Itechnician[];
+      applicants: ITechnician[];
       pagination: {
         total: number;
         page: number;
@@ -782,7 +782,7 @@ export class TechnicianService implements ItechnicianService {
     success: boolean;
     message: string;
     data?: {
-      technicians: Itechnician[];
+      technicians: ITechnician[];
       pagination: {
         total: number;
         page: number;
@@ -839,7 +839,7 @@ export class TechnicianService implements ItechnicianService {
   ): Promise<{
     success: boolean;
     message: string;
-    data?: Itechnician[];
+    data?: ITechnician[];
   }> {
     try {
       console.log(

@@ -2,13 +2,13 @@ import { injectable } from "tsyringe";
 import { BaseRepository } from "./baseRepository";
 import service from "../models/serviceModel";
 import { IService } from "../interfaces/Models/Iservice";
-import { IserviceRepository } from "../interfaces/Irepositories/IserviceRepository";
+import { IServiceRepository } from "../interfaces/Irepositories/IserviceRepository";
 import { FilterQuery, Types } from "mongoose";
 
 @injectable()
 export class ServiceRepository
   extends BaseRepository<IService>
-  implements IserviceRepository
+  implements IServiceRepository
 {
   constructor() {
     super(service);

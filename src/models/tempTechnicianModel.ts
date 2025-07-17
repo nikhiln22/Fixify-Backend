@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
-import { ItempTechnician } from "../interfaces/Models/ItempTechnician";
+import { ITempTechnician } from "../interfaces/Models/ItempTechnician";
 
-const tempTechnicianSchema: Schema<ItempTechnician> = new Schema(
+const tempTechnicianSchema: Schema<ITempTechnician> = new Schema(
   {
     username: {
       type: String,
@@ -29,7 +29,7 @@ const tempTechnicianSchema: Schema<ItempTechnician> = new Schema(
 
 tempTechnicianSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 900 });
 
-const tempTechnician = mongoose.model<ItempTechnician>(
+const tempTechnician = mongoose.model<ITempTechnician>(
   "tempTechnician",
   tempTechnicianSchema
 );

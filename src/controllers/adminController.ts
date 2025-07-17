@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../utils/httpStatus";
-import { IadminController } from "../interfaces/Icontrollers/IadminController";
+import { IAdminController } from "../interfaces/Icontrollers/IadminController";
 import { inject, injectable } from "tsyringe";
-import { IuserService } from "../interfaces/Iservices/IuserService";
-import { IadminService } from "../interfaces/Iservices/IadminService";
-import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
-import { IbookingService } from "../interfaces/Iservices/IbookingService";
+import { IUserService } from "../interfaces/Iservices/IuserService";
+import { IAdminService } from "../interfaces/Iservices/IadminService";
+import { ITechnicianService } from "../interfaces/Iservices/ItechnicianService";
+import { IBookingService } from "../interfaces/Iservices/IbookingService";
 import { IOfferService } from "../interfaces/Iservices/IofferService";
 import { ICouponService } from "../interfaces/Iservices/IcouponService";
 import {
@@ -14,15 +14,15 @@ import {
 } from "../utils/responseHelper";
 
 @injectable()
-export class AdminController implements IadminController {
+export class AdminController implements IAdminController {
   constructor(
-    @inject("IuserService")
-    private userService: IuserService,
-    @inject("IadminService")
-    private adminService: IadminService,
-    @inject("ItechnicianService")
-    private technicianService: ItechnicianService,
-    @inject("IbookingService") private bookingService: IbookingService,
+    @inject("IUserService")
+    private userService: IUserService,
+    @inject("IAdminService")
+    private adminService: IAdminService,
+    @inject("ITechnicianService")
+    private technicianService: ITechnicianService,
+    @inject("IBookingService") private bookingService: IBookingService,
     @inject("IOfferService") private offerService: IOfferService,
     @inject("ICouponService") private couponService: ICouponService
   ) {}

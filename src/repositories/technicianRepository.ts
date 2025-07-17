@@ -1,32 +1,31 @@
-import { ItechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
-import { Itechnician } from "../interfaces/Models/Itechnician";
+import { ITechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
+import { ITechnician } from "../interfaces/Models/Itechnician";
 import technician from "../models/technicianModel";
 import {
-  findByEmailResponse,
-  createTechnician,
+  FindByEmailResponse,
+  CreateTechnician,
   UpdatePasswordResponse,
   TechnicianQualification,
   UpdateTechnicianQualificationResponse,
-  findByIdResponse,
+  FindByIdResponse,
   VerifyTechnicianResponse,
   RejectTechnicianResponse,
 } from "../interfaces/DTO/IRepository/ItechnicianRepository";
 import { BaseRepository } from "./baseRepository";
 import { injectable } from "tsyringe";
 import { FilterQuery } from "mongoose";
-import jobDesignation from "../models/jobDesignationModel";
 
 @injectable()
 export class TechnicianRepository
-  extends BaseRepository<Itechnician>
-  implements ItechnicianRepository
+  extends BaseRepository<ITechnician>
+  implements ITechnicianRepository
 {
   constructor() {
     super(technician);
   }
   async createTechnician(
-    technicianData: createTechnician
-  ): Promise<Itechnician> {
+    technicianData: CreateTechnician
+  ): Promise<ITechnician> {
     try {
       const newTechnician = await this.create(technicianData);
       console.log("savedTechnician from TechnicianRepository:", newTechnician);
@@ -35,11 +34,12 @@ export class TechnicianRepository
       }
       return newTechnician;
     } catch (error) {
-      throw new Error("Error occured while creating new technician");
+      console.log(error);
+      throw new Error("Error occured while creating new technician:");
     }
   }
 
-  async findByEmail(email: string): Promise<findByEmailResponse> {
+  async findByEmail(email: string): Promise<FindByEmailResponse> {
     try {
       console.log("email in the findbymail technician Repository:", email);
       const technicianData = await this.findOne({ email });
@@ -50,7 +50,7 @@ export class TechnicianRepository
         return { success: false };
       }
     } catch (error) {
-      console.log("error occured while fetching the technician");
+      console.log("error occured while fetching the technician:", error);
       throw new Error("An error occurred while retrieving the technician");
     }
   }
@@ -138,7 +138,7 @@ export class TechnicianRepository
     }
   }
 
-  async getTechnicianById(id: string): Promise<findByIdResponse> {
+  async getTechnicianById(id: string): Promise<FindByIdResponse> {
     try {
       console.log("Finding technician by ID in repository:", id);
       const technicianData = await this.model
@@ -167,7 +167,7 @@ export class TechnicianRepository
   }
 
   async getAllApplicants(options: { page?: number; limit?: number }): Promise<{
-    data: Itechnician[];
+    data: ITechnician[];
     total: number;
     page: number;
     limit: number;
@@ -183,7 +183,7 @@ export class TechnicianRepository
       const result = (await this.find(filter, {
         pagination: { page, limit },
         sort: { createdAt: -1 },
-      })) as { data: Itechnician[]; total: number };
+      })) as { data: ITechnician[]; total: number };
 
       console.log("data fetched from the technician repository:", result);
 
@@ -266,7 +266,7 @@ export class TechnicianRepository
     status?: string;
     designation?: string;
   }): Promise<{
-    data: Itechnician[];
+    data: ITechnician[];
     total: number;
     page: number;
     limit: number;
@@ -277,7 +277,7 @@ export class TechnicianRepository
       const page = options.page || 1;
       const limit = options.limit || 5;
 
-      const filter: FilterQuery<Itechnician> = {
+      const filter: FilterQuery<ITechnician> = {
         is_verified: true,
       };
 
@@ -300,7 +300,7 @@ export class TechnicianRepository
         pagination: { page, limit },
         sort: { createdAt: -1 },
         populate: { path: "Designation", select: "designation" },
-      })) as { data: Itechnician[]; total: number };
+      })) as { data: ITechnician[]; total: number };
 
       console.log("data fetched from the technician repository:", result);
 
@@ -323,7 +323,7 @@ export class TechnicianRepository
   ): Promise<{
     success: boolean;
     message?: string;
-    technicianData?: Itechnician;
+    technicianData?: ITechnician;
   }> {
     try {
       console.log(
@@ -360,15 +360,12 @@ export class TechnicianRepository
     }
   }
 
-  // Add this method to your TechnicianRepository class
-  // This finds technicians within radius of USER'S location
-
   async nearbyTechnicians(
     designationId: string,
     userLongitude: number,
     userLatitude: number,
     radius: number = 10
-  ): Promise<Itechnician[]> {
+  ): Promise<ITechnician[]> {
     try {
       console.log("Searching for technicians near user location:", {
         designationId,
@@ -383,7 +380,7 @@ export class TechnicianRepository
         status: "Active",
         latitude: { $exists: true, $ne: null },
         longitude: { $exists: true, $ne: null },
-      })) as Itechnician[];
+      })) as ITechnician[];
 
       console.log(
         `Found ${techniciansWithDesignation.length} technicians with designation and location data`
@@ -414,7 +411,7 @@ export class TechnicianRepository
         `Found ${nearbyTechniciansWithDistance.length} technicians within ${radius}km of user's location`
       );
 
-      return nearbyTechniciansWithDistance as Itechnician[];
+      return nearbyTechniciansWithDistance as ITechnician[];
     } catch (error) {
       console.log("Error occurred while fetching nearby technicians:", error);
       throw new Error("An error occurred while retrieving nearby technicians");

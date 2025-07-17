@@ -1,13 +1,13 @@
-import { IauthController } from "../interfaces/Icontrollers/IauthController";
+import { IAuthController } from "../interfaces/Icontrollers/IauthController";
 import { inject, injectable } from "tsyringe";
-import { IauthService } from "../interfaces/Iservices/IauthService";
+import { IAuthService } from "../interfaces/Iservices/IauthService";
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../utils/httpStatus";
 
 @injectable()
-export class AuthController implements IauthController {
+export class AuthController implements IAuthController {
   constructor(
-    @inject("IauthService") private authService: IauthService
+    @inject("IAuthService") private authService: IAuthService
   ) {}
 
   async refreshAccessToken(req: Request, res: Response): Promise<void> {
