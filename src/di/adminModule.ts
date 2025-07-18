@@ -36,6 +36,10 @@ import { ICouponService } from "../interfaces/Iservices/IcouponService";
 import { CouponService } from "../services/couponService";
 import { ICouponRepository } from "../interfaces/Irepositories/IcouponRepository";
 import { CouponRepository } from "../repositories/couponRepository";
+import { ISubscriptionPlanService } from "../interfaces/Iservices/IsubscriptionPlanService";
+import { SubscriptionPlanService } from "../services/subscriptionPlanService";
+import { ISubscriptionPlanRepository } from "../interfaces/Irepositories/IsubscriptionPlanRepository";
+import { SubscriptionPlanRepository } from "../repositories/subscriptionPlanRepository";
 
 container.registerSingleton<IAdminService>("IAdminService", AdminService);
 container.registerSingleton<IAdminRepository>("IAdminRepository", AdminRepository);
@@ -55,3 +59,5 @@ container.registerSingleton<IOfferService>("IOfferService",OfferService);
 container.registerSingleton<IOfferRepository>("IOfferRepository",OfferRepository);
 container.registerSingleton<ICouponService>("ICouponService",CouponService);
 container.registerSingleton<ICouponRepository>("ICouponRepository",CouponRepository);
+container.registerSingleton<ISubscriptionPlanService>("ISubscriptionPlanService",SubscriptionPlanService);
+container.registerSingleton<ISubscriptionPlanRepository>("ISubscriptionPlanRepository",SubscriptionPlanRepository);

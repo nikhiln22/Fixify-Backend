@@ -445,4 +445,72 @@ export class TechnicianRepository
   private toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
   }
+
+  async getTechniciansWithSubscriptions(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    filterPlan?: string;
+  }): Promise<{
+    data: ITechnician[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  }> {
+    try {
+      console.log(
+        "entered to the technician repository that fetches technicians with subscription plans"
+      );
+
+      const page = options.page || 1;
+      const limit = options.limit || 10;
+
+      const filter: FilterQuery<ITechnician> = {};
+
+      if (options.search) {
+        filter.$or = [
+          { username: { $regex: options.search, $options: "i" } },
+          { email: { $regex: options.search, $options: "i" } },
+        ];
+      }
+
+      const result = (await this.find(filter, {
+        pagination: { page, limit },
+        sort: { createdAt: -1 },
+        populate: {
+          path: "SubscriptionPlanId",
+          select: "planName monthlyPrice commissionRate",
+        },
+      })) as { data: ITechnician[]; total: number };
+
+      let filteredTechnicians = result.data;
+
+      if (options.filterPlan) {
+        filteredTechnicians = result.data.filter((technician) => {
+          const plan = technician.SubscriptionPlanId as {
+            planName: string;
+            monthlyPrice: number;
+            commissionRate: number;
+          };
+          return plan?.planName === options.filterPlan;
+        });
+      }
+
+      // Return the same structure as getAllTechnicians
+      return {
+        data: filteredTechnicians,
+        total: result.total,
+        page,
+        limit,
+        pages: Math.ceil(result.total / limit),
+      };
+    } catch (error) {
+      console.log(
+        "error occurred while fetching technicians with subscription plans:",
+        error
+      );
+      throw new Error("Failed to fetch technicians with subscription plans");
+    }
+  }
 }

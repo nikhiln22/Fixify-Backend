@@ -583,6 +583,8 @@ export class UserService implements IUserService {
         };
       }
 
+      
+
       const profileDataToSave: any = {};
 
       if (updateData.username) {

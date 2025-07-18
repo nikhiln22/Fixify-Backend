@@ -2,7 +2,6 @@ import { App } from "./app";
 import config from "./config/env";
 import { database } from "./config/database";
 
-
 class Server {
   private appInstance: App;
 

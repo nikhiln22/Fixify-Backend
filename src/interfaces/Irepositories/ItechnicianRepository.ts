@@ -58,4 +58,17 @@ export interface ITechnicianRepository {
     userLatitude: number,
     radius: number
   ): Promise<ITechnician[]>;
+
+  getTechniciansWithSubscriptions(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    filterPlan?: string;
+  }): Promise<{
+    data: ITechnician[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  }>;
 }

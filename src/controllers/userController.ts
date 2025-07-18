@@ -13,6 +13,7 @@ import {
   createSuccessResponse,
   createErrorResponse,
 } from "../utils/responseHelper";
+import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
 
 @injectable()
 export class UserController implements IUserController {
@@ -342,10 +343,10 @@ export class UserController implements IUserController {
     }
   }
 
-  async getProfile(req: Request, res: Response): Promise<void> {
+  async getProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("Entering user profile fetch");
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       if (!userId) {
         res
@@ -382,10 +383,10 @@ export class UserController implements IUserController {
     }
   }
 
-  async editProfile(req: Request, res: Response): Promise<void> {
+  async editProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("entering to the user editing the profile function");
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       if (!userId) {
         res
@@ -442,10 +443,10 @@ export class UserController implements IUserController {
     }
   }
 
-  async getAddress(req: Request, res: Response): Promise<void> {
+  async getAddress(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("entering to the controller for fetching the user address");
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       console.log("userId from the address fetching controller:", userId);
 
       if (!userId) {
@@ -486,10 +487,10 @@ export class UserController implements IUserController {
     }
   }
 
-  async addAddress(req: Request, res: Response): Promise<void> {
+  async addAddress(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("entering to the function adding the user address");
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       if (!userId) {
         res
@@ -531,10 +532,10 @@ export class UserController implements IUserController {
     }
   }
 
-  async deleteAddress(req: Request, res: Response): Promise<void> {
+  async deleteAddress(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("deleting the already existing address of the user");
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const addressId = req.params.addressId;
       console.log("userId from the address deleting controller:", userId);
       console.log("addressId from the address deleting controller:", addressId);
@@ -726,12 +727,19 @@ export class UserController implements IUserController {
     }
   }
 
-  async bookService(req: Request, res: Response): Promise<void> {
+  async bookService(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("entering to the user booking the controller function");
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const data = req.body;
       console.log("Received Data:", data);
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
 
       const serviceResponse = await this.bookingService.bookService(
         userId,
@@ -765,16 +773,26 @@ export class UserController implements IUserController {
     }
   }
 
-  async verifyStripeSession(req: Request, res: Response): Promise<void> {
+  async verifyStripeSession(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log(
         "entering to the verifyStripeSession in the user controller function for booking"
       );
 
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const sessionId = req.params.sessionId as string;
       console.log("userId in the stripe verify function:", userId);
       console.log("sessionId in the stripe verify function:", sessionId);
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
 
       const serviceResponse = await this.bookingService.verifyStripeSession(
         sessionId,
@@ -814,12 +832,15 @@ export class UserController implements IUserController {
     }
   }
 
-  async getAllBookings(req: Request, res: Response): Promise<void> {
+  async getAllBookings(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log("entering to the all bookings fetching for the user");
       const page = parseInt(req.query.page as string) || undefined;
       const limit = parseInt(req.query.limit as string) || undefined;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const search = req.query.search as string;
       const filter = req.query.filter as string;
 
@@ -859,20 +880,27 @@ export class UserController implements IUserController {
     }
   }
 
-  async getBookingDetails(req: Request, res: Response): Promise<void> {
+  async getBookingDetails(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log("Controller: Getting booking details");
 
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const { bookingId } = req.params;
 
       if (!userId) {
-        res.status(401).json(createErrorResponse("User not authenticated"));
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
         return;
       }
 
       if (!bookingId) {
-        res.status(400).json(createErrorResponse("Booking ID is required"));
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("Booking ID is required"));
         return;
       }
 
@@ -911,15 +939,22 @@ export class UserController implements IUserController {
     }
   }
 
-  async addMoney(req: Request, res: Response): Promise<void> {
+  async addMoney(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log(
         "entering the function which adds the money to the user wallet"
       );
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const { amount } = req.body;
       console.log("userId in the add money controller:", userId);
       console.log("Received Data:", amount);
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
 
       const serviceResponse = await this.userService.addMoney(userId, amount);
       console.log(
@@ -953,19 +988,29 @@ export class UserController implements IUserController {
     }
   }
 
-  async verifyWalletStripeSession(req: Request, res: Response): Promise<void> {
+  async verifyWalletStripeSession(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log(
         "entering to the verifyStripeSession in the user controller function for wallet"
       );
 
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const sessionId = req.params.sessionId as string;
       console.log("userId in the verify stripe session for wallet:", userId);
       console.log(
         "sessionId in the verify stripe session for wallet:",
         sessionId
       );
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
 
       const serviceResponse = await this.userService.verifyWalletStripeSession(
         sessionId,
@@ -1007,16 +1052,26 @@ export class UserController implements IUserController {
     }
   }
 
-  async getWalletBalance(req: Request, res: Response): Promise<void> {
+  async getWalletBalance(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log(
         "fetching the wallet balance for the user in the user controller function"
       );
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       console.log(
         "userId in the getWalletBalance function in user controller:",
         userId
       );
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
 
       const serviceResponse = await this.userService.getWalletBalance(userId);
       console.log(
@@ -1050,16 +1105,26 @@ export class UserController implements IUserController {
     }
   }
 
-  async getWalletTransactions(req: Request, res: Response): Promise<void> {
+  async getWalletTransactions(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log("fetching the wallet transactions by the user:");
       const page = parseInt(req.query.page as string) || undefined;
       const limit = parseInt(req.query.limit as string) || undefined;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       console.log(
         "userId in the getwallet transactions in the user controller:",
         userId
       );
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
 
       const serviceResponse = await this.userService.getAllWalletTransactions({
         page,
@@ -1125,13 +1190,20 @@ export class UserController implements IUserController {
     }
   }
 
-  async sendChat(req: Request, res: Response): Promise<void> {
+  async sendChat(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("Sending chat message to the technician");
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const { bookingId } = req.params;
       const { messageText, technicianId } = req.body;
-      const io = (req as any).io;
+      const io = req.io;
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
 
       const chatData = {
         userId,
@@ -1170,13 +1242,20 @@ export class UserController implements IUserController {
     }
   }
 
-  async cancelBooking(req: Request, res: Response): Promise<void> {
+  async cancelBooking(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("entering to the user controller that cancels the booking");
       const { bookingId } = req.params;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const { cancellationReason } = req.body;
       console.log("received Data:", cancellationReason);
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
 
       const serviceResponse = await this.bookingService.cancelBookingByUser(
         userId,
@@ -1215,14 +1294,21 @@ export class UserController implements IUserController {
     }
   }
 
-  async rateService(req: Request, res: Response): Promise<void> {
+  async rateService(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("entering the user controller which rate the services");
       const { bookingId } = req.params;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const { rating, review } = req.body;
 
       console.log("received data:", { bookingId, userId, rating, review });
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
 
       const serviceResponse = await this.bookingService.rateService(
         userId,
@@ -1296,10 +1382,10 @@ export class UserController implements IUserController {
     }
   }
 
-  async logout(req: Request, res: Response): Promise<void> {
+  async logout(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("entering the logout function from the user auth controller");
-      const role = (req as any).user?.role;
+      const role = req.user?.role;
       console.log("role in the user auth controller:", role);
       res.clearCookie(`${role}_refresh_token`, {
         httpOnly: true,

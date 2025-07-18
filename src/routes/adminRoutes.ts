@@ -212,6 +212,18 @@ export class AdminRoutes {
       adminController.getRating.bind(adminController)
     );
 
+    this.router.post(
+      "/addsubscriptionplan",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.addSubscriptionPlan.bind(adminController)
+    );
+
+    this.router.get(
+      "/subscriptionplans",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.getAllSubscriptionPlans.bind(adminController)
+    );
+
     this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.ADMIN),

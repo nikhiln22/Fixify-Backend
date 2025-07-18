@@ -134,4 +134,25 @@ export interface ITechnicianService {
     averageRating?: number;
     totalReviews?: number;
   }>;
+
+  getTechniciansWithSubscriptions(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    filterPlan?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      technicians: ITechnician[];
+      pagination: {
+        total: number;
+        page: number;
+        pages: number;
+        limit: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    };
+  }>;
 }

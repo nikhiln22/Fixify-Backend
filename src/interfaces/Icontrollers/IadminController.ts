@@ -21,5 +21,8 @@ export interface IAdminController {
   blockCoupon(req: Request, res: Response): Promise<void>;
   updateCoupon(req: Request, res: Response): Promise<void>;
   getRating(req: Request, res: Response): Promise<void>;
+  addSubscriptionPlan(req: Request, res: Response): Promise<void>;
+  getAllSubscriptionPlans(req: Request, res: Response): Promise<void>;
+  getSubscriptionhistory(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

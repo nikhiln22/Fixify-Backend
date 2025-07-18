@@ -1,8 +1,8 @@
-import { couponData } from "../DTO/IServices/IcouponService";
+import { CouponData } from "../DTO/IServices/IcouponService";
 import { ICoupon } from "../Models/Icoupon";
 
 export interface ICouponService {
-  addCoupon(data: couponData): Promise<{
+  addCoupon(data: CouponData): Promise<{
     success: boolean;
     message: string;
     data?: ICoupon;

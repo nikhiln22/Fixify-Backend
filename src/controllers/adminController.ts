@@ -8,10 +8,12 @@ import { ITechnicianService } from "../interfaces/Iservices/ItechnicianService";
 import { IBookingService } from "../interfaces/Iservices/IbookingService";
 import { IOfferService } from "../interfaces/Iservices/IofferService";
 import { ICouponService } from "../interfaces/Iservices/IcouponService";
+import { ISubscriptionPlanService } from "../interfaces/Iservices/IsubscriptionPlanService";
 import {
   createErrorResponse,
   createSuccessResponse,
 } from "../utils/responseHelper";
+import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
 
 @injectable()
 export class AdminController implements IAdminController {
@@ -24,7 +26,9 @@ export class AdminController implements IAdminController {
     private technicianService: ITechnicianService,
     @inject("IBookingService") private bookingService: IBookingService,
     @inject("IOfferService") private offerService: IOfferService,
-    @inject("ICouponService") private couponService: ICouponService
+    @inject("ICouponService") private couponService: ICouponService,
+    @inject("ISubscriptionPlanService")
+    private subscriptionPlanService: ISubscriptionPlanService
   ) {}
 
   async login(req: Request, res: Response): Promise<void> {
@@ -975,12 +979,167 @@ export class AdminController implements IAdminController {
     }
   }
 
-  async logout(req: Request, res: Response): Promise<void> {
+  async addSubscriptionPlan(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering to the function adding the subscription plan");
+      console.log("Received Data:", req.body);
+
+      const { planName, commissionRate, monthlyPrice } = req.body;
+
+      if (!planName || !commissionRate || monthlyPrice === undefined) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              "planName, commissionRate, and monthlyPrice are required"
+            )
+          );
+        return;
+      }
+
+      if (!["BASIC", "PRO", "ELITE"].includes(planName)) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("planName must be BASIC, PRO, or ELITE"));
+        return;
+      }
+
+      if (
+        typeof commissionRate !== "number" ||
+        typeof monthlyPrice !== "number"
+      ) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              "commissionRate and monthlyPrice must be numbers"
+            )
+          );
+        return;
+      }
+
+      const serviceResponse =
+        await this.subscriptionPlanService.addSubscriptionPlan(
+          planName,
+          commissionRate,
+          monthlyPrice
+        );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.CREATED)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to add subscription plan"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error occurred while adding the subscription plan:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getAllSubscriptionPlans(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("fetching the subscription plans for the admin");
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+      const search = (req.query.search as string) || undefined;
+      const filterStatus = (req.query.filterStatus as string) || undefined;
+
+      const serviceResponse =
+        await this.subscriptionPlanService.getAllSubscriptionPlans({
+          page,
+          limit,
+          search,
+          filterStatus,
+        });
+      console.log(
+        "response in the fetching all Subscription Plans:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch Subscription Plans"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error occurred while fetching subscription plans:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getSubscriptionhistory(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("fetching the technician subscription history for the admin");
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+      const filterPlan = (req.query.filterPlan as string) || undefined;
+
+      const serviceResponse =
+        await this.technicianService.getTechniciansWithSubscriptions({
+          page,
+          limit,
+          filterPlan,
+        });
+
+      console.log(
+        "response in the fetching technician Subscription history:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message ||
+                "Failed to fetch technician Subscription History"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error occurred while fetching subscription history:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async logout(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log(
         "entering the logout function from the admin auth controller"
       );
-      const role = (req as any).user?.role;
+      const role = req.user?.role;
       console.log("role in the admin auth controller:", role);
 
       res.clearCookie(`${role}_refresh_token`, {

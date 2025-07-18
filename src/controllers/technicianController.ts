@@ -11,6 +11,7 @@ import {
   createErrorResponse,
   createSuccessResponse,
 } from "../utils/responseHelper";
+import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
 
 @injectable()
 export class TechnicianController implements ITechnicianController {
@@ -294,13 +295,16 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async submitQualifications(req: Request, res: Response): Promise<void> {
+  async submitQualifications(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log("Entering technician qualification submission");
       const data = req.body;
       console.log("Received data:", data);
 
-      const technicianId = (req as any).user?.id;
+      const technicianId = req.user?.id;
       console.log("technicianId:", technicianId);
 
       const files = req.files as
@@ -321,6 +325,13 @@ export class TechnicianController implements ITechnicianController {
       };
 
       console.log("Processing qualification data:", qualificationData);
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
 
       const serviceResponse =
         await this.technicianService.submitTechnicianQualifications(
@@ -354,10 +365,10 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async getProfile(req: Request, res: Response): Promise<void> {
+  async getProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("Entering technician profile fetch");
-      const technicianId = (req as any).user?.id;
+      const technicianId = req.user?.id;
 
       if (!technicianId) {
         res
@@ -434,15 +445,22 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async addTimeSlots(req: Request, res: Response): Promise<void> {
+  async addTimeSlots(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log(
         "adding the time slots by the technician in time slot function"
       );
-      const technicianId = (req as any).user?.id;
+      const technicianId = req.user?.id;
       const data = req.body;
       console.log("data in the addtime slot controller:", data);
       console.log("technicianId from the addtimeslot function:", technicianId);
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Unauthorized access"));
+        return;
+      }
 
       const serviceResponse = await this.timeSlotService.addTimeSlots(
         technicianId,
@@ -476,15 +494,22 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async getTimeSlots(req: Request, res: Response): Promise<void> {
+  async getTimeSlots(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("fetching the added time slots for the technician");
-      const technicianId = (req as any).user?.id;
+      const technicianId = req.user?.id;
       const includePast = req.query.includePast === "true";
       console.log(
         "technicianId from the getTimeSlots function in technician controller:",
         technicianId
       );
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Unauthorized access"));
+        return;
+      }
 
       const serviceResponse = await this.timeSlotService.getTimeSlots(
         technicianId,
@@ -521,18 +546,25 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async blockTimeSlot(req: Request, res: Response): Promise<void> {
+  async blockTimeSlot(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log(
         "entering the technician controller function that makes the released slots unavailable"
       );
-      const technicianId = (req as any).user?.id;
+      const technicianId = req.user?.id;
       console.log(
         "technicianId in the blocktime slots function:",
         technicianId
       );
       const slotId = req.params.slotId;
       console.log("slotId in the blocktime slots function:", slotId);
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Unauthorized access"));
+        return;
+      }
 
       const serviceResponse = await this.timeSlotService.blockTimeSlot(
         technicianId,
@@ -566,7 +598,10 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async getAllBookings(req: Request, res: Response): Promise<void> {
+  async getAllBookings(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log(
         "entering to the technician controller which fetches all the bookings for the technician"
@@ -576,7 +611,7 @@ export class TechnicianController implements ITechnicianController {
       const search = (req.query.search as string) || undefined;
       const filter = (req.query.filter as string) || undefined;
 
-      const technicianId = (req as any).user?.id;
+      const technicianId = req.user?.id;
       console.log(
         "technicianId in the fetching booking in the technician controller:",
         technicianId
@@ -619,11 +654,14 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async getBookingDetails(req: Request, res: Response): Promise<void> {
+  async getBookingDetails(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log("technician Controller: Getting booking details");
 
-      const technicianId = (req as any).user?.id;
+      const technicianId = req.user?.id;
       console.log(
         "technicianId in the fetching booking details in the technician controller:",
         technicianId
@@ -714,13 +752,20 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async sendChat(req: Request, res: Response): Promise<void> {
+  async sendChat(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("Sending chat message to the user");
-      const technicianId = (req as any).user?.id;
+      const technicianId = req.user?.id;
       const { bookingId } = req.params;
       const { messageText, userId } = req.body;
-      const io = (req as any).io;
+      const io = req.io;
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("technician not authenticated"));
+        return;
+      }
 
       const chatData = {
         userId,
@@ -760,13 +805,23 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async generateCompletionOtp(req: Request, res: Response): Promise<void> {
+  async generateCompletionOtp(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log(
         "entering to the technician controller function that generates the completion otp"
       );
-      const technicianId = (req as any).user?.id;
+      const technicianId = req.user?.id;
       const bookingId = req.params.bookingId;
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("technician not authenticated"));
+        return;
+      }
 
       const serviceResponse = await this.bookingService.generateCompletionOtp(
         technicianId,
@@ -801,18 +856,29 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async verifyCompletionOtp(req: Request, res: Response): Promise<void> {
+  async verifyCompletionOtp(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log("entering the controller that verify the work completion");
       const { otp } = req.body;
       const { bookingId } = req.params;
-      const technicianId = (req as any).user?.id;
+      const technicianId = req.user?.id;
+
       console.log("bookingId and technicianId in the verify controller:", {
         bookingId,
         technicianId,
       });
 
       console.log("received data:", otp);
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("technician not authenticated"));
+        return;
+      }
 
       const serviceResponse = await this.bookingService.verifyCompletionOtp(
         technicianId,
@@ -850,16 +916,26 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async getWalletBalance(req: Request, res: Response): Promise<void> {
+  async getWalletBalance(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log(
         "fetching the wallet balance for the technician in the technician controller function"
       );
-      const technicianId = (req as any).user?.id;
+      const technicianId = req.user?.id;
       console.log(
         "technicianId in the getWalletBalance function in technician controller:",
         technicianId
       );
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("technician not authenticated"));
+        return;
+      }
 
       const serviceResponse = await this.technicianService.getWalletBalance(
         technicianId
@@ -895,16 +971,26 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async getWalletTransactions(req: Request, res: Response): Promise<void> {
+  async getWalletTransactions(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log("fetching the wallet transactions by the technician:");
       const page = parseInt(req.query.page as string) || undefined;
       const limit = parseInt(req.query.limit as string) || undefined;
-      const technicianId = (req as any).user?.id;
+      const technicianId = req.user?.id;
       console.log(
         "technicianId in the getwallet transactions in the technician controller:",
         technicianId
       );
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("technician not authenticated"));
+        return;
+      }
 
       const serviceResponse =
         await this.technicianService.getAllWalletTransactions({
@@ -941,12 +1027,12 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async cancelBooking(req: Request, res: Response): Promise<void> {
+  async cancelBooking(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log(
         "technician controller which cancels the booking from the technician controller"
       );
-      const technicianId = (req as any).user?.id;
+      const technicianId = req.user?.id;
       const { bookingId } = req.params;
       const { cancellationReason } = req.body;
       console.log(
@@ -957,6 +1043,13 @@ export class TechnicianController implements ITechnicianController {
         "bookingId in the cancelbooking controller function:",
         bookingId
       );
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("technician not authenticated"));
+        return;
+      }
 
       const serviceResponse =
         await this.bookingService.cancelBookingByTechnician(
@@ -998,13 +1091,20 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async getReviews(req: Request, res: Response): Promise<void> {
+  async getReviews(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const technicianId = (req as any).user?.id;
+      const technicianId = req.user?.id;
       console.log(
         "technicianId in the technician controller fetching the reviews:",
         technicianId
       );
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("technician not authenticated"));
+        return;
+      }
 
       const serviceResponse = await this.technicianService.getReviews(
         technicianId
@@ -1087,12 +1187,12 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async logout(req: Request, res: Response): Promise<void> {
+  async logout(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log(
         "entering the logout function from the technician auth controller"
       );
-      const role = (req as any).user?.role;
+      const role = req.user?.role;
       console.log("role in the technician auth controller:", role);
 
       res.clearCookie(`${role}_refresh_token`, {

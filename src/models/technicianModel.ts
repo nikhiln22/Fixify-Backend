@@ -54,6 +54,10 @@ const technicianSchema: Schema<ITechnician> = new Schema(
         type: String,
       },
     ],
+    SubscriptionPlanId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "subscriptionPlan",
+    },
   },
   { timestamps: true }
 );

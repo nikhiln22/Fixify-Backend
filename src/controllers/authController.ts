@@ -6,9 +6,7 @@ import { HTTP_STATUS } from "../utils/httpStatus";
 
 @injectable()
 export class AuthController implements IAuthController {
-  constructor(
-    @inject("IAuthService") private authService: IAuthService
-  ) {}
+  constructor(@inject("IAuthService") private authService: IAuthService) {}
 
   async refreshAccessToken(req: Request, res: Response): Promise<void> {
     try {
@@ -16,7 +14,7 @@ export class AuthController implements IAuthController {
         "entering to the access token generating with the existing refresh token"
       );
       const { role } = req.body;
-      console.log("role:",role);
+      console.log("role:", role);
       if (!role) {
         res.status(400).json({ message: "Role is required in the body" });
         return;
@@ -42,8 +40,8 @@ export class AuthController implements IAuthController {
         message: "Access token refreshed successfully",
         access_token: newAccessToken,
       });
-    } catch (error: any) {
-      console.error("Error in refreshAccessToken controller:", error.message);
+    } catch (error) {
+      console.error("Error in refreshAccessToken controller:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ message: "Failed to refresh access token" });

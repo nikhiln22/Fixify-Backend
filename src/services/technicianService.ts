@@ -1107,4 +1107,65 @@ export class TechnicianService implements ITechnicianService {
       };
     }
   }
+
+  async getTechniciansWithSubscriptions(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    filterPlan?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      technicians: ITechnician[];
+      pagination: {
+        total: number;
+        page: number;
+        pages: number;
+        limit: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    };
+  }> {
+    try {
+      console.log(
+        "entered to the technician service that fetches the technicians with subscription plans"
+      );
+      const page = options.page || 1;
+      const limit = options.limit || 5;
+      const result =
+        await this.technicianRepository.getTechniciansWithSubscriptions({
+          page,
+          limit,
+          search: options.search,
+          filterPlan: options.filterPlan,
+        });
+      console.log("result from the technician service:", result);
+
+      return {
+        success: true,
+        message: "Technicians subscription plan fetched successfully",
+        data: {
+          technicians: result.data,
+          pagination: {
+            total: result.total,
+            page: result.page,
+            pages: result.pages,
+            limit: limit,
+            hasNextPage: result.page < result.pages,
+            hasPrevPage: page > 1,
+          },
+        },
+      };
+    } catch (error) {
+      console.log(
+        "error occured while fetching the technicians with subscription plans",
+        error
+      );
+      throw Error(
+        "error occured while fetching the technicians with subscription plans"
+      );
+    }
+  }
 }

@@ -8,8 +8,9 @@ import { TechnicianRoutes } from "./routes/technicianRoutes";
 import { AuthRoutes } from "./routes/authRoutes";
 import LoggerMiddleware from "./middlewares/LoggerMiddleware";
 import { createServer, Server as HttpServer } from "http";
-import { initializeSocket } from "../src/utils/socket";
+import { initializeSocket } from "./utils/socket";
 import { Server as SocketIOServer } from "socket.io";
+import { AuthenticatedRequest } from "./middlewares/AuthMiddleware";
 
 export class App {
   public app: Express;
@@ -42,8 +43,8 @@ export class App {
   private setupSocket(): void {
     this.io = initializeSocket(this.server);
 
-    this.app.use((req, res, next) => {
-      (req as any).io = this.io;
+    this.app.use((req: AuthenticatedRequest, res, next) => {
+      req.io = this.io;
       next();
     });
   }

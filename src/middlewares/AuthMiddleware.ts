@@ -4,12 +4,14 @@ import { HTTP_STATUS } from "../utils/httpStatus";
 import { Roles } from "../config/roles";
 import { UserRepository } from "../repositories/userRepository";
 import { TechnicianRepository } from "../repositories/technicianRepository";
+import { Server as SocketIOServer } from "socket.io";
 
-interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     role: Roles;
   };
+  io?: SocketIOServer;
 }
 
 interface JwtPayload {
@@ -68,6 +70,7 @@ export class AuthMiddleware {
 
         next();
       } catch (error) {
+        console.log("error occured while authenticating user:", error);
         res
           .status(HTTP_STATUS.UNAUTHORIZED)
           .json({ message: "Invalid or expired token" });
@@ -186,6 +189,7 @@ export class AuthMiddleware {
 
         next();
       } catch (error) {
+        console.log("error occured while validating token:", error);
         res
           .status(HTTP_STATUS.UNAUTHORIZED)
           .json({ message: "Invalid or expired token" });
