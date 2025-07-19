@@ -19,16 +19,16 @@ import { ICategoryRepository } from "../interfaces/Irepositories/IcategoryReposi
 @injectable()
 export class ServiceServices implements IServiceService {
   constructor(
-    @inject("IServiceRepository") private serviceRepository: IServiceRepository,
+    @inject("IServiceRepository") private _serviceRepository: IServiceRepository,
     @inject("ICategoryRepository")
-    private categoryRepository: ICategoryRepository,
+    private _categoryRepository: ICategoryRepository,
     @inject("IFileUploader") private fileUploader: IFileUploader
   ) {}
 
   async addService(data: ServiceData): Promise<AddServiceResponse> {
     try {
       console.log("entering the service adding function");
-      const existingService = await this.serviceRepository.findServiceByName(
+      const existingService = await this._serviceRepository.findServiceByName(
         data.name
       );
 
@@ -68,7 +68,7 @@ export class ServiceServices implements IServiceService {
         designation: data.designationId,
       };
 
-      const newService = await this.serviceRepository.addService(serviceData);
+      const newService = await this._serviceRepository.addService(serviceData);
       console.log("response from the services adding service:", newService);
 
       return {
@@ -112,7 +112,7 @@ export class ServiceServices implements IServiceService {
       const page = options.page || 1;
       const limit = options.limit || 5;
 
-      const result = await this.serviceRepository.getAllServices({
+      const result = await this._serviceRepository.getAllServices({
         page,
         limit,
         search: options.search,
@@ -151,7 +151,7 @@ export class ServiceServices implements IServiceService {
   ): Promise<ToggleServiceStatusResponse> {
     try {
       console.log("toggling the status of the category");
-      const service = await this.serviceRepository.findServiceById(serviceId);
+      const service = await this._serviceRepository.findServiceById(serviceId);
 
       if (!service) {
         return {
@@ -162,7 +162,7 @@ export class ServiceServices implements IServiceService {
 
       const newStatus = !service.status;
 
-      const updatedService = await this.serviceRepository.updateServiceStatus(
+      const updatedService = await this._serviceRepository.updateServiceStatus(
         serviceId,
         newStatus
       );
@@ -208,7 +208,7 @@ export class ServiceServices implements IServiceService {
     try {
       console.log("Updating service details");
 
-      const service = await this.serviceRepository.findServiceById(serviceId);
+      const service = await this._serviceRepository.findServiceById(serviceId);
 
       if (!service) {
         return {
@@ -264,7 +264,7 @@ export class ServiceServices implements IServiceService {
         };
       }
 
-      const updatedService = await this.serviceRepository.updateService(
+      const updatedService = await this._serviceRepository.updateService(
         serviceId,
         updatedFields
       );
@@ -295,7 +295,7 @@ export class ServiceServices implements IServiceService {
     imageFile: string
   ): Promise<AddCategoryResponse> {
     try {
-      const existingCategory = await this.categoryRepository.findCategoryByName(
+      const existingCategory = await this._categoryRepository.findCategoryByName(
         name
       );
       if (existingCategory) {
@@ -318,7 +318,7 @@ export class ServiceServices implements IServiceService {
         };
       }
 
-      const newCategory = await this.categoryRepository.addCategory(
+      const newCategory = await this._categoryRepository.addCategory(
         name,
         imageUrl
       );
@@ -363,7 +363,7 @@ export class ServiceServices implements IServiceService {
       const page = options.page;
       const limit = options.limit;
 
-      const result = await this.categoryRepository.getAllCategories({
+      const result = await this._categoryRepository.getAllCategories({
         page,
         limit,
         search: options.search,
@@ -401,7 +401,7 @@ export class ServiceServices implements IServiceService {
   ): Promise<ToggleCategoryStatusResponse> {
     try {
       console.log("toggling the status of the category");
-      const category = await this.categoryRepository.findCategoryById(
+      const category = await this._categoryRepository.findCategoryById(
         categoryId
       );
 
@@ -415,7 +415,7 @@ export class ServiceServices implements IServiceService {
       const newStatus = !category.status;
 
       const updatedCategory =
-        await this.categoryRepository.updateCategoryStatus(
+        await this._categoryRepository.updateCategoryStatus(
           categoryId,
           newStatus
         );
@@ -455,7 +455,7 @@ export class ServiceServices implements IServiceService {
     try {
       console.log("Updating category details");
 
-      const category = await this.categoryRepository.findCategoryById(
+      const category = await this._categoryRepository.findCategoryById(
         categoryId
       );
 
@@ -495,7 +495,7 @@ export class ServiceServices implements IServiceService {
         };
       }
 
-      const updatedCategory = await this.categoryRepository.updateCategory(
+      const updatedCategory = await this._categoryRepository.updateCategory(
         categoryId,
         updatedFields
       );
@@ -530,7 +530,7 @@ export class ServiceServices implements IServiceService {
         serviceId
       );
 
-      const service = await this.serviceRepository.findServiceById(serviceId);
+      const service = await this._serviceRepository.findServiceById(serviceId);
 
       console.log("fetched service details:", service);
 
@@ -541,7 +541,7 @@ export class ServiceServices implements IServiceService {
         };
       }
 
-      const relatdServicesResult = await this.serviceRepository.getAllServices({
+      const relatdServicesResult = await this._serviceRepository.getAllServices({
         categoryId: service?.category.toString(),
         status: "active",
       });

@@ -17,13 +17,13 @@ import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
 export class TechnicianController implements ITechnicianController {
   constructor(
     @inject("ITechnicianService")
-    private technicianService: ITechnicianService,
+    private _technicianService: ITechnicianService,
     @inject("IJobsService")
-    private jobsService: IJobsService,
+    private _jobsService: IJobsService,
     @inject("ITimeSlotService")
-    private timeSlotService: ITimeSlotService,
-    @inject("IBookingService") private bookingService: IBookingService,
-    @inject("IChatService") private chatService: IChatService
+    private _timeSlotService: ITimeSlotService,
+    @inject("IBookingService") private _bookingService: IBookingService,
+    @inject("IChatService") private _chatService: IChatService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {
@@ -34,7 +34,7 @@ export class TechnicianController implements ITechnicianController {
       const data = req.body;
       console.log("data:", data);
 
-      const serviceResponse = await this.technicianService.technicianSignUp(
+      const serviceResponse = await this._technicianService.technicianSignUp(
         data
       );
       console.log("response in technician register:", serviceResponse);
@@ -74,7 +74,7 @@ export class TechnicianController implements ITechnicianController {
       const data = req.body;
       console.log("technicianData in verifyOtp controller:", data);
 
-      const serviceResponse = await this.technicianService.verifyOtp(data);
+      const serviceResponse = await this._technicianService.verifyOtp(data);
       console.log(
         "response in verifyOtp controller in technician:",
         serviceResponse
@@ -121,7 +121,7 @@ export class TechnicianController implements ITechnicianController {
       );
       const { email } = req.body;
 
-      const serviceResponse = await this.technicianService.resendOtp(email);
+      const serviceResponse = await this._technicianService.resendOtp(email);
       console.log(
         "response from the technician resendotp controller:",
         serviceResponse
@@ -164,7 +164,7 @@ export class TechnicianController implements ITechnicianController {
       );
       const data = req.body;
 
-      const serviceResponse = await this.technicianService.login(data);
+      const serviceResponse = await this._technicianService.login(data);
       console.log(
         "response from the technician login controller",
         serviceResponse
@@ -220,7 +220,7 @@ export class TechnicianController implements ITechnicianController {
       );
       const { email } = req.body;
 
-      const serviceResponse = await this.technicianService.forgotPassword({
+      const serviceResponse = await this._technicianService.forgotPassword({
         email,
       });
       console.log(
@@ -264,7 +264,7 @@ export class TechnicianController implements ITechnicianController {
       );
       const { email, password } = req.body;
 
-      const serviceResponse = await this.technicianService.resetPassword({
+      const serviceResponse = await this._technicianService.resetPassword({
         email,
         password,
       });
@@ -334,7 +334,7 @@ export class TechnicianController implements ITechnicianController {
       }
 
       const serviceResponse =
-        await this.technicianService.submitTechnicianQualifications(
+        await this._technicianService.submitTechnicianQualifications(
           technicianId,
           qualificationData
         );
@@ -377,9 +377,8 @@ export class TechnicianController implements ITechnicianController {
         return;
       }
 
-      const serviceResponse = await this.technicianService.getTechnicianProfile(
-        technicianId
-      );
+      const serviceResponse =
+        await this._technicianService.getTechnicianProfile(technicianId);
 
       if (serviceResponse.success) {
         res
@@ -416,7 +415,7 @@ export class TechnicianController implements ITechnicianController {
         "entering to the job designations fetching function from the technician controller"
       );
 
-      const serviceResponse = await this.jobsService.getAllDesignations({});
+      const serviceResponse = await this._jobsService.getAllDesignations({});
       console.log(
         "response from the job designations controller:",
         serviceResponse
@@ -462,7 +461,7 @@ export class TechnicianController implements ITechnicianController {
         return;
       }
 
-      const serviceResponse = await this.timeSlotService.addTimeSlots(
+      const serviceResponse = await this._timeSlotService.addTimeSlots(
         technicianId,
         data
       );
@@ -511,7 +510,7 @@ export class TechnicianController implements ITechnicianController {
         return;
       }
 
-      const serviceResponse = await this.timeSlotService.getTimeSlots(
+      const serviceResponse = await this._timeSlotService.getTimeSlots(
         technicianId,
         includePast
       );
@@ -566,7 +565,7 @@ export class TechnicianController implements ITechnicianController {
         return;
       }
 
-      const serviceResponse = await this.timeSlotService.blockTimeSlot(
+      const serviceResponse = await this._timeSlotService.blockTimeSlot(
         technicianId,
         slotId
       );
@@ -618,7 +617,7 @@ export class TechnicianController implements ITechnicianController {
       );
       console.log("filter in technician controller:", filter);
 
-      const serviceResponse = await this.bookingService.getAllBookings({
+      const serviceResponse = await this._bookingService.getAllBookings({
         page,
         limit,
         technicianId,
@@ -689,7 +688,7 @@ export class TechnicianController implements ITechnicianController {
         technicianId
       );
 
-      const serviceResponse = await this.bookingService.getBookingById(
+      const serviceResponse = await this._bookingService.getBookingById(
         bookingId,
         {
           technicianId: technicianId,
@@ -727,7 +726,7 @@ export class TechnicianController implements ITechnicianController {
       console.log("Fetching chat history for booking");
       const { bookingId } = req.params;
 
-      const serviceResponse = await this.chatService.getChatHistory(bookingId);
+      const serviceResponse = await this._chatService.getChatHistory(bookingId);
 
       if (serviceResponse.success) {
         res
@@ -775,7 +774,7 @@ export class TechnicianController implements ITechnicianController {
         senderType: "technician" as const,
       };
 
-      const serviceResponse = await this.chatService.sendChat(chatData);
+      const serviceResponse = await this._chatService.sendChat(chatData);
 
       if (serviceResponse.success && io && serviceResponse.data) {
         io.to(`booking_${bookingId}`).emit("new_message", serviceResponse.data);
@@ -823,7 +822,7 @@ export class TechnicianController implements ITechnicianController {
         return;
       }
 
-      const serviceResponse = await this.bookingService.generateCompletionOtp(
+      const serviceResponse = await this._bookingService.generateCompletionOtp(
         technicianId,
         bookingId
       );
@@ -880,7 +879,7 @@ export class TechnicianController implements ITechnicianController {
         return;
       }
 
-      const serviceResponse = await this.bookingService.verifyCompletionOtp(
+      const serviceResponse = await this._bookingService.verifyCompletionOtp(
         technicianId,
         bookingId,
         otp
@@ -937,7 +936,7 @@ export class TechnicianController implements ITechnicianController {
         return;
       }
 
-      const serviceResponse = await this.technicianService.getWalletBalance(
+      const serviceResponse = await this._technicianService.getWalletBalance(
         technicianId
       );
       console.log(
@@ -993,7 +992,7 @@ export class TechnicianController implements ITechnicianController {
       }
 
       const serviceResponse =
-        await this.technicianService.getAllWalletTransactions({
+        await this._technicianService.getAllWalletTransactions({
           page,
           limit,
           technicianId,
@@ -1052,7 +1051,7 @@ export class TechnicianController implements ITechnicianController {
       }
 
       const serviceResponse =
-        await this.bookingService.cancelBookingByTechnician(
+        await this._bookingService.cancelBookingByTechnician(
           technicianId,
           bookingId,
           cancellationReason
@@ -1106,7 +1105,7 @@ export class TechnicianController implements ITechnicianController {
         return;
       }
 
-      const serviceResponse = await this.technicianService.getReviews(
+      const serviceResponse = await this._technicianService.getReviews(
         technicianId
       );
       console.log(
@@ -1156,7 +1155,7 @@ export class TechnicianController implements ITechnicianController {
       const { bookingId } = req.params;
       console.log("bookingId in the technician controller:", bookingId);
 
-      const serviceResponse = await this.bookingService.getRating(bookingId);
+      const serviceResponse = await this._bookingService.getRating(bookingId);
 
       if (serviceResponse.success) {
         res

@@ -28,14 +28,16 @@ import { IRating } from "../interfaces/Models/Irating";
 @injectable()
 export class BookingService implements IBookingService {
   constructor(
-    @inject("IBookingRepository") private bookingRepository: IBookingRepository,
-    @inject("ITimeSlotService") private timeSlotService: ITimeSlotService,
-    @inject("IWalletRepository") private walletRepository: IWalletRepository,
-    @inject("IPaymentRepository") private paymentRepository: IPaymentRepository,
-    @inject("IOTPService") private otpService: IOTPService,
-    @inject("IRedisService") private redisService: IRedisService,
-    @inject("IEmailService") private emailService: IEmailService,
-    @inject("IRatingRepository") private ratingRepository: IRatingRepository
+    @inject("IBookingRepository")
+    private _bookingRepository: IBookingRepository,
+    @inject("ITimeSlotService") private _timeSlotService: ITimeSlotService,
+    @inject("IWalletRepository") private _walletRepository: IWalletRepository,
+    @inject("IPaymentRepository")
+    private _paymentRepository: IPaymentRepository,
+    @inject("IOTPService") private _otpService: IOTPService,
+    @inject("IRedisService") private _redisService: IRedisService,
+    @inject("IEmailService") private _emailService: IEmailService,
+    @inject("IRatingRepository") private _ratingRepository: IRatingRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -46,19 +48,19 @@ export class BookingService implements IBookingService {
     email: string,
     purpose: OtpPurpose
   ): Promise<string> {
-    const otp = await this.otpService.generateOtp();
+    const otp = await this._otpService.generateOtp();
     console.log(`Generated Otp for ${purpose}:`, otp);
 
     const redisKey = this.getOtpRedisKey(email, purpose);
 
     console.log("generated RedisKey:", redisKey);
 
-    await this.redisService.set(redisKey, otp, BOOKING_OTP_EXPIRATION_SECONDS);
+    await this._redisService.set(redisKey, otp, BOOKING_OTP_EXPIRATION_SECONDS);
 
     if (purpose === OtpPurpose.PASSWORD_RESET) {
-      await this.emailService.sendPasswordResetEmail(email, otp);
+      await this._emailService.sendPasswordResetEmail(email, otp);
     } else {
-      await this.emailService.sendOtpEmail(email, otp);
+      await this._emailService.sendOtpEmail(email, otp);
     }
     return otp;
   }
@@ -73,7 +75,7 @@ export class BookingService implements IBookingService {
     status: number;
   }> {
     const redisKey = this.getOtpRedisKey(key, purpose);
-    const storedOtp = await this.redisService.get(redisKey);
+    const storedOtp = await this._redisService.get(redisKey);
 
     if (!storedOtp) {
       return {
@@ -162,7 +164,7 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const slotBooking = await this.timeSlotService.updateSlotBookingStatus(
+      const slotBooking = await this._timeSlotService.updateSlotBookingStatus(
         data.technicianId,
         data.timeSlotId,
         true
@@ -177,7 +179,7 @@ export class BookingService implements IBookingService {
 
       if (data.paymentMethod === "Wallet") {
         try {
-          const userWallet = await this.walletRepository.getWalletByOwnerId(
+          const userWallet = await this._walletRepository.getWalletByOwnerId(
             userId,
             "user"
           );
@@ -187,7 +189,7 @@ export class BookingService implements IBookingService {
           );
 
           if (!userWallet) {
-            await this.timeSlotService.updateSlotBookingStatus(
+            await this._timeSlotService.updateSlotBookingStatus(
               data.technicianId,
               data.timeSlotId,
               false
@@ -199,7 +201,7 @@ export class BookingService implements IBookingService {
           }
 
           if (userWallet.balance < data.bookingAmount) {
-            await this.timeSlotService.updateSlotBookingStatus(
+            await this._timeSlotService.updateSlotBookingStatus(
               data.technicianId,
               data.timeSlotId,
               false
@@ -215,7 +217,7 @@ export class BookingService implements IBookingService {
             bookingStatus: "Booked" as const,
           };
 
-          const newBooking = await this.bookingRepository.bookService(
+          const newBooking = await this._bookingRepository.bookService(
             userId,
             bookingData
           );
@@ -225,7 +227,7 @@ export class BookingService implements IBookingService {
           const newBookingId = newBooking._id.toString().slice(-8);
 
           const walletUpdate =
-            await this.walletRepository.updateWalletBalanceWithTransaction(
+            await this._walletRepository.updateWalletBalanceWithTransaction(
               userId,
               "user",
               data.bookingAmount,
@@ -246,7 +248,7 @@ export class BookingService implements IBookingService {
             (data.bookingAmount - fixifyShare).toFixed(2)
           );
 
-          const newPayment = await this.paymentRepository.createPayment({
+          const newPayment = await this._paymentRepository.createPayment({
             userId: userId,
             bookingId: newBooking._id.toString(),
             technicianId: data.technicianId,
@@ -259,7 +261,7 @@ export class BookingService implements IBookingService {
             refundStatus: "Not Refunded",
           });
 
-          await this.bookingRepository.updateBooking(
+          await this._bookingRepository.updateBooking(
             { _id: newBooking._id },
             { paymentId: newPayment._id }
           );
@@ -278,7 +280,7 @@ export class BookingService implements IBookingService {
         } catch (walletError) {
           console.error("Wallet payment failed:", walletError);
 
-          await this.timeSlotService.updateSlotBookingStatus(
+          await this._timeSlotService.updateSlotBookingStatus(
             data.technicianId,
             data.timeSlotId,
             false
@@ -296,7 +298,7 @@ export class BookingService implements IBookingService {
         bookingStatus: "Pending" as const,
       };
 
-      const newBooking = await this.bookingRepository.bookService(
+      const newBooking = await this._bookingRepository.bookService(
         userId,
         bookingData
       );
@@ -346,7 +348,7 @@ export class BookingService implements IBookingService {
       } catch (paymentError) {
         console.error("Payment intent creation failed:", paymentError);
 
-        await this.timeSlotService.updateSlotBookingStatus(
+        await this._timeSlotService.updateSlotBookingStatus(
           data.technicianId,
           data.timeSlotId,
           false
@@ -397,7 +399,7 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const booking = await this.bookingRepository.getBookingDetailsById(
+      const booking = await this._bookingRepository.getBookingDetailsById(
         bookingId
       );
 
@@ -413,7 +415,7 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const existingPayment = await this.paymentRepository.findByBookingId(
+      const existingPayment = await this._paymentRepository.findByBookingId(
         bookingId
       );
 
@@ -429,7 +431,7 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const updatedBooking = await this.bookingRepository.updateBooking(
+      const updatedBooking = await this._bookingRepository.updateBooking(
         { _id: bookingId },
         { bookingStatus: "Booked" }
       );
@@ -451,7 +453,7 @@ export class BookingService implements IBookingService {
         (booking.bookingAmount - fixifyShare).toFixed(2)
       );
 
-      const newPayment = await this.paymentRepository.createPayment({
+      const newPayment = await this._paymentRepository.createPayment({
         userId: userId,
         bookingId: bookingId,
         technicianId: booking.technicianId._id.toString(),
@@ -464,7 +466,7 @@ export class BookingService implements IBookingService {
         refundStatus: "Not Refunded",
       });
 
-      await this.bookingRepository.updateBooking(
+      await this._bookingRepository.updateBooking(
         { _id: bookingId },
         { paymentId: newPayment._id }
       );
@@ -522,7 +524,7 @@ export class BookingService implements IBookingService {
       const role = options.role || "admin";
       const { technicianId, userId } = options;
 
-      const result = await this.bookingRepository.getAllBookings({
+      const result = await this._bookingRepository.getAllBookings({
         page,
         limit,
         technicianId,
@@ -580,7 +582,7 @@ export class BookingService implements IBookingService {
 
       const { userId, technicianId } = options || {};
 
-      const booking = await this.bookingRepository.getBookingDetailsById(
+      const booking = await this._bookingRepository.getBookingDetailsById(
         bookingId,
         userId,
         technicianId
@@ -637,7 +639,7 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const booking = (await this.bookingRepository.getBookingDetailsById(
+      const booking = (await this._bookingRepository.getBookingDetailsById(
         bookingId
       )) as any;
 
@@ -671,7 +673,7 @@ export class BookingService implements IBookingService {
         bookingId,
         OtpPurpose.BOOKING_COMPLETION
       );
-      const existingOtp = await this.redisService.get(existingOtpKey);
+      const existingOtp = await this._redisService.get(existingOtpKey);
 
       if (existingOtp) {
         return {
@@ -681,14 +683,14 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const otp = await this.otpService.generateOtp();
+      const otp = await this._otpService.generateOtp();
       console.log(`Generated completion OTP for booking ${bookingId}:`, otp);
 
       const redisKey = this.getOtpRedisKey(
         bookingId,
         OtpPurpose.BOOKING_COMPLETION
       );
-      await this.redisService.set(
+      await this._redisService.set(
         redisKey,
         otp,
         BOOKING_OTP_EXPIRATION_SECONDS
@@ -702,18 +704,18 @@ export class BookingService implements IBookingService {
         serviceName: booking.serviceId?.name || "Service",
         technicianName:
           booking.technicianId?.username ||
-          booking.technicianId?.name ||
+          booking.technicianId?.username ||
           "Technician",
         otp: otp,
         bookingId: bookingId,
       };
 
-      const emailContent = this.emailService.generateEmailContent(
+      const emailContent = this._emailService.generateEmailContent(
         EmailType.BOOKING_COMPLETION_OTP,
         emailData
       );
 
-      await this.emailService.sendEmail({
+      await this._emailService.sendEmail({
         to: booking.userId.email,
         subject: `Service Completion Verification - ${APP_NAME}`,
         html: emailContent.html,
@@ -762,7 +764,7 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const booking = await this.bookingRepository.getBookingDetailsById(
+      const booking = await this._bookingRepository.getBookingDetailsById(
         bookingId
       );
 
@@ -797,7 +799,7 @@ export class BookingService implements IBookingService {
         return otpVerification;
       }
 
-      const updatedBooking = await this.bookingRepository.updateBooking(
+      const updatedBooking = await this._bookingRepository.updateBooking(
         { _id: bookingId },
         { bookingStatus: "Completed" }
       );
@@ -810,25 +812,28 @@ export class BookingService implements IBookingService {
       }
 
       try {
-        const payment = await this.paymentRepository.findByBookingId(bookingId);
+        const payment = await this._paymentRepository.findByBookingId(
+          bookingId
+        );
         console.log("found payment in booking repository:", payment);
 
         if (payment && !payment.technicianPaid) {
-          let technicianWallet = await this.walletRepository.getWalletByOwnerId(
-            technicianId,
-            "technician"
-          );
+          let technicianWallet =
+            await this._walletRepository.getWalletByOwnerId(
+              technicianId,
+              "technician"
+            );
 
           if (!technicianWallet) {
             console.log("Technician wallet not found, creating new wallet");
-            technicianWallet = await this.walletRepository.createWallet(
+            technicianWallet = await this._walletRepository.createWallet(
               technicianId,
               "technician"
             );
             console.log("Created new wallet for technician:", technicianWallet);
           }
 
-          await this.walletRepository.updateWalletBalanceWithTransaction(
+          await this._walletRepository.updateWalletBalanceWithTransaction(
             technicianId,
             "technician",
             payment.technicianShare,
@@ -837,7 +842,7 @@ export class BookingService implements IBookingService {
             bookingId
           );
 
-          await this.paymentRepository.updatePayment(payment._id.toString(), {
+          await this._paymentRepository.updatePayment(payment._id.toString(), {
             technicianPaid: true,
             technicianPaidAt: new Date(),
           });
@@ -854,7 +859,7 @@ export class BookingService implements IBookingService {
         bookingId,
         OtpPurpose.BOOKING_COMPLETION
       );
-      await this.redisService.delete(redisKey);
+      await this._redisService.delete(redisKey);
 
       console.log(
         `Booking ${bookingId} completed successfully by technician ${technicianId}`
@@ -897,7 +902,7 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const booking = await this.bookingRepository.getBookingDetailsById(
+      const booking = await this._bookingRepository.getBookingDetailsById(
         bookingId
       );
       if (!booking) {
@@ -954,7 +959,7 @@ export class BookingService implements IBookingService {
         refundAmount,
       });
 
-      const payment = await this.paymentRepository.findByBookingId(bookingId);
+      const payment = await this._paymentRepository.findByBookingId(bookingId);
       if (!payment) {
         return {
           success: false,
@@ -962,7 +967,7 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const updatedBooking = await this.bookingRepository.updateBooking(
+      const updatedBooking = await this._bookingRepository.updateBooking(
         { _id: bookingId },
         {
           bookingStatus: "Cancelled",
@@ -979,7 +984,7 @@ export class BookingService implements IBookingService {
         };
       }
 
-      await this.paymentRepository.updatePayment(payment._id.toString(), {
+      await this._paymentRepository.updatePayment(payment._id.toString(), {
         paymentStatus: refundAmount > 0 ? "Refunded" : "Paid",
         refundStatus: refundAmount > 0 ? "Refunded" : "Not Refunded",
         refundAmount: refundAmount,
@@ -987,16 +992,19 @@ export class BookingService implements IBookingService {
       });
 
       if (refundAmount > 0) {
-        let userWallet = await this.walletRepository.getWalletByOwnerId(
+        let userWallet = await this._walletRepository.getWalletByOwnerId(
           userId,
           "user"
         );
         if (!userWallet) {
           console.log("User wallet not found, creating new wallet");
-          userWallet = await this.walletRepository.createWallet(userId, "user");
+          userWallet = await this._walletRepository.createWallet(
+            userId,
+            "user"
+          );
         }
 
-        await this.walletRepository.updateWalletBalanceWithTransaction(
+        await this._walletRepository.updateWalletBalanceWithTransaction(
           userId,
           "user",
           refundAmount,
@@ -1014,7 +1022,7 @@ export class BookingService implements IBookingService {
 
       try {
         const timeSlot = booking.timeSlotId as ITimeSlot;
-        await this.timeSlotService.updateSlotBookingStatus(
+        await this._timeSlotService.updateSlotBookingStatus(
           booking.technicianId._id.toString(),
           timeSlot._id.toString(),
           false
@@ -1070,7 +1078,7 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const booking = await this.bookingRepository.getBookingDetailsById(
+      const booking = await this._bookingRepository.getBookingDetailsById(
         bookingId
       );
       if (!booking) {
@@ -1137,7 +1145,7 @@ export class BookingService implements IBookingService {
         isToday,
       });
 
-      const payment = await this.paymentRepository.findByBookingId(bookingId);
+      const payment = await this._paymentRepository.findByBookingId(bookingId);
       if (!payment) {
         return {
           success: false,
@@ -1145,7 +1153,7 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const updatedBooking = await this.bookingRepository.updateBooking(
+      const updatedBooking = await this._bookingRepository.updateBooking(
         { _id: bookingId },
         {
           bookingStatus: "Cancelled",
@@ -1164,27 +1172,27 @@ export class BookingService implements IBookingService {
 
       const fullRefundAmount = booking.bookingAmount;
 
-      await this.paymentRepository.updatePayment(payment._id.toString(), {
+      await this._paymentRepository.updatePayment(payment._id.toString(), {
         paymentStatus: "Refunded",
         refundStatus: "Refunded",
         refundAmount: fullRefundAmount,
         refundDate: new Date(),
       });
 
-      let userWallet = await this.walletRepository.getWalletByOwnerId(
+      let userWallet = await this._walletRepository.getWalletByOwnerId(
         booking.userId._id.toString(),
         "user"
       );
 
       if (!userWallet) {
         console.log("User wallet not found, creating new wallet");
-        userWallet = await this.walletRepository.createWallet(
+        userWallet = await this._walletRepository.createWallet(
           booking.userId._id.toString(),
           "user"
         );
       }
 
-      await this.walletRepository.updateWalletBalanceWithTransaction(
+      await this._walletRepository.updateWalletBalanceWithTransaction(
         booking.userId._id.toString(),
         "user",
         fullRefundAmount,
@@ -1200,7 +1208,7 @@ export class BookingService implements IBookingService {
       );
 
       try {
-        await this.timeSlotService.updateSlotBookingStatus(
+        await this._timeSlotService.updateSlotBookingStatus(
           technicianId,
           timeSlot._id.toString(),
           false
@@ -1270,7 +1278,7 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const booking = await this.bookingRepository.getBookingDetailsById(
+      const booking = await this._bookingRepository.getBookingDetailsById(
         bookingId,
         userId
       );
@@ -1297,7 +1305,7 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const existingRating = await this.ratingRepository.getRatingByBookingId(
+      const existingRating = await this._ratingRepository.getRatingByBookingId(
         bookingId
       );
       if (existingRating) {
@@ -1307,7 +1315,7 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const newRating = await this.ratingRepository.createRating({
+      const newRating = await this._ratingRepository.createRating({
         userId,
         technicianId: booking.technicianId._id.toString(),
         serviceId: booking.serviceId._id.toString(),
@@ -1318,7 +1326,7 @@ export class BookingService implements IBookingService {
 
       console.log("newley created rating for the service:", newRating);
 
-      const updatedBooking = await this.bookingRepository.updateBooking(
+      const updatedBooking = await this._bookingRepository.updateBooking(
         { _id: bookingId },
         { isRated: true }
       );
@@ -1360,7 +1368,7 @@ export class BookingService implements IBookingService {
         "entering to the booking service getting the rating for the booking"
       );
       console.log("bookingId in the booking service:", bookingId);
-      const response = await this.ratingRepository.getRatingByBookingId(
+      const response = await this._ratingRepository.getRatingByBookingId(
         bookingId
       );
       console.log("response from the rating repository:", response);

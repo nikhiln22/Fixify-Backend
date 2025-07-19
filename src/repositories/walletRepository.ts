@@ -14,7 +14,7 @@ export class WalletRepository
 {
   constructor(
     @inject("IWalletTransactionRepository")
-    private walletTransactionRepository: IWalletTransactionRepository
+    private _walletTransactionRepository: IWalletTransactionRepository
   ) {
     super(wallet);
   }
@@ -74,7 +74,7 @@ export class WalletRepository
       });
 
       const existingTransaction =
-        await this.walletTransactionRepository.findByReferenceId(
+        await this._walletTransactionRepository.findByReferenceId(
           sessionId,
           "Credit"
         );
@@ -111,7 +111,7 @@ export class WalletRepository
         );
 
         const newTransaction =
-          await this.walletTransactionRepository.createTransaction({
+          await this._walletTransactionRepository.createTransaction({
             ownerId: new Types.ObjectId(ownerId),
             ownerType: ownerType,
             walletId: ownerWallet._id as Types.ObjectId,
@@ -185,7 +185,7 @@ export class WalletRepository
           : new Types.ObjectId(ownerWallet._id);
 
       const newTransaction =
-        await this.walletTransactionRepository.createTransaction({
+        await this._walletTransactionRepository.createTransaction({
           ownerId: ownerId,
           ownerType: ownerType,
           walletId: walletId.toString(),

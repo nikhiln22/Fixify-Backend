@@ -7,7 +7,7 @@ import { CreateChatData } from "../interfaces/DTO/IRepository/IchatRepository";
 @injectable()
 export class ChatService implements IChatService {
   constructor(
-    @inject("IChatRepository") private chatRepository: IChatRepository
+    @inject("IChatRepository") private _chatRepository: IChatRepository
   ) {}
 
   async getChatHistory(bookingId: string): Promise<{
@@ -25,7 +25,7 @@ export class ChatService implements IChatService {
         };
       }
 
-      const chatMessages = await this.chatRepository.getChatsByBookingId(
+      const chatMessages = await this._chatRepository.getChatsByBookingId(
         bookingId
       );
 
@@ -91,7 +91,7 @@ export class ChatService implements IChatService {
         };
       }
 
-      const savedMessage = await this.chatRepository.createChat(chatData);
+      const savedMessage = await this._chatRepository.createChat(chatData);
 
       console.log("ChatService: Message saved successfully");
 

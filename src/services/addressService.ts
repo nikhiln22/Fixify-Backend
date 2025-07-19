@@ -7,7 +7,7 @@ import { Types } from "mongoose";
 @injectable()
 export class AddressService implements IAddressService {
   constructor(
-    @inject("IAddressRepository") private addressRepository: IAddressRepository
+    @inject("IAddressRepository") private _addressRepository: IAddressRepository
   ) {}
 
   async addAddress(
@@ -47,7 +47,7 @@ export class AddressService implements IAddressService {
         newAddressData
       );
 
-      const savedAddress = await this.addressRepository.addAddress(
+      const savedAddress = await this._addressRepository.addAddress(
         newAddressData as IUserAddress
       );
 
@@ -80,7 +80,7 @@ export class AddressService implements IAddressService {
         };
       }
 
-      const userAddresses = await this.addressRepository.getUserAddresses(
+      const userAddresses = await this._addressRepository.getUserAddresses(
         userId
       );
 
@@ -118,7 +118,7 @@ export class AddressService implements IAddressService {
         };
       }
 
-      const existingAddress = await this.addressRepository.findById(addressId);
+      const existingAddress = await this._addressRepository.findById(addressId);
 
       console.log("existingAddress in address service:", existingAddress);
 
@@ -136,7 +136,7 @@ export class AddressService implements IAddressService {
         };
       }
 
-      const deletedAddress = await this.addressRepository.deleteAddress(
+      const deletedAddress = await this._addressRepository.deleteAddress(
         addressId
       );
 

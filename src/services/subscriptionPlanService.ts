@@ -7,7 +7,7 @@ import { ISubscriptionPlanRepository } from "../interfaces/Irepositories/Isubscr
 export class SubscriptionPlanService implements ISubscriptionPlanService {
   constructor(
     @inject("ISubscriptionPlanRepository")
-    private subscriptionPlanRepository: ISubscriptionPlanRepository
+    private _subscriptionPlanRepository: ISubscriptionPlanRepository
   ) {}
 
   async addSubscriptionPlan(
@@ -27,7 +27,7 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
         `planName:${planName}, monthlyPrice:${monthlyPrice}, commissionRate:${commissionRate}`
       );
 
-      const existingPlan = await this.subscriptionPlanRepository.findByPlanName(
+      const existingPlan = await this._subscriptionPlanRepository.findByPlanName(
         planName
       );
       if (existingPlan) {
@@ -37,7 +37,7 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
         };
       }
 
-      const result = await this.subscriptionPlanRepository.addSubscriptionPlan(
+      const result = await this._subscriptionPlanRepository.addSubscriptionPlan(
         planName,
         commissionRate,
         monthlyPrice
@@ -84,7 +84,7 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
       const page = options.page || 1;
       const limit = options.limit || 5;
       const result =
-        await this.subscriptionPlanRepository.getAllSubscriptionPlans({
+        await this._subscriptionPlanRepository.getAllSubscriptionPlans({
           page,
           limit,
           search: options.search,

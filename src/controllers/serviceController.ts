@@ -12,7 +12,7 @@ import {
 export class ServiceController implements IServiceController {
   constructor(
     @inject("IServiceService")
-    private serviceService: IServiceService
+    private _serviceService: IServiceService
   ) {}
 
   async addService(req: Request, res: Response): Promise<void> {
@@ -24,7 +24,7 @@ export class ServiceController implements IServiceController {
 
       data.imageFile = req.file?.path;
 
-      const serviceResponse = await this.serviceService.addService(data);
+      const serviceResponse = await this._serviceService.addService(data);
       console.log("result from the addservice function:", serviceResponse);
 
       if (serviceResponse.success) {
@@ -62,7 +62,7 @@ export class ServiceController implements IServiceController {
       const categoryId = (req.query.category as string) || undefined;
       const status = (req.query.status as string) || undefined;
 
-      const serviceResponse = await this.serviceService.getAllServices({
+      const serviceResponse = await this._serviceService.getAllServices({
         page,
         limit,
         search,
@@ -103,7 +103,7 @@ export class ServiceController implements IServiceController {
       console.log("entering to the toggle service status");
       const serviceId = req.params.serviceId;
 
-      const serviceResponse = await this.serviceService.toggleServiceStatus(
+      const serviceResponse = await this._serviceService.toggleServiceStatus(
         serviceId
       );
 
@@ -170,7 +170,7 @@ export class ServiceController implements IServiceController {
         return;
       }
 
-      const serviceResponse = await this.serviceService.updateService(
+      const serviceResponse = await this._serviceService.updateService(
         serviceId,
         updateData
       );
@@ -213,7 +213,7 @@ export class ServiceController implements IServiceController {
         return;
       }
 
-      const serviceResponse = await this.serviceService.addCategory(
+      const serviceResponse = await this._serviceService.addCategory(
         name,
         req.file.path
       );
@@ -252,7 +252,7 @@ export class ServiceController implements IServiceController {
       const search = (req.query.search as string) || undefined;
       const status = (req.query.status as string) || undefined;
 
-      const serviceResponse = await this.serviceService.getAllCategories({
+      const serviceResponse = await this._serviceService.getAllCategories({
         page,
         limit,
         search,
@@ -287,7 +287,7 @@ export class ServiceController implements IServiceController {
       console.log("entering to the toggle category status");
       const categoryId = req.params.categoryId;
 
-      const serviceResponse = await this.serviceService.toggleCategoryStatus(
+      const serviceResponse = await this._serviceService.toggleCategoryStatus(
         categoryId
       );
 
@@ -347,7 +347,7 @@ export class ServiceController implements IServiceController {
         return;
       }
 
-      const serviceResponse = await this.serviceService.updateCategory(
+      const serviceResponse = await this._serviceService.updateCategory(
         categoryId,
         updateData
       );

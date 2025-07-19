@@ -18,13 +18,14 @@ import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
 @injectable()
 export class UserController implements IUserController {
   constructor(
-    @inject("IUserService") private userService: IUserService,
-    @inject("IServiceService") private serviceService: IServiceService,
-    @inject("IAddressService") private addressService: IAddressService,
-    @inject("ITechnicianService") private technicianService: ITechnicianService,
-    @inject("ITimeSlotService") private timeSlotService: ITimeSlotService,
-    @inject("IBookingService") private bookingService: IBookingService,
-    @inject("IChatService") private chatService: IChatService
+    @inject("IUserService") private _userService: IUserService,
+    @inject("IServiceService") private _serviceService: IServiceService,
+    @inject("IAddressService") private _addressService: IAddressService,
+    @inject("ITechnicianService")
+    private _technicianService: ITechnicianService,
+    @inject("ITimeSlotService") private _timeSlotService: ITimeSlotService,
+    @inject("IBookingService") private _bookingService: IBookingService,
+    @inject("IChatService") private _chatService: IChatService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {
@@ -32,7 +33,7 @@ export class UserController implements IUserController {
       console.log("entering to the register function in userController");
       const data = req.body;
       console.log("data:", data);
-      const serviceResponse = await this.userService.userSignUp(data);
+      const serviceResponse = await this._userService.userSignUp(data);
       console.log("response in register:", serviceResponse);
       if (serviceResponse.success) {
         res.status(HTTP_STATUS.CREATED).json(
@@ -67,7 +68,7 @@ export class UserController implements IUserController {
       console.log("entering into the verify otp function in userController");
       const data = req.body;
       console.log("userData in verifyOtp controller:", data);
-      const serviceResponse = await this.userService.verifyOtp(data);
+      const serviceResponse = await this._userService.verifyOtp(data);
       console.log("response in verifyOtp controller:", serviceResponse);
       if (serviceResponse.success) {
         res
@@ -107,7 +108,7 @@ export class UserController implements IUserController {
     try {
       console.log("entering into the resend otp functionality in the ");
       const { email } = req.body;
-      const serviceResponse = await this.userService.resendOtp(email);
+      const serviceResponse = await this._userService.resendOtp(email);
       console.log("response from the resendotp controller:", serviceResponse);
       if (serviceResponse.success) {
         res.status(HTTP_STATUS.OK).json(
@@ -144,7 +145,7 @@ export class UserController implements IUserController {
       console.log("entering the user login function in usercontroller");
       const data = req.body;
 
-      const serviceResponse = await this.userService.login(data);
+      const serviceResponse = await this._userService.login(data);
       console.log("response from the login controller", serviceResponse);
 
       if (serviceResponse.success) {
@@ -195,7 +196,7 @@ export class UserController implements IUserController {
       console.log("Entering forgotPassword function in userController");
       const { email } = req.body;
 
-      const serviceResponse = await this.userService.forgotPassword({ email });
+      const serviceResponse = await this._userService.forgotPassword({ email });
       console.log("Response from forgotPassword service:", serviceResponse);
 
       if (serviceResponse.success) {
@@ -232,7 +233,7 @@ export class UserController implements IUserController {
       console.log("Entering resetPassword function in userController");
       const { email, password } = req.body;
 
-      const serviceResponse = await this.userService.resetPassword({
+      const serviceResponse = await this._userService.resetPassword({
         email,
         password,
       });
@@ -269,7 +270,7 @@ export class UserController implements IUserController {
       const limit = parseInt(req.query.limit as string) || undefined;
       const search = (req.query.search as string) || undefined;
 
-      const serviceResponse = await this.serviceService.getAllCategories({
+      const serviceResponse = await this._serviceService.getAllCategories({
         page,
         limit,
         search,
@@ -308,7 +309,7 @@ export class UserController implements IUserController {
       const search = (req.query.search as string) || undefined;
       const categoryId = req.query.category as string;
 
-      const serviceResponse = await this.serviceService.getAllServices({
+      const serviceResponse = await this._serviceService.getAllServices({
         page,
         limit,
         search,
@@ -355,7 +356,7 @@ export class UserController implements IUserController {
         return;
       }
 
-      const serviceResponse = await this.userService.getUserProfile(userId);
+      const serviceResponse = await this._userService.getUserProfile(userId);
 
       if (serviceResponse.success) {
         res
@@ -407,7 +408,7 @@ export class UserController implements IUserController {
       console.log("userId from the edit profile:", userId);
       console.log("Profile update data:", profileUpdateData);
 
-      const serviceResponse = await this.userService.editProfile(
+      const serviceResponse = await this._userService.editProfile(
         userId,
         profileUpdateData
       );
@@ -456,7 +457,7 @@ export class UserController implements IUserController {
         return;
       }
 
-      const serviceResponse = await this.addressService.getUserAddresses(
+      const serviceResponse = await this._addressService.getUserAddresses(
         userId
       );
       console.log(
@@ -502,7 +503,7 @@ export class UserController implements IUserController {
       const addressData = req.body;
       console.log("address Data received:", req.body);
 
-      const serviceResponse = await this.addressService.addAddress(
+      const serviceResponse = await this._addressService.addAddress(
         userId,
         addressData
       );
@@ -547,7 +548,7 @@ export class UserController implements IUserController {
         return;
       }
 
-      const serviceResponse = await this.addressService.deleteAddress(
+      const serviceResponse = await this._addressService.deleteAddress(
         addressId,
         userId
       );
@@ -586,7 +587,7 @@ export class UserController implements IUserController {
       const serviceId = req.params.serviceId;
       console.log("serviceId in the user controller:", serviceId);
 
-      const serviceResponse = await this.serviceService.getServiceDetails(
+      const serviceResponse = await this._serviceService.getServiceDetails(
         serviceId
       );
       console.log("response in the user controller:", serviceResponse);
@@ -644,12 +645,13 @@ export class UserController implements IUserController {
         return;
       }
 
-      const serviceResponse = await this.technicianService.getNearbyTechnicians(
-        designationId,
-        userLongitude,
-        userLatitude,
-        radius
-      );
+      const serviceResponse =
+        await this._technicianService.getNearbyTechnicians(
+          designationId,
+          userLongitude,
+          userLatitude,
+          radius
+        );
 
       console.log("response in the user controller:", serviceResponse);
 
@@ -691,7 +693,7 @@ export class UserController implements IUserController {
         isBooked: false,
       };
 
-      const serviceResponse = await this.timeSlotService.getTimeSlots(
+      const serviceResponse = await this._timeSlotService.getTimeSlots(
         technicianId,
         includePast,
         userFilters
@@ -741,7 +743,7 @@ export class UserController implements IUserController {
         return;
       }
 
-      const serviceResponse = await this.bookingService.bookService(
+      const serviceResponse = await this._bookingService.bookService(
         userId,
         data
       );
@@ -794,7 +796,7 @@ export class UserController implements IUserController {
         return;
       }
 
-      const serviceResponse = await this.bookingService.verifyStripeSession(
+      const serviceResponse = await this._bookingService.verifyStripeSession(
         sessionId,
         userId
       );
@@ -844,7 +846,7 @@ export class UserController implements IUserController {
       const search = req.query.search as string;
       const filter = req.query.filter as string;
 
-      const serviceResponse = await this.bookingService.getAllBookings({
+      const serviceResponse = await this._bookingService.getAllBookings({
         page,
         limit,
         userId,
@@ -906,7 +908,7 @@ export class UserController implements IUserController {
 
       console.log("Fetching booking details for:", bookingId, "User:", userId);
 
-      const serviceResponse = await this.bookingService.getBookingById(
+      const serviceResponse = await this._bookingService.getBookingById(
         bookingId,
         {
           userId: userId,
@@ -956,7 +958,7 @@ export class UserController implements IUserController {
         return;
       }
 
-      const serviceResponse = await this.userService.addMoney(userId, amount);
+      const serviceResponse = await this._userService.addMoney(userId, amount);
       console.log(
         "result in the usercontroller for adding money in wallet:",
         serviceResponse
@@ -1012,7 +1014,7 @@ export class UserController implements IUserController {
         return;
       }
 
-      const serviceResponse = await this.userService.verifyWalletStripeSession(
+      const serviceResponse = await this._userService.verifyWalletStripeSession(
         sessionId,
         userId
       );
@@ -1073,7 +1075,7 @@ export class UserController implements IUserController {
         return;
       }
 
-      const serviceResponse = await this.userService.getWalletBalance(userId);
+      const serviceResponse = await this._userService.getWalletBalance(userId);
       console.log(
         "response in the user controller for fetching the user wallet balance:",
         serviceResponse
@@ -1126,7 +1128,7 @@ export class UserController implements IUserController {
         return;
       }
 
-      const serviceResponse = await this.userService.getAllWalletTransactions({
+      const serviceResponse = await this._userService.getAllWalletTransactions({
         page,
         limit,
         userId,
@@ -1165,7 +1167,7 @@ export class UserController implements IUserController {
       console.log("Fetching chat history for booking");
       const { bookingId } = req.params;
 
-      const serviceResponse = await this.chatService.getChatHistory(bookingId);
+      const serviceResponse = await this._chatService.getChatHistory(bookingId);
 
       if (serviceResponse.success) {
         res
@@ -1213,7 +1215,7 @@ export class UserController implements IUserController {
         senderType: "user" as const,
       };
 
-      const serviceResponse = await this.chatService.sendChat(chatData);
+      const serviceResponse = await this._chatService.sendChat(chatData);
 
       if (serviceResponse.success && io && serviceResponse.data) {
         io.to(`booking_${bookingId}`).emit("new_message", serviceResponse.data);
@@ -1257,7 +1259,7 @@ export class UserController implements IUserController {
         return;
       }
 
-      const serviceResponse = await this.bookingService.cancelBookingByUser(
+      const serviceResponse = await this._bookingService.cancelBookingByUser(
         userId,
         bookingId,
         cancellationReason
@@ -1310,7 +1312,7 @@ export class UserController implements IUserController {
         return;
       }
 
-      const serviceResponse = await this.bookingService.rateService(
+      const serviceResponse = await this._bookingService.rateService(
         userId,
         bookingId,
         rating,
@@ -1351,7 +1353,7 @@ export class UserController implements IUserController {
       const { bookingId } = req.params;
       console.log("bookingId in the user controller:", bookingId);
 
-      const serviceResponse = await this.bookingService.getRating(bookingId);
+      const serviceResponse = await this._bookingService.getRating(bookingId);
 
       if (serviceResponse.success) {
         res

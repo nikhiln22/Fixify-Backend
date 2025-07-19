@@ -8,7 +8,7 @@ import { AddTimeSlotsResult } from "../interfaces/DTO/IServices/ItechnicianServi
 export class TimeSlotService implements ITimeSlotService {
   constructor(
     @inject("ITimeSlotRepository")
-    private timeSlotRepository: ITimeSlotRepository
+    private _timeSlotRepository: ITimeSlotRepository
   ) {}
 
   async addTimeSlots(
@@ -29,7 +29,7 @@ export class TimeSlotService implements ITimeSlotService {
         const { date, startTime, endTime } = slot;
 
         const overlappingSlots =
-          await this.timeSlotRepository.findOverlappingSlots(
+          await this._timeSlotRepository.findOverlappingSlots(
             technicianId,
             date,
             startTime,
@@ -126,7 +126,7 @@ export class TimeSlotService implements ITimeSlotService {
       const currentTimeStr = this.minutesToTimeString(currentMinutes);
       const nextTimeStr = this.minutesToTimeString(nextMinutes);
 
-      const exists = await this.timeSlotRepository.findSlot(
+      const exists = await this._timeSlotRepository.findSlot(
         technicianId,
         formattedDate,
         currentTimeStr,
@@ -138,7 +138,7 @@ export class TimeSlotService implements ITimeSlotService {
       );
 
       if (!exists) {
-        const createdSlot = await this.timeSlotRepository.newTimeslot(
+        const createdSlot = await this._timeSlotRepository.newTimeslot(
           technicianId,
           formattedDate,
           currentTimeStr,
@@ -222,7 +222,7 @@ export class TimeSlotService implements ITimeSlotService {
         "Fetching the timeSlots for the technician in the timeSlot Service"
       );
 
-      const timeSlots = await this.timeSlotRepository.getTimeSlots(
+      const timeSlots = await this._timeSlotRepository.getTimeSlots(
         technicianId,
         includePast,
         additionalFilters
@@ -265,7 +265,7 @@ export class TimeSlotService implements ITimeSlotService {
         slotId
       );
 
-      const timeSlot = await this.timeSlotRepository.findSlotById(
+      const timeSlot = await this._timeSlotRepository.findSlotById(
         technicianId,
         slotId
       );
@@ -285,7 +285,7 @@ export class TimeSlotService implements ITimeSlotService {
         };
       }
 
-      const updatedSlot = await this.timeSlotRepository.toggleSlotAvailability(
+      const updatedSlot = await this._timeSlotRepository.toggleSlotAvailability(
         slotId
       );
 
@@ -319,7 +319,7 @@ export class TimeSlotService implements ITimeSlotService {
         isBooked
       );
 
-      const updatedSlot = await this.timeSlotRepository.updateSlotBookingStatus(
+      const updatedSlot = await this._timeSlotRepository.updateSlotBookingStatus(
         technicianId,
         slotId,
         isBooked
