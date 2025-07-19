@@ -7,7 +7,7 @@ import { IOfferRepository } from "../interfaces/Irepositories/IofferRepository";
 @injectable()
 export class OfferService implements IOfferService {
   constructor(
-    @inject("IOfferRepository") private offerRepository: IOfferRepository
+    @inject("IOfferRepository") private _offerRepository: IOfferRepository
   ) {}
 
   async addOffer(data: OfferData): Promise<{
@@ -19,7 +19,7 @@ export class OfferService implements IOfferService {
       console.log("entering to the service function that adds the offer");
       console.log("data received:", data);
 
-      const response = await this.offerRepository.addOffer(data);
+      const response = await this._offerRepository.addOffer(data);
       console.log(
         "response from the offer repository in the offer service:",
         response
@@ -63,7 +63,7 @@ export class OfferService implements IOfferService {
       console.log("Function fetching all the offers");
       const page = options.page || 1;
       const limit = options.limit || 5;
-      const result = await this.offerRepository.getAllOffers({
+      const result = await this._offerRepository.getAllOffers({
         page,
         limit,
         search: options.search,
@@ -99,7 +99,7 @@ export class OfferService implements IOfferService {
   async blockOffer(id: string): Promise<{ message: string; offer?: IOffer }> {
     try {
       console.log("entering the service layer that blocks the offer:", id);
-      const offer = await this.offerRepository.findOfferById(id);
+      const offer = await this._offerRepository.findOfferById(id);
       console.log("offer fetched from repository:", offer);
 
       if (!offer) {
@@ -109,7 +109,7 @@ export class OfferService implements IOfferService {
       }
 
       const newStatus = !offer.status;
-      const response = await this.offerRepository.blockOffer(id, newStatus);
+      const response = await this._offerRepository.blockOffer(id, newStatus);
       console.log(
         "Response after toggling offer status from the offer repository:",
         response
@@ -150,7 +150,7 @@ export class OfferService implements IOfferService {
         "entering the offer service which updates the existing offer added by the admin"
       );
 
-      const offer = await this.offerRepository.findOfferById(offerId);
+      const offer = await this._offerRepository.findOfferById(offerId);
       if (!offer) {
         return {
           success: false,
@@ -158,7 +158,7 @@ export class OfferService implements IOfferService {
         };
       }
 
-      const updatedOffer = await this.offerRepository.updateOffer(
+      const updatedOffer = await this._offerRepository.updateOffer(
         offerId,
         updateData
       );

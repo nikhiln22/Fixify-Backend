@@ -8,12 +8,14 @@ import { IJobDesignation } from "../interfaces/Models/IjobDesignation";
 export class JobService implements IJobsService {
   constructor(
     @inject("IJobDesignationRepository")
-    private designationRepository: IJobDesignationRepository
+    private _designationRepository: IJobDesignationRepository
   ) {}
 
   async addDesignation(designation: string): Promise<DesignationResponse> {
     try {
-      const existing = await this.designationRepository.findByName(designation);
+      const existing = await this._designationRepository.findByName(
+        designation
+      );
       if (existing) {
         return {
           success: false,
@@ -21,7 +23,7 @@ export class JobService implements IJobsService {
         };
       }
 
-      const newDesignation = await this.designationRepository.addDesignation(
+      const newDesignation = await this._designationRepository.addDesignation(
         designation
       );
       console.log("added new designation from the service:", newDesignation);
@@ -41,7 +43,7 @@ export class JobService implements IJobsService {
 
   async toggleDesignationStatus(id: string): Promise<DesignationResponse> {
     try {
-      const designation = await this.designationRepository.findById(id);
+      const designation = await this._designationRepository.findById(id);
       console.log(
         "desigantion from the block designation service:",
         designation
@@ -56,7 +58,7 @@ export class JobService implements IJobsService {
       const newStatus = !designation.status;
 
       const updatedDesignation =
-        await this.designationRepository.blockDesignation(id, newStatus);
+        await this._designationRepository.blockDesignation(id, newStatus);
       console.log(
         "response after blocking the job designation from the designation repository:",
         updatedDesignation
@@ -103,7 +105,7 @@ export class JobService implements IJobsService {
       const page = options.page || 1;
       const limit = options.limit || 5;
 
-      const result = await this.designationRepository.getAllDesignations({
+      const result = await this._designationRepository.getAllDesignations({
         page,
         limit,
         search: options.search,
@@ -138,7 +140,7 @@ export class JobService implements IJobsService {
 
   async findDesignationByName(name: string): Promise<DesignationResponse> {
     try {
-      const designation = await this.designationRepository.findByName(name);
+      const designation = await this._designationRepository.findByName(name);
       if (!designation) {
         return {
           success: false,

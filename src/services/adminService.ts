@@ -12,9 +12,9 @@ import { IPasswordHasher } from "../interfaces/IpasswordHasher/IpasswordHasher";
 @injectable()
 export class AdminService implements IAdminService {
   constructor(
-    @inject("IAdminRepository") private adminRepository: IAdminRepository,
-    @inject("IPasswordHasher") private passwordService: IPasswordHasher,
-    @inject("IJwtService") private jwtService: IJwtService
+    @inject("IAdminRepository") private _adminRepository: IAdminRepository,
+    @inject("IPasswordHasher") private _passwordService: IPasswordHasher,
+    @inject("IJwtService") private _jwtService: IJwtService
   ) {}
 
   async adminLogin(data: LoginData): Promise<LoginResponse> {
@@ -26,7 +26,7 @@ export class AdminService implements IAdminService {
 
       const { email, password } = data;
 
-      const admin = await this.adminRepository.findByEmail(email);
+      const admin = await this._adminRepository.findByEmail(email);
 
       console.log("admin from the adminAuthService:", admin);
 
@@ -37,7 +37,7 @@ export class AdminService implements IAdminService {
         };
       }
 
-      const isPasswordValid = await this.passwordService.verify(
+      const isPasswordValid = await this._passwordService.verify(
         admin.adminData.password,
         password
       );
@@ -58,13 +58,13 @@ export class AdminService implements IAdminService {
 
       delete safeAdminData.password;
 
-      const access_token = await this.jwtService.generateAccessToken(
+      const access_token = await this._jwtService.generateAccessToken(
         adminId,
         Roles.ADMIN
       );
       console.log("admin access_token:", access_token);
 
-      const refresh_token = await this.jwtService.generateRefreshToken(
+      const refresh_token = await this._jwtService.generateRefreshToken(
         adminId,
         Roles.ADMIN
       );

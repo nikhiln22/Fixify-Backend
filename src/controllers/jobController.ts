@@ -12,14 +12,16 @@ import {
 export class JobController implements IJobController {
   constructor(
     @inject("IJobsService")
-    private jobService: IJobsService
+    private _jobService: IJobsService
   ) {}
 
   async addDesignation(req: Request, res: Response): Promise<void> {
     try {
       const { designation } = req.body;
 
-      const serviceResponse = await this.jobService.addDesignation(designation);
+      const serviceResponse = await this._jobService.addDesignation(
+        designation
+      );
       console.log("result in the adddesignation controller:", serviceResponse);
 
       if (serviceResponse.success) {
@@ -50,7 +52,9 @@ export class JobController implements IJobController {
       const { id } = req.params;
       console.log("id from the toggle designation control:", id);
 
-      const serviceResponse = await this.jobService.toggleDesignationStatus(id);
+      const serviceResponse = await this._jobService.toggleDesignationStatus(
+        id
+      );
 
       if (serviceResponse.success) {
         res
@@ -86,7 +90,7 @@ export class JobController implements IJobController {
       const search = (req.query.search as string) || undefined;
       const status = (req.query.status as string) || undefined;
 
-      const serviceResponse = await this.jobService.getAllDesignations({
+      const serviceResponse = await this._jobService.getAllDesignations({
         page,
         limit,
         search,
@@ -125,7 +129,9 @@ export class JobController implements IJobController {
     try {
       const { name } = req.params;
 
-      const serviceResponse = await this.jobService.findDesignationByName(name);
+      const serviceResponse = await this._jobService.findDesignationByName(
+        name
+      );
 
       if (serviceResponse.success) {
         res

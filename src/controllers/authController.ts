@@ -3,20 +3,30 @@ import { inject, injectable } from "tsyringe";
 import { IAuthService } from "../interfaces/Iservices/IauthService";
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../utils/httpStatus";
+import {
+  createSuccessResponse,
+  createErrorResponse,
+} from "../utils/responseHelper";
 
 @injectable()
 export class AuthController implements IAuthController {
-  constructor(@inject("IAuthService") private authService: IAuthService) {}
+  constructor(@inject("IAuthService") private _authService: IAuthService) {}
 
   async refreshAccessToken(req: Request, res: Response): Promise<void> {
     try {
       console.log(
         "entering to the access token generating with the existing refresh token"
       );
+
       const { role } = req.body;
       console.log("role:", role);
+
       if (!role) {
-        res.status(400).json({ message: "Role is required in the body" });
+        const errorResponse = createErrorResponse(
+          "Role is required in the body",
+          "Validation failed"
+        );
+        res.status(HTTP_STATUS.BAD_REQUEST).json(errorResponse);
         return;
       }
 
@@ -24,27 +34,39 @@ export class AuthController implements IAuthController {
       console.log("refresh token from the refresh controller", refreshToken);
 
       if (!refreshToken) {
-        res
-          .status(HTTP_STATUS.NOT_FOUND)
-          .json({ message: "Refresh token not found in cookies" });
+        const errorResponse = createErrorResponse(
+          "Refresh token not found in cookies",
+          "Authentication failed"
+        );
+        res.status(HTTP_STATUS.NOT_FOUND).json(errorResponse);
         return;
       }
 
-      const newAccessToken = await this.authService.refreshAccessToken(
+      const result = await this._authService.refreshAccessToken(
         refreshToken,
         role
       );
 
-      res.status(HTTP_STATUS.OK).json({
-        success: true,
-        message: "Access token refreshed successfully",
-        access_token: newAccessToken,
-      });
+      if (result.success) {
+        const successResponse = createSuccessResponse(
+          { access_token: result.data },
+          result.message
+        );
+        res.status(HTTP_STATUS.OK).json(successResponse);
+      } else {
+        const errorResponse = createErrorResponse(
+          result.message,
+          "Token refresh failed"
+        );
+        res.status(HTTP_STATUS.UNAUTHORIZED).json(errorResponse);
+      }
     } catch (error) {
       console.error("Error in refreshAccessToken controller:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ message: "Failed to refresh access token" });
+      const errorResponse = createErrorResponse(
+        "Internal server error",
+        "Failed to refresh access token"
+      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(errorResponse);
     }
   }
 }

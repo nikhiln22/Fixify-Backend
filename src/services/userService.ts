@@ -46,18 +46,18 @@ import { IWalletTransaction } from "../interfaces/Models/IwalletTransaction";
 @injectable()
 export class UserService implements IUserService {
   constructor(
-    @inject("IUserRepository") private userRepository: IUserRepository,
+    @inject("IUserRepository") private _userRepository: IUserRepository,
     @inject("ITempUserRepository")
-    private tempUserRepository: ITempUserRepository,
-    @inject("IEmailService") private emailService: IEmailService,
-    @inject("IOTPService") private otpService: IOTPService,
-    @inject("IPasswordHasher") private passwordService: IPasswordHasher,
-    @inject("IJwtService") private jwtService: IJwtService,
-    @inject("IRedisService") private redisService: IRedisService,
-    @inject("IFileUploader") private fileUploader: IFileUploader,
-    @inject("IWalletRepository") private walletRepository: IWalletRepository,
+    private _tempUserRepository: ITempUserRepository,
+    @inject("IEmailService") private _emailService: IEmailService,
+    @inject("IOTPService") private _otpService: IOTPService,
+    @inject("IPasswordHasher") private _passwordService: IPasswordHasher,
+    @inject("IJwtService") private _jwtService: IJwtService,
+    @inject("IRedisService") private _redisService: IRedisService,
+    @inject("IFileUploader") private _fileUploader: IFileUploader,
+    @inject("IWalletRepository") private _walletRepository: IWalletRepository,
     @inject("IWalletTransactionRepository")
-    private walletTransactionRepository: IWalletTransactionRepository
+    private _walletTransactionRepository: IWalletTransactionRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -68,19 +68,19 @@ export class UserService implements IUserService {
     email: string,
     purpose: OtpPurpose
   ): Promise<string> {
-    const otp = await this.otpService.generateOtp();
+    const otp = await this._otpService.generateOtp();
     console.log(`Generated Otp for ${purpose}:`, otp);
 
     const redisKey = this.getOtpRedisKey(email, purpose);
 
     console.log("generated RedisKey:", redisKey);
 
-    await this.redisService.set(redisKey, otp, OTP_EXPIRY_SECONDS);
+    await this._redisService.set(redisKey, otp, OTP_EXPIRY_SECONDS);
 
     if (purpose === OtpPurpose.PASSWORD_RESET) {
-      await this.emailService.sendPasswordResetEmail(email, otp);
+      await this._emailService.sendPasswordResetEmail(email, otp);
     } else {
-      await this.emailService.sendOtpEmail(email, otp);
+      await this._emailService.sendOtpEmail(email, otp);
     }
     return otp;
   }
@@ -91,7 +91,7 @@ export class UserService implements IUserService {
     purpose: OtpPurpose
   ): Promise<OtpVerificationResult> {
     const redisKey = this.getOtpRedisKey(email, purpose);
-    const storedOtp = await this.redisService.get(redisKey);
+    const storedOtp = await this._redisService.get(redisKey);
 
     if (!storedOtp) {
       return {
@@ -121,14 +121,14 @@ export class UserService implements IUserService {
       );
       console.log("data:", data);
       const { email, password } = data;
-      const result = await this.userRepository.findByEmail(email);
+      const result = await this._userRepository.findByEmail(email);
       if (result.success) {
         return {
           message: "user already exists",
           success: false,
         };
       }
-      const hashedPassword = await this.passwordService.hash(password);
+      const hashedPassword = await this._passwordService.hash(password);
 
       const otp = await this.generateAndSendOtp(email, OtpPurpose.REGISTRATION);
 
@@ -141,7 +141,7 @@ export class UserService implements IUserService {
         expiresAt,
       } as ITempUser;
 
-      const response = await this.tempUserRepository.createTempUser(
+      const response = await this._tempUserRepository.createTempUser(
         tempUserData
       );
 
@@ -167,9 +167,8 @@ export class UserService implements IUserService {
       let userEmail = email;
 
       if (OtpPurpose.REGISTRATION === purpose && tempUserId) {
-        const tempUserResponse = await this.tempUserRepository.findTempUserById(
-          tempUserId
-        );
+        const tempUserResponse =
+          await this._tempUserRepository.findTempUserById(tempUserId);
         console.log("tempUserResponse:", tempUserResponse);
 
         if (!tempUserResponse.success || !tempUserResponse.tempUserData) {
@@ -201,10 +200,10 @@ export class UserService implements IUserService {
           phone: tempUser.phone,
         };
 
-        const newUser = await this.userRepository.createUser(userData);
+        const newUser = await this._userRepository.createUser(userData);
         console.log("new created user:", newUser);
 
-        const newWallet = await this.walletRepository.createWallet(
+        const newWallet = await this._walletRepository.createWallet(
           newUser._id.toString(),
           "user"
         );
@@ -222,7 +221,7 @@ export class UserService implements IUserService {
           userEmail,
           OtpPurpose.REGISTRATION
         );
-        await this.redisService.delete(redisKey);
+        await this._redisService.delete(redisKey);
 
         return {
           message: "OTP verified successfully, user registered",
@@ -231,7 +230,7 @@ export class UserService implements IUserService {
         };
       } else if (OtpPurpose.PASSWORD_RESET === purpose && userEmail) {
         console.log("password resetting in the userAuthService");
-        const user = await this.userRepository.findByEmail(userEmail);
+        const user = await this._userRepository.findByEmail(userEmail);
         console.log("user from the password resetting:", user);
         if (!user.success || !user.userData) {
           return {
@@ -265,10 +264,10 @@ export class UserService implements IUserService {
   async resendOtp(data: string): Promise<ResendOtpResponse> {
     try {
       console.log("entering resendotp function in the userservice");
-      const tempUser = await this.tempUserRepository.findTempUserByEmail(data);
+      const tempUser = await this._tempUserRepository.findTempUserByEmail(data);
       console.log("tempuser in resendotp user service:", tempUser);
 
-      const user = await this.userRepository.findByEmail(data);
+      const user = await this._userRepository.findByEmail(data);
       console.log("user in the resendOtp in the user service");
 
       let purpose: OtpPurpose;
@@ -312,7 +311,7 @@ export class UserService implements IUserService {
       console.log("Entering forgotPassword in userService");
       const { email } = data;
 
-      const user = await this.userRepository.findByEmail(email);
+      const user = await this._userRepository.findByEmail(email);
       if (!user.success || !user.userData) {
         return {
           success: false,
@@ -345,7 +344,7 @@ export class UserService implements IUserService {
       console.log("Entering resetPassword in userService");
       const { email, password } = data;
 
-      const user = await this.userRepository.findByEmail(email);
+      const user = await this._userRepository.findByEmail(email);
       console.log("userData in resetPasssword:", user);
       if (!user.success || !user.userData) {
         return {
@@ -354,9 +353,9 @@ export class UserService implements IUserService {
         };
       }
 
-      const hashedPassword = await this.passwordService.hash(password);
+      const hashedPassword = await this._passwordService.hash(password);
 
-      const updateResult = await this.userRepository.updatePassword(
+      const updateResult = await this._userRepository.updatePassword(
         email,
         hashedPassword
       );
@@ -369,7 +368,7 @@ export class UserService implements IUserService {
       }
 
       const redisKey = `forgotPassword:${email}`;
-      await this.redisService.delete(redisKey);
+      await this._redisService.delete(redisKey);
 
       return {
         success: true,
@@ -388,7 +387,7 @@ export class UserService implements IUserService {
     try {
       console.log("entering to the login credentials verifying in service");
       const { email, password } = data;
-      const user = await this.userRepository.findByEmail(email);
+      const user = await this._userRepository.findByEmail(email);
       console.log("user", user);
       if (!user.success || !user.userData) {
         return {
@@ -397,7 +396,7 @@ export class UserService implements IUserService {
         };
       }
 
-      const isPasswordValid = await this.passwordService.verify(
+      const isPasswordValid = await this._passwordService.verify(
         user.userData.password,
         password
       );
@@ -418,12 +417,12 @@ export class UserService implements IUserService {
 
       const userId = String(user.userData._id);
       console.log("userId from login:", userId);
-      const access_token = this.jwtService.generateAccessToken(
+      const access_token = this._jwtService.generateAccessToken(
         userId,
         Roles.USER
       );
 
-      const refresh_token = this.jwtService.generateRefreshToken(
+      const refresh_token = this._jwtService.generateRefreshToken(
         userId,
         Roles.USER
       );
@@ -474,7 +473,7 @@ export class UserService implements IUserService {
       console.log("Function fetching all the users");
       const page = options.page || 1;
       const limit = options.limit || 5;
-      const result = await this.userRepository.getAllUsers({
+      const result = await this._userRepository.getAllUsers({
         page,
         limit,
         search: options.search,
@@ -509,7 +508,7 @@ export class UserService implements IUserService {
 
   async toggleUserStatus(id: string): Promise<ToggleUserStatusResponse> {
     try {
-      const user = await this.userRepository.findById(id);
+      const user = await this._userRepository.findById(id);
       console.log("User fetched from repository:", user);
 
       if (!user) {
@@ -520,7 +519,7 @@ export class UserService implements IUserService {
       }
 
       const newStatus = !user.status;
-      const response = await this.userRepository.blockUser(id, newStatus);
+      const response = await this._userRepository.blockUser(id, newStatus);
       console.log(
         "Response after toggling user status from the user repository:",
         response
@@ -544,7 +543,7 @@ export class UserService implements IUserService {
     try {
       console.log("Fetching user profile in user service for ID:", userId);
 
-      const userData = await this.userRepository.findById(userId);
+      const userData = await this._userRepository.findById(userId);
 
       if (!userData) {
         return {
@@ -575,15 +574,13 @@ export class UserService implements IUserService {
       console.log("Entering editProfile in user service");
       console.log("userId:", userId, "updateData:", updateData);
 
-      const existingUser = await this.userRepository.findById(userId);
+      const existingUser = await this._userRepository.findById(userId);
       if (!existingUser) {
         return {
           success: false,
           message: "User not found",
         };
       }
-
-      
 
       const profileDataToSave: any = {};
 
@@ -597,7 +594,7 @@ export class UserService implements IUserService {
 
       if (updateData.image) {
         console.log("Uploading profile photo to Cloudinary");
-        const imageUrl = await this.fileUploader.uploadFile(updateData.image, {
+        const imageUrl = await this._fileUploader.uploadFile(updateData.image, {
           folder: "fixify/users/profile",
         });
 
@@ -611,7 +608,7 @@ export class UserService implements IUserService {
 
       console.log("Final data to save:", profileDataToSave);
 
-      const updatedUser = await this.userRepository.editProfile(
+      const updatedUser = await this._userRepository.editProfile(
         userId,
         profileDataToSave
       );
@@ -657,12 +654,12 @@ export class UserService implements IUserService {
         };
       }
 
-      let wallet = await this.walletRepository.getWalletByOwnerId(
+      let wallet = await this._walletRepository.getWalletByOwnerId(
         userId,
         "user"
       );
       if (!wallet) {
-        wallet = await this.walletRepository.createWallet(userId, "user");
+        wallet = await this._walletRepository.createWallet(userId, "user");
       }
 
       const amountInCents = Math.round(amount * 100);
@@ -727,14 +724,14 @@ export class UserService implements IUserService {
       console.log("Verifying Stripe session:", { sessionId, userId });
 
       const existingTransaction =
-        await this.walletTransactionRepository.findByReferenceId(
+        await this._walletTransactionRepository.findByReferenceId(
           sessionId,
           "Credit"
         );
 
       if (existingTransaction) {
         console.log("Session already processed:", sessionId);
-        const wallet = await this.walletRepository.getWalletByOwnerId(
+        const wallet = await this._walletRepository.getWalletByOwnerId(
           userId,
           "user"
         );
@@ -775,7 +772,7 @@ export class UserService implements IUserService {
         };
       }
 
-      const result = await this.walletRepository.addMoney(
+      const result = await this._walletRepository.addMoney(
         amount,
         userId,
         "user",
@@ -816,7 +813,7 @@ export class UserService implements IUserService {
         userId
       );
 
-      let fetchedWallet = await this.walletRepository.getWalletByOwnerId(
+      let fetchedWallet = await this._walletRepository.getWalletByOwnerId(
         userId,
         "user"
       );
@@ -826,7 +823,7 @@ export class UserService implements IUserService {
       if (!fetchedWallet) {
         console.log(`Wallet not found for user ${userId}, creating new wallet`);
         try {
-          fetchedWallet = await this.walletRepository.createWallet(
+          fetchedWallet = await this._walletRepository.createWallet(
             userId,
             "user"
           );
@@ -887,7 +884,7 @@ export class UserService implements IUserService {
       const userId = options.userId;
 
       const result =
-        await this.walletTransactionRepository.getOwnerWalletTransactions({
+        await this._walletTransactionRepository.getOwnerWalletTransactions({
           page,
           limit,
           ownerId: userId,

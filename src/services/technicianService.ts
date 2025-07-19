@@ -48,19 +48,19 @@ import { IRating } from "../interfaces/Models/Irating";
 export class TechnicianService implements ITechnicianService {
   constructor(
     @inject("ITechnicianRepository")
-    private technicianRepository: ITechnicianRepository,
+    private _technicianRepository: ITechnicianRepository,
     @inject("ITempTechnicianRepository")
-    private tempTechnicianRepository: ITempTechnicianRepository,
-    @inject("IEmailService") private emailService: IEmailService,
-    @inject("IOTPService") private otpService: IOTPService,
-    @inject("IPasswordHasher") private passwordService: IPasswordHasher,
-    @inject("IJwtService") private jwtService: IJwtService,
-    @inject("IRedisService") private redisService: IRedisService,
-    @inject("IFileUploader") private fileUploader: IFileUploader,
-    @inject("IWalletRepository") private walletRepository: IWalletRepository,
+    private _tempTechnicianRepository: ITempTechnicianRepository,
+    @inject("IEmailService") private _emailService: IEmailService,
+    @inject("IOTPService") private _otpService: IOTPService,
+    @inject("IPasswordHasher") private _passwordService: IPasswordHasher,
+    @inject("IJwtService") private _jwtService: IJwtService,
+    @inject("IRedisService") private _redisService: IRedisService,
+    @inject("IFileUploader") private _fileUploader: IFileUploader,
+    @inject("IWalletRepository") private _walletRepository: IWalletRepository,
     @inject("IWalletTransactionRepository")
-    private walletTransactionRepository: IWalletTransactionRepository,
-    @inject("IRatingRepository") private ratingRepository: IRatingRepository
+    private _walletTransactionRepository: IWalletTransactionRepository,
+    @inject("IRatingRepository") private _ratingRepository: IRatingRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -71,19 +71,19 @@ export class TechnicianService implements ITechnicianService {
     email: string,
     purpose: OtpPurpose
   ): Promise<string> {
-    const otp = await this.otpService.generateOtp();
+    const otp = await this._otpService.generateOtp();
     console.log(`Generated Otp for ${purpose}:`, otp);
 
     const redisKey = this.getOtpRedisKey(email, purpose);
 
     console.log("generated RedisKey:", redisKey);
 
-    await this.redisService.set(redisKey, otp, OTP_EXPIRY_SECONDS);
+    await this._redisService.set(redisKey, otp, OTP_EXPIRY_SECONDS);
 
     if (purpose === OtpPurpose.PASSWORD_RESET) {
-      await this.emailService.sendPasswordResetEmail(email, otp);
+      await this._emailService.sendPasswordResetEmail(email, otp);
     } else {
-      await this.emailService.sendOtpEmail(email, otp);
+      await this._emailService.sendOtpEmail(email, otp);
     }
     return otp;
   }
@@ -94,7 +94,7 @@ export class TechnicianService implements ITechnicianService {
     purpose: OtpPurpose
   ): Promise<OtpVerificationResult> {
     const redisKey = this.getOtpRedisKey(email, purpose);
-    const storedOtp = await this.redisService.get(redisKey);
+    const storedOtp = await this._redisService.get(redisKey);
 
     if (!storedOtp) {
       return {
@@ -126,14 +126,14 @@ export class TechnicianService implements ITechnicianService {
       );
       console.log("data:", data);
       const { email, password } = data;
-      const result = await this.technicianRepository.findByEmail(email);
+      const result = await this._technicianRepository.findByEmail(email);
       if (result.success) {
         return {
           message: "technician already exists",
           success: false,
         };
       }
-      const hashedPassword = await this.passwordService.hash(password);
+      const hashedPassword = await this._passwordService.hash(password);
 
       const otp = await this.generateAndSendOtp(email, OtpPurpose.REGISTRATION);
 
@@ -146,9 +146,10 @@ export class TechnicianService implements ITechnicianService {
         expiresAt,
       } as ITempTechnician;
 
-      const response = await this.tempTechnicianRepository.createTempTechnician(
-        tempTechnicianData
-      );
+      const response =
+        await this._tempTechnicianRepository.createTempTechnician(
+          tempTechnicianData
+        );
 
       console.log("response in technicianService:", response);
       return {
@@ -178,7 +179,7 @@ export class TechnicianService implements ITechnicianService {
 
       if (OtpPurpose.REGISTRATION === purpose && tempTechnicianId) {
         const tempTechnicianResponse =
-          await this.tempTechnicianRepository.findTempTechnicianById(
+          await this._tempTechnicianRepository.findTempTechnicianById(
             tempTechnicianId
           );
         console.log("tempTechnicianResponse:", tempTechnicianResponse);
@@ -215,12 +216,12 @@ export class TechnicianService implements ITechnicianService {
           phone: tempTechnician.phone,
         };
 
-        const newTechnician = await this.technicianRepository.createTechnician(
+        const newTechnician = await this._technicianRepository.createTechnician(
           technicianData
         );
         console.log("new created technician:", newTechnician);
 
-        const newWallet = await this.walletRepository.createWallet(
+        const newWallet = await this._walletRepository.createWallet(
           newTechnician._id.toString(),
           "technician"
         );
@@ -239,7 +240,7 @@ export class TechnicianService implements ITechnicianService {
           technicianEmail,
           OtpPurpose.REGISTRATION
         );
-        await this.redisService.delete(redisKey);
+        await this._redisService.delete(redisKey);
 
         return {
           message: "OTP verified successfully, Technician registered",
@@ -250,7 +251,7 @@ export class TechnicianService implements ITechnicianService {
         console.log("password resetting in the technican Service");
         technicianEmail = email;
 
-        const technician = await this.technicianRepository.findByEmail(
+        const technician = await this._technicianRepository.findByEmail(
           technicianEmail
         );
         console.log("user from the password resetting:", technician);
@@ -287,13 +288,13 @@ export class TechnicianService implements ITechnicianService {
     try {
       console.log("entering resendotp function in the technician service");
       const tempTechnician =
-        await this.tempTechnicianRepository.findTempTechnicianByEmail(data);
+        await this._tempTechnicianRepository.findTempTechnicianByEmail(data);
       console.log(
         "temptechnician in resendotp technician service:",
         tempTechnician
       );
 
-      const technician = await this.technicianRepository.findByEmail(data);
+      const technician = await this._technicianRepository.findByEmail(data);
       console.log("technician in the resendOtp in the technician service");
 
       let purpose: OtpPurpose;
@@ -337,7 +338,7 @@ export class TechnicianService implements ITechnicianService {
       console.log("Entering forgotPassword in technician Service");
       const { email } = data;
 
-      const technician = await this.technicianRepository.findByEmail(email);
+      const technician = await this._technicianRepository.findByEmail(email);
       if (!technician.success || !technician.technicianData) {
         return {
           success: false,
@@ -370,7 +371,7 @@ export class TechnicianService implements ITechnicianService {
       console.log("Entering resetPassword in technician Service");
       const { email, password } = data;
 
-      const technician = await this.technicianRepository.findByEmail(email);
+      const technician = await this._technicianRepository.findByEmail(email);
       console.log("userData in resetPasssword:", technician);
       if (!technician.success || !technician.technicianData) {
         return {
@@ -379,9 +380,9 @@ export class TechnicianService implements ITechnicianService {
         };
       }
 
-      const hashedPassword = await this.passwordService.hash(password);
+      const hashedPassword = await this._passwordService.hash(password);
 
-      const updateResult = await this.technicianRepository.updatePassword(
+      const updateResult = await this._technicianRepository.updatePassword(
         email,
         hashedPassword
       );
@@ -394,7 +395,7 @@ export class TechnicianService implements ITechnicianService {
       }
 
       const redisKey = this.getOtpRedisKey(email, OtpPurpose.PASSWORD_RESET);
-      await this.redisService.delete(redisKey);
+      await this._redisService.delete(redisKey);
 
       return {
         success: true,
@@ -413,7 +414,7 @@ export class TechnicianService implements ITechnicianService {
     try {
       console.log("entering to the login credentials verifying in service");
       const { email, password } = data;
-      const technician = await this.technicianRepository.findByEmail(email);
+      const technician = await this._technicianRepository.findByEmail(email);
       console.log("technician", technician);
       if (!technician.success || !technician.technicianData) {
         return {
@@ -422,7 +423,7 @@ export class TechnicianService implements ITechnicianService {
         };
       }
 
-      const isPasswordValid = await this.passwordService.verify(
+      const isPasswordValid = await this._passwordService.verify(
         technician.technicianData.password,
         password
       );
@@ -445,12 +446,12 @@ export class TechnicianService implements ITechnicianService {
 
       const technicianId = String(technician.technicianData._id);
 
-      const access_token = this.jwtService.generateAccessToken(
+      const access_token = this._jwtService.generateAccessToken(
         technicianId,
         Roles.TECHNICIAN
       );
       console.log("access_token:", access_token);
-      const refresh_token = this.jwtService.generateRefreshToken(
+      const refresh_token = this._jwtService.generateRefreshToken(
         technicianId,
         Roles.TECHNICIAN
       );
@@ -497,7 +498,7 @@ export class TechnicianService implements ITechnicianService {
       };
 
       if (qualificationData.profilePhoto) {
-        const profilePhotoUrl = await this.fileUploader.uploadFile(
+        const profilePhotoUrl = await this._fileUploader.uploadFile(
           qualificationData.profilePhoto.path,
           { folder: "fixify/technicians/profile" }
         );
@@ -512,7 +513,7 @@ export class TechnicianService implements ITechnicianService {
       ) {
         const certificateUrls: string[] = [];
         for (const certificate of qualificationData.certificates) {
-          const certificateUrl = await this.fileUploader.uploadFile(
+          const certificateUrl = await this._fileUploader.uploadFile(
             certificate.path,
             { folder: "fixify/technicians/certificates" }
           );
@@ -526,7 +527,7 @@ export class TechnicianService implements ITechnicianService {
       }
 
       const result =
-        await this.technicianRepository.updateTechnicianQualification(
+        await this._technicianRepository.updateTechnicianQualification(
           technicianId,
           qualificationDataToSave
         );
@@ -566,7 +567,7 @@ export class TechnicianService implements ITechnicianService {
       console.log("Function fetching all the applcants");
       const page = options.page || 1;
       const limit = options.limit || 5;
-      const result = await this.technicianRepository.getAllApplicants({
+      const result = await this._technicianRepository.getAllApplicants({
         page,
         limit,
       });
@@ -606,7 +607,7 @@ export class TechnicianService implements ITechnicianService {
         technicianId
       );
 
-      const result = await this.technicianRepository.getTechnicianById(
+      const result = await this._technicianRepository.getTechnicianById(
         technicianId
       );
 
@@ -649,7 +650,7 @@ export class TechnicianService implements ITechnicianService {
       console.log("Verifying technician in service layer:", technicianId);
 
       const technicianResult =
-        await this.technicianRepository.getTechnicianById(technicianId);
+        await this._technicianRepository.getTechnicianById(technicianId);
 
       if (!technicianResult.success || !technicianResult.technicianData) {
         return {
@@ -661,7 +662,7 @@ export class TechnicianService implements ITechnicianService {
       const technician = technicianResult.technicianData;
 
       const verificationResult =
-        await this.technicianRepository.verifyTechnician(technicianId);
+        await this._technicianRepository.verifyTechnician(technicianId);
 
       if (!verificationResult.success) {
         return {
@@ -675,12 +676,12 @@ export class TechnicianService implements ITechnicianService {
           technicianName: technician.username,
         };
 
-        const emailContent = this.emailService.generateEmailContent(
+        const emailContent = this._emailService.generateEmailContent(
           EmailType.VERIFICATION_SUCCESS,
           emailData
         );
 
-        await this.emailService.sendEmail({
+        await this._emailService.sendEmail({
           to: technician.email,
           subject: `Welcome to ${APP_NAME} - Application Approved!`,
           html: emailContent.html,
@@ -713,7 +714,7 @@ export class TechnicianService implements ITechnicianService {
       console.log("Rejecting technician in service layer:", technicianId);
 
       const technicianResult =
-        await this.technicianRepository.getTechnicianById(technicianId);
+        await this._technicianRepository.getTechnicianById(technicianId);
 
       if (!technicianResult.success || !technicianResult.technicianData) {
         return {
@@ -724,7 +725,7 @@ export class TechnicianService implements ITechnicianService {
 
       const technician = technicianResult.technicianData;
 
-      const rejectionResult = await this.technicianRepository.rejectTechnician(
+      const rejectionResult = await this._technicianRepository.rejectTechnician(
         technicianId
       );
 
@@ -741,12 +742,12 @@ export class TechnicianService implements ITechnicianService {
           reason: reason || "Application did not meet our current requirements",
         };
 
-        const emailContent = this.emailService.generateEmailContent(
+        const emailContent = this._emailService.generateEmailContent(
           EmailType.APPLICATION_REJECTED,
           emailData
         );
 
-        await this.emailService.sendEmail({
+        await this._emailService.sendEmail({
           to: technician.email,
           subject: `${APP_NAME} - Application Update`,
           html: emailContent.html,
@@ -797,7 +798,7 @@ export class TechnicianService implements ITechnicianService {
       console.log("Function fetching all the technicians");
       const page = options.page || 1;
       const limit = options.limit || 5;
-      const result = await this.technicianRepository.getAllTechnicians({
+      const result = await this._technicianRepository.getAllTechnicians({
         page,
         limit,
         search: options.search,
@@ -865,7 +866,7 @@ export class TechnicianService implements ITechnicianService {
       }
 
       const nearbyTechnicians =
-        await this.technicianRepository.nearbyTechnicians(
+        await this._technicianRepository.nearbyTechnicians(
           designationId,
           userLongitude,
           userLatitude,
@@ -900,7 +901,7 @@ export class TechnicianService implements ITechnicianService {
     try {
       console.log("toogling hte technician status in the service layer:", id);
       const technicianResult =
-        await this.technicianRepository.getTechnicianById(id);
+        await this._technicianRepository.getTechnicianById(id);
       if (!technicianResult.success || !technicianResult.technicianData) {
         return {
           success: false,
@@ -920,7 +921,7 @@ export class TechnicianService implements ITechnicianService {
         currentTechnician.status === "Active" ? "Blocked" : "Active";
 
       const toggleResult =
-        await this.technicianRepository.toggleTechnicianStatus(id, newStatus);
+        await this._technicianRepository.toggleTechnicianStatus(id, newStatus);
 
       return {
         success: true,
@@ -950,7 +951,7 @@ export class TechnicianService implements ITechnicianService {
         techncianId
       );
 
-      let fetchedWallet = await this.walletRepository.getWalletByOwnerId(
+      let fetchedWallet = await this._walletRepository.getWalletByOwnerId(
         techncianId,
         "technician"
       );
@@ -962,7 +963,7 @@ export class TechnicianService implements ITechnicianService {
           `Wallet not found for user ${techncianId}, creating new wallet`
         );
         try {
-          fetchedWallet = await this.walletRepository.createWallet(
+          fetchedWallet = await this._walletRepository.createWallet(
             techncianId,
             "user"
           );
@@ -1026,7 +1027,7 @@ export class TechnicianService implements ITechnicianService {
       const userId = options.technicianId;
 
       const result =
-        await this.walletTransactionRepository.getOwnerWalletTransactions({
+        await this._walletTransactionRepository.getOwnerWalletTransactions({
           page,
           limit,
           ownerId: userId,
@@ -1076,7 +1077,7 @@ export class TechnicianService implements ITechnicianService {
       }
 
       const technicianResult =
-        await this.technicianRepository.getTechnicianById(technicianId);
+        await this._technicianRepository.getTechnicianById(technicianId);
       if (!technicianResult.success || !technicianResult.technicianData) {
         return {
           success: false,
@@ -1085,7 +1086,7 @@ export class TechnicianService implements ITechnicianService {
       }
 
       const reviewsResult =
-        await this.ratingRepository.getRatingsByTechnicianId(technicianId);
+        await this._ratingRepository.getRatingsByTechnicianId(technicianId);
 
       console.log(
         `Fetched ${reviewsResult.data.length} reviews for technician`
@@ -1135,7 +1136,7 @@ export class TechnicianService implements ITechnicianService {
       const page = options.page || 1;
       const limit = options.limit || 5;
       const result =
-        await this.technicianRepository.getTechniciansWithSubscriptions({
+        await this._technicianRepository.getTechniciansWithSubscriptions({
           page,
           limit,
           search: options.search,

@@ -19,16 +19,16 @@ import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
 export class AdminController implements IAdminController {
   constructor(
     @inject("IUserService")
-    private userService: IUserService,
+    private _userService: IUserService,
     @inject("IAdminService")
-    private adminService: IAdminService,
+    private _adminService: IAdminService,
     @inject("ITechnicianService")
-    private technicianService: ITechnicianService,
-    @inject("IBookingService") private bookingService: IBookingService,
-    @inject("IOfferService") private offerService: IOfferService,
-    @inject("ICouponService") private couponService: ICouponService,
+    private _technicianService: ITechnicianService,
+    @inject("IBookingService") private _bookingService: IBookingService,
+    @inject("IOfferService") private _offerService: IOfferService,
+    @inject("ICouponService") private _couponService: ICouponService,
     @inject("ISubscriptionPlanService")
-    private subscriptionPlanService: ISubscriptionPlanService
+    private _subscriptionPlanService: ISubscriptionPlanService
   ) {}
 
   async login(req: Request, res: Response): Promise<void> {
@@ -37,7 +37,7 @@ export class AdminController implements IAdminController {
       const data = req.body;
       console.log("data:", data);
 
-      const serviceResponse = await this.adminService.adminLogin(data);
+      const serviceResponse = await this._adminService.adminLogin(data);
       console.log("response from the admin login controller:", serviceResponse);
 
       if (serviceResponse.success) {
@@ -89,7 +89,7 @@ export class AdminController implements IAdminController {
       const search = (req.query.search as string) || undefined;
       const status = (req.query.status as string) || undefined;
 
-      const serviceResponse = await this.userService.getAllUsers({
+      const serviceResponse = await this._userService.getAllUsers({
         page,
         limit,
         search,
@@ -128,7 +128,7 @@ export class AdminController implements IAdminController {
     try {
       const { id } = req.params;
 
-      const serviceResponse = await this.userService.toggleUserStatus(id);
+      const serviceResponse = await this._userService.toggleUserStatus(id);
 
       if (serviceResponse.success) {
         res
@@ -162,7 +162,7 @@ export class AdminController implements IAdminController {
       const page = parseInt(req.query.page as string) || undefined;
       const limit = parseInt(req.query.limit as string) || undefined;
 
-      const serviceResponse = await this.technicianService.getAllApplicants({
+      const serviceResponse = await this._technicianService.getAllApplicants({
         page,
         limit,
       });
@@ -207,7 +207,7 @@ export class AdminController implements IAdminController {
         applicantId
       );
 
-      const serviceResponse = await this.technicianService.verifyTechnician(
+      const serviceResponse = await this._technicianService.verifyTechnician(
         applicantId
       );
       console.log("Response from verifying the applicant:", serviceResponse);
@@ -215,7 +215,7 @@ export class AdminController implements IAdminController {
       if (serviceResponse.success) {
         res
           .status(HTTP_STATUS.OK)
-          .json(createSuccessResponse(null, serviceResponse.message));
+          .json(createSuccessResponse(serviceResponse.message));
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
           ? HTTP_STATUS.NOT_FOUND
@@ -248,7 +248,7 @@ export class AdminController implements IAdminController {
       );
       console.log("Rejection reason:", reason);
 
-      const serviceResponse = await this.technicianService.rejectTechnician(
+      const serviceResponse = await this._technicianService.rejectTechnician(
         applicantId,
         reason
       );
@@ -257,7 +257,7 @@ export class AdminController implements IAdminController {
       if (serviceResponse.success) {
         res
           .status(HTTP_STATUS.OK)
-          .json(createSuccessResponse(null, serviceResponse.message));
+          .json(createSuccessResponse(serviceResponse.message));
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
           ? HTTP_STATUS.NOT_FOUND
@@ -284,9 +284,8 @@ export class AdminController implements IAdminController {
       const technicianId = req.params.technicianId;
       console.log("technicianId from the admin controller:", technicianId);
 
-      const serviceResponse = await this.technicianService.getTechnicianProfile(
-        technicianId
-      );
+      const serviceResponse =
+        await this._technicianService.getTechnicianProfile(technicianId);
       console.log("response from the technician profile:", serviceResponse);
 
       if (serviceResponse.success) {
@@ -327,7 +326,7 @@ export class AdminController implements IAdminController {
       const status = (req.query.status as string) || undefined;
       const designation = (req.query.designation as string) || undefined;
 
-      const serviceResponse = await this.technicianService.getAllTechnicians({
+      const serviceResponse = await this._technicianService.getAllTechnicians({
         page,
         limit,
         search,
@@ -371,7 +370,7 @@ export class AdminController implements IAdminController {
       const { id } = req.params;
 
       const serviceResponse =
-        await this.technicianService.toggleTechnicianStatus(id);
+        await this._technicianService.toggleTechnicianStatus(id);
 
       if (serviceResponse.success) {
         res
@@ -412,7 +411,7 @@ export class AdminController implements IAdminController {
 
       console.log("filter status in the admin controller:", filter);
 
-      const serviceResponse = await this.bookingService.getAllBookings({
+      const serviceResponse = await this._bookingService.getAllBookings({
         page,
         limit,
         search,
@@ -466,7 +465,7 @@ export class AdminController implements IAdminController {
 
       console.log("Fetching booking details for admin:", bookingId);
 
-      const serviceResponse = await this.bookingService.getBookingById(
+      const serviceResponse = await this._bookingService.getBookingById(
         bookingId,
         {}
       );
@@ -520,7 +519,7 @@ export class AdminController implements IAdminController {
 
       console.log("processed offer data:", offerData);
 
-      const serviceResponse = await this.offerService.addOffer(offerData);
+      const serviceResponse = await this._offerService.addOffer(offerData);
 
       if (serviceResponse.success) {
         res
@@ -554,7 +553,7 @@ export class AdminController implements IAdminController {
       const filterStatus = (req.query.filterStatus as string) || undefined;
       console.log("filterStatus in adminController:", filterStatus);
 
-      const serviceResponse = await this.offerService.getAllOffers({
+      const serviceResponse = await this._offerService.getAllOffers({
         page,
         limit,
         search,
@@ -593,7 +592,7 @@ export class AdminController implements IAdminController {
       const { id } = req.params;
       console.log("offerId in the block offer function:", id);
 
-      const serviceResponse = await this.offerService.blockOffer(id);
+      const serviceResponse = await this._offerService.blockOffer(id);
       console.log("response from the block offer function:", serviceResponse);
 
       if (serviceResponse.success) {
@@ -685,7 +684,7 @@ export class AdminController implements IAdminController {
         return;
       }
 
-      const serviceResponse = await this.offerService.updateOffer(
+      const serviceResponse = await this._offerService.updateOffer(
         offerId,
         updateData
       );
@@ -742,7 +741,7 @@ export class AdminController implements IAdminController {
 
       console.log("processed coupon data:", couponData);
 
-      const serviceResponse = await this.couponService.addCoupon(couponData);
+      const serviceResponse = await this._couponService.addCoupon(couponData);
       console.log(
         "response after adding the coupon in admin controller:",
         serviceResponse
@@ -779,7 +778,7 @@ export class AdminController implements IAdminController {
       const search = (req.query.search as string) || undefined;
       const filterStatus = (req.query.filterStatus as string) || undefined;
 
-      const serviceResponse = await this.couponService.getAllCoupons({
+      const serviceResponse = await this._couponService.getAllCoupons({
         page,
         limit,
         search,
@@ -818,7 +817,7 @@ export class AdminController implements IAdminController {
       const { id } = req.params;
       console.log("couponId in the block coupon function:", id);
 
-      const serviceResponse = await this.couponService.blockCoupon(id);
+      const serviceResponse = await this._couponService.blockCoupon(id);
       console.log("response from the block coupon function:", serviceResponse);
 
       if (serviceResponse.success) {
@@ -905,7 +904,7 @@ export class AdminController implements IAdminController {
         return;
       }
 
-      const serviceResponse = await this.couponService.updateCoupon(
+      const serviceResponse = await this._couponService.updateCoupon(
         couponId,
         updateData
       );
@@ -948,7 +947,7 @@ export class AdminController implements IAdminController {
       const { bookingId } = req.params;
       console.log("bookingId in the admin controller:", bookingId);
 
-      const serviceResponse = await this.bookingService.getRating(bookingId);
+      const serviceResponse = await this._bookingService.getRating(bookingId);
 
       if (serviceResponse.success) {
         res
@@ -1019,7 +1018,7 @@ export class AdminController implements IAdminController {
       }
 
       const serviceResponse =
-        await this.subscriptionPlanService.addSubscriptionPlan(
+        await this._subscriptionPlanService.addSubscriptionPlan(
           planName,
           commissionRate,
           monthlyPrice
@@ -1057,7 +1056,7 @@ export class AdminController implements IAdminController {
       const filterStatus = (req.query.filterStatus as string) || undefined;
 
       const serviceResponse =
-        await this.subscriptionPlanService.getAllSubscriptionPlans({
+        await this._subscriptionPlanService.getAllSubscriptionPlans({
           page,
           limit,
           search,
@@ -1099,7 +1098,7 @@ export class AdminController implements IAdminController {
       const filterPlan = (req.query.filterPlan as string) || undefined;
 
       const serviceResponse =
-        await this.technicianService.getTechniciansWithSubscriptions({
+        await this._technicianService.getTechniciansWithSubscriptions({
           page,
           limit,
           filterPlan,

@@ -7,7 +7,7 @@ import { ICouponRepository } from "../interfaces/Irepositories/IcouponRepository
 @injectable()
 export class CouponService implements ICouponService {
   constructor(
-    @inject("ICouponRepository") private couponRepository: ICouponRepository
+    @inject("ICouponRepository") private _couponRepository: ICouponRepository
   ) {}
 
   async addCoupon(data: CouponData): Promise<{
@@ -19,7 +19,7 @@ export class CouponService implements ICouponService {
       console.log("entering to the service function that adds the coupon");
       console.log("data received:", data);
 
-      const response = await this.couponRepository.addCoupon(data);
+      const response = await this._couponRepository.addCoupon(data);
       console.log(
         "response from the coupon repository in the coupon service:",
         response
@@ -63,7 +63,7 @@ export class CouponService implements ICouponService {
       console.log("Function fetching all the coupons");
       const page = options.page || 1;
       const limit = options.limit || 5;
-      const result = await this.couponRepository.getAllCoupons({
+      const result = await this._couponRepository.getAllCoupons({
         page,
         limit,
         search: options.search,
@@ -101,7 +101,7 @@ export class CouponService implements ICouponService {
   ): Promise<{ message: string; success: boolean; coupon?: ICoupon }> {
     try {
       console.log("entering the service layer that blocks the coupon:", id);
-      const coupon = await this.couponRepository.findCouponById(id);
+      const coupon = await this._couponRepository.findCouponById(id);
       console.log("coupon fetched from repository:", coupon);
 
       if (!coupon) {
@@ -112,7 +112,7 @@ export class CouponService implements ICouponService {
       }
 
       const newStatus = !coupon.status;
-      const response = await this.couponRepository.blockCoupon(id, newStatus);
+      const response = await this._couponRepository.blockCoupon(id, newStatus);
       console.log(
         "Response after toggling coupon status from the coupon repository:",
         response
@@ -154,7 +154,7 @@ export class CouponService implements ICouponService {
         "entering the coupon service which updates the existing coupon added by the admin"
       );
 
-      const offer = await this.couponRepository.findCouponById(couponId);
+      const offer = await this._couponRepository.findCouponById(couponId);
       if (!offer) {
         return {
           success: false,
@@ -162,7 +162,7 @@ export class CouponService implements ICouponService {
         };
       }
 
-      const updatedCoupon = await this.couponRepository.updateCoupon(
+      const updatedCoupon = await this._couponRepository.updateCoupon(
         couponId,
         updateData
       );
