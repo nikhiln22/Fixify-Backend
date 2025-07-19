@@ -1,8 +1,8 @@
 import { EmailType } from "../../config/emailConfig";
-import { EmailTemplate } from "../../types/email.types";
-import { EmailContentResult } from "./IemailTemplate";
+// import { EmailTemplate } from "../../types/email.types";
+// import { EmailContentResult } from "./IemailTemplate";
 
-export interface IemailService {
+export interface IEmailService {
   sendOtpEmail(toEmail: string, otp: string): Promise<void>;
   sendPasswordResetEmail(toEmail: string, otp: string): Promise<void>;
   sendEmail(emailData: {

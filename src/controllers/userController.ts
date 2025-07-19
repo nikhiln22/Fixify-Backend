@@ -1,25 +1,30 @@
-import { IuserController } from "../interfaces/Icontrollers/IuserController";
-import { IuserService } from "../interfaces/Iservices/IuserService";
+import { IUserController } from "../interfaces/Icontrollers/IuserController";
+import { IUserService } from "../interfaces/Iservices/IuserService";
 import { IServiceService } from "../interfaces/Iservices/IserviceService";
 import { IAddressService } from "../interfaces/Iservices/IaddressService";
-import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
+import { ITechnicianService } from "../interfaces/Iservices/ItechnicianService";
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
 import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
-import { IbookingService } from "../interfaces/Iservices/IbookingService";
-import { IchatService } from "../interfaces/Iservices/IchatService";
+import { IBookingService } from "../interfaces/Iservices/IbookingService";
+import { IChatService } from "../interfaces/Iservices/IchatService";
+import {
+  createSuccessResponse,
+  createErrorResponse,
+} from "../utils/responseHelper";
+import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
 
 @injectable()
-export class UserController implements IuserController {
+export class UserController implements IUserController {
   constructor(
-    @inject("IuserService") private userService: IuserService,
+    @inject("IUserService") private userService: IUserService,
     @inject("IServiceService") private serviceService: IServiceService,
     @inject("IAddressService") private addressService: IAddressService,
-    @inject("ItechnicianService") private technicianService: ItechnicianService,
+    @inject("ITechnicianService") private technicianService: ITechnicianService,
     @inject("ITimeSlotService") private timeSlotService: ITimeSlotService,
-    @inject("IbookingService") private bookingService: IbookingService,
-    @inject("IchatService") private chatService: IchatService
+    @inject("IBookingService") private bookingService: IBookingService,
+    @inject("IChatService") private chatService: IChatService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {
@@ -27,25 +32,33 @@ export class UserController implements IuserController {
       console.log("entering to the register function in userController");
       const data = req.body;
       console.log("data:", data);
-      const response = await this.userService.userSignUp(data);
-      console.log("response in register:", response);
-      if (response.success) {
-        res.status(response.status).json({
-          success: response.success,
-          message: response.message,
-          email: response.email,
-          tempUserId: response.tempUserId,
-        });
+      const serviceResponse = await this.userService.userSignUp(data);
+      console.log("response in register:", serviceResponse);
+      if (serviceResponse.success) {
+        res.status(HTTP_STATUS.CREATED).json(
+          createSuccessResponse(
+            {
+              email: serviceResponse.email,
+              tempUserId: serviceResponse.tempUserId,
+            },
+            serviceResponse.message
+          )
+        );
       } else {
         res
-          .status(response.status)
-          .json({ success: response.success, message: response.message });
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Registration failed"
+            )
+          );
       }
     } catch (error) {
       console.log("error occured", error);
+      console.log("error occurred", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ success: false, message: "Internal Server Error" });
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -54,20 +67,39 @@ export class UserController implements IuserController {
       console.log("entering into the verify otp function in userController");
       const data = req.body;
       console.log("userData in verifyOtp controller:", data);
-      const response = await this.userService.verifyOtp(data);
-      console.log("response in verifyOtp controller:", response);
-      if (response.success) {
-        res.status(response.status).json(response);
-      } else {
+      const serviceResponse = await this.userService.verifyOtp(data);
+      console.log("response in verifyOtp controller:", serviceResponse);
+      if (serviceResponse.success) {
         res
-          .status(response.status)
-          .json({ success: response.success, message: response.message });
+          .status(200)
+          .json(
+            createSuccessResponse(
+              serviceResponse.userData || null,
+              serviceResponse.message
+            )
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("expired")
+          ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("Invalid OTP")
+          ? HTTP_STATUS.UNAUTHORIZED
+          : HTTP_STATUS.BAD_REQUEST;
+
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "OTP verification failed"
+            )
+          );
       }
     } catch (error) {
       console.log("error occured:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ success: false, message: "Internal Server Error" });
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -75,25 +107,35 @@ export class UserController implements IuserController {
     try {
       console.log("entering into the resend otp functionality in the ");
       const { email } = req.body;
-      const response = await this.userService.resendOtp(email);
-      console.log("response from the resendotp controller:", response);
-      if (response.success) {
-        res.status(response.status).json({
-          success: response.success,
-          message: response.message,
-          email: response.email,
-          tempuserId: response.tempUserId,
-        });
+      const serviceResponse = await this.userService.resendOtp(email);
+      console.log("response from the resendotp controller:", serviceResponse);
+      if (serviceResponse.success) {
+        res.status(HTTP_STATUS.OK).json(
+          createSuccessResponse(
+            {
+              email: serviceResponse.email,
+              tempUserId: serviceResponse.tempUserId,
+            },
+            serviceResponse.message
+          )
+        );
       } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
         res
-          .status(response.status)
-          .json({ success: response.success, message: response.message });
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to resend OTP"
+            )
+          );
       }
     } catch (error) {
       console.log("error in the resendOtp controller", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ success: false, message: "Internal Server Error" });
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -101,36 +143,50 @@ export class UserController implements IuserController {
     try {
       console.log("entering the user login function in usercontroller");
       const data = req.body;
-      const response = await this.userService.login(data);
 
-      res.cookie(
-        `${response.role?.toLowerCase()}_refresh_token`,
-        response.refresh_token,
-        {
-          httpOnly: true,
-          secure: true,
-          sameSite: "strict",
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        }
-      );
+      const serviceResponse = await this.userService.login(data);
+      console.log("response from the login controller", serviceResponse);
 
-      console.log("response from the login controller", response);
-      if (response.success) {
-        res.status(response.status).json({
-          success: response.success,
-          message: response.message,
-          data: response,
-        });
+      if (serviceResponse.success) {
+        res.cookie(
+          `${serviceResponse.role?.toLowerCase()}_refresh_token`,
+          serviceResponse.refresh_token,
+          {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+          }
+        );
+
+        res.status(HTTP_STATUS.OK).json(
+          createSuccessResponse(
+            {
+              user: serviceResponse.user,
+              access_token: serviceResponse.access_token,
+              role: serviceResponse.role,
+            },
+            serviceResponse.message
+          )
+        );
       } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("invalid password")
+          ? HTTP_STATUS.UNAUTHORIZED
+          : serviceResponse.message?.includes("blocked")
+          ? HTTP_STATUS.FORBIDDEN
+          : HTTP_STATUS.BAD_REQUEST;
+
         res
-          .status(response.status)
-          .json({ success: response.success, message: response.message });
+          .status(statusCode)
+          .json(createErrorResponse(serviceResponse.message || "Login failed"));
       }
     } catch (error) {
       console.log("error:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ success: false, message: "Internal server error" });
+        .json(createErrorResponse("Internal server error"));
     }
   }
 
@@ -139,25 +195,35 @@ export class UserController implements IuserController {
       console.log("Entering forgotPassword function in userController");
       const { email } = req.body;
 
-      const response = await this.userService.forgotPassword({ email });
-      console.log("Response from forgotPassword service:", response);
+      const serviceResponse = await this.userService.forgotPassword({ email });
+      console.log("Response from forgotPassword service:", serviceResponse);
 
-      if (response.success) {
-        res.status(response.status).json({
-          success: response.success,
-          message: response.message,
-          email: response.email,
-        });
+      if (serviceResponse.success) {
+        res.status(HTTP_STATUS.OK).json(
+          createSuccessResponse(
+            {
+              email: serviceResponse.email,
+            },
+            serviceResponse.message
+          )
+        );
       } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
         res
-          .status(response.status)
-          .json({ success: response.success, message: response.message });
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to send reset email"
+            )
+          );
       }
     } catch (error) {
       console.log("Error in forgotPassword controller:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ success: false, message: "Internal Server Error" });
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -166,28 +232,33 @@ export class UserController implements IuserController {
       console.log("Entering resetPassword function in userController");
       const { email, password } = req.body;
 
-      const response = await this.userService.resetPassword({
+      const serviceResponse = await this.userService.resetPassword({
         email,
         password,
       });
+      console.log("Response from resetPassword service:", serviceResponse);
 
-      console.log("Response from resetPassword service:", response);
-
-      if (response.success) {
-        res.status(response.status).json({
-          success: response.success,
-          message: response.message,
-        });
-      } else {
+      if (serviceResponse.success) {
         res
-          .status(response.status)
-          .json({ success: response.success, message: response.message });
+          .status(HTTP_STATUS.OK)
+          .json(createSuccessResponse(serviceResponse.message));
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to reset password"
+            )
+          );
       }
     } catch (error) {
       console.log("Error in resetPassword controller:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ success: false, message: "Internal Server Error" });
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -198,24 +269,34 @@ export class UserController implements IuserController {
       const limit = parseInt(req.query.limit as string) || undefined;
       const search = (req.query.search as string) || undefined;
 
-      const result = await this.serviceService.getAllCategories({
+      const serviceResponse = await this.serviceService.getAllCategories({
         page,
         limit,
         search,
       });
 
-      console.log(
-        "result from the fetching all categories from the service service:",
-        result
-      );
-      res.status(result.status).json(result);
+      console.log("result from the fetching all categories:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to send chat message"
+            )
+          );
+      }
     } catch (error) {
-      console.error("Error occured while fetching the categories:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Error fetching users",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      console.log("Error sending chat:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -227,62 +308,90 @@ export class UserController implements IuserController {
       const search = (req.query.search as string) || undefined;
       const categoryId = req.query.category as string;
 
-      const result = await this.serviceService.getAllServices({
+      const serviceResponse = await this.serviceService.getAllServices({
         page,
         limit,
         search,
         categoryId,
       });
 
-      console.log("result from the services fetching controller:", result);
-      res.status(result.status).json(result);
+      console.log(
+        "result from the services fetching controller:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch services"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while fetching the services:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Error fetching users",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      console.log("error occurred while fetching the services:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Error fetching services"));
     }
   }
 
-  async getProfile(req: Request, res: Response): Promise<void> {
+  async getProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("Entering user profile fetch");
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       if (!userId) {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json({
-          message: "Unauthorized access",
-          success: false,
-          status: HTTP_STATUS.UNAUTHORIZED,
-        });
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Unauthorized access"));
         return;
       }
 
-      const response = await this.userService.getUserProfile(userId);
-      res.status(response.status).json(response);
+      const serviceResponse = await this.userService.getUserProfile(userId);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.user, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch profile"
+            )
+          );
+      }
     } catch (error) {
-      console.log("Error fetching technician profile:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server Error",
-        success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-      });
+      console.log("Error fetching user profile:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
-  async editProfile(req: Request, res: Response): Promise<void> {
+  async editProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("entering to the user editing the profile function");
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
 
       if (!userId) {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json({
-          message: "Unauthorized access",
-          success: false,
-          status: HTTP_STATUS.UNAUTHORIZED,
-        });
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Unauthorized access"));
         return;
       }
 
@@ -298,112 +407,176 @@ export class UserController implements IuserController {
       console.log("userId from the edit profile:", userId);
       console.log("Profile update data:", profileUpdateData);
 
-      const response = await this.userService.editProfile(
+      const serviceResponse = await this.userService.editProfile(
         userId,
         profileUpdateData
       );
 
-      console.log("response in the user editing profile function:", response);
-
-      res.status(response.status).json(response);
-    } catch (error) {
-      console.log("Error in editProfile controller:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
-    }
-  }
-
-  async getAddress(req: Request, res: Response): Promise<void> {
-    try {
-      console.log("entering to the controller for fetchning the user address");
-      const userId = (req as any).user?.id;
-      console.log("userId from the address fetching controller:", userId);
-      if (!userId) {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json({
-          success: false,
-          message: "UnAuthorized access",
-        });
-        return;
-      }
-      const response = await this.addressService.getUserAddresses(userId);
       console.log(
-        "response from the user controller fetchning the user address:",
-        response
+        "response in the user editing profile function:",
+        serviceResponse
       );
 
-      res.status(response.status).json(response);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.user, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to update profile"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while fetchning the user address:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server error",
-      });
+      console.log("Error in editProfile controller:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
-  async addAddress(req: Request, res: Response): Promise<void> {
+  async getAddress(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      console.log("entering to the controller for fetching the user address");
+      const userId = req.user?.id;
+      console.log("userId from the address fetching controller:", userId);
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Unauthorized access"));
+        return;
+      }
+
+      const serviceResponse = await this.addressService.getUserAddresses(
+        userId
+      );
+      console.log(
+        "response from the user controller fetching the user address:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch addresses"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error occurred while fetching the user address:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async addAddress(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("entering to the function adding the user address");
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
+
       if (!userId) {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json({
-          success: false,
-          message: "UnAuthorized access",
-        });
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Unauthorized access"));
         return;
       }
 
       const addressData = req.body;
-
       console.log("address Data received:", req.body);
 
-      const response = await this.addressService.addAddress(
+      const serviceResponse = await this.addressService.addAddress(
         userId,
         addressData
       );
 
-      console.log("response from the addService service:", response);
-      res.status(response.status).json(response);
+      console.log("response from the addAddress service:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.CREATED)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to add address"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while adding new address:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server error",
-      });
+      console.log("error occurred while adding new address:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
-  async deleteAddress(req: Request, res: Response): Promise<void> {
+  async deleteAddress(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("deleting the already existing address of the user");
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const addressId = req.params.addressId;
       console.log("userId from the address deleting controller:", userId);
       console.log("addressId from the address deleting controller:", addressId);
-      if (!userId && !addressId) {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json({
-          success: false,
-          message: "UnAuthorized access",
-        });
+
+      if (!userId || !addressId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Unauthorized access"));
         return;
       }
-      const response = await this.addressService.deleteAddress(
+
+      const serviceResponse = await this.addressService.deleteAddress(
         addressId,
         userId
       );
       console.log(
         "response from the user controller deleting the user address:",
-        response
+        serviceResponse
       );
-      res.status(response.status).json(response);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(createSuccessResponse(null, serviceResponse.message));
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to delete address"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while deleting the address:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server error",
-      });
+      console.log("error occurred while deleting the address:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -412,18 +585,38 @@ export class UserController implements IuserController {
       console.log("fetching the service details for the user");
       const serviceId = req.params.serviceId;
       console.log("serviceId in the user controller:", serviceId);
-      const response = await this.serviceService.getServiceDetails(serviceId);
-      console.log("response in the user controller:", response);
-      res.status(response.status).json(response);
+
+      const serviceResponse = await this.serviceService.getServiceDetails(
+        serviceId
+      );
+      console.log("response in the user controller:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch service details"
+            )
+          );
+      }
     } catch (error) {
       console.log(
-        "error occured while fetching the service details for the user:",
+        "error occurred while fetching the service details for the user:",
         error
       );
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -441,32 +634,48 @@ export class UserController implements IuserController {
         : 10;
 
       if (!designationId || isNaN(userLongitude) || isNaN(userLatitude)) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json({
-          success: false,
-          message:
-            "Invalid or missing parameters. Required: designationId, longitude (user's), latitude (user's)",
-        });
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              "Invalid or missing parameters. Required: designationId, longitude (user's), latitude (user's)"
+            )
+          );
         return;
       }
 
-      const response = await this.technicianService.getNearbyTechnicians(
+      const serviceResponse = await this.technicianService.getNearbyTechnicians(
         designationId,
         userLongitude,
         userLatitude,
         radius
       );
 
-      console.log("response in the user controller:", response);
-      res.status(response.status).json(response);
+      console.log("response in the user controller:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch nearby technicians"
+            )
+          );
+      }
     } catch (error) {
       console.log(
         "error occurred while fetching the nearby technicians for the user:",
         error
       );
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -475,180 +684,320 @@ export class UserController implements IuserController {
       console.log("finding the time slots for the user");
       const technicianId = req.params.technicianId;
       const includePast = req.query.includePast === "true";
-      console.log("techncianId in the user controller:", technicianId);
+      console.log("technicianId in the user controller:", technicianId);
 
       const userFilters = {
         isAvailable: true,
         isBooked: false,
       };
 
-      const response = await this.timeSlotService.getTimeSlots(
+      const serviceResponse = await this.timeSlotService.getTimeSlots(
         technicianId,
         includePast,
         userFilters
       );
       console.log(
         "response from the get time slots user controller:",
-        response
+        serviceResponse
       );
-      res.status(response.status).json(response);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch time slots"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while fetching the time slots for the user");
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server error",
-      });
+      console.log(
+        "error occurred while fetching the time slots for the user",
+        error
+      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
-  async bookService(req: Request, res: Response): Promise<void> {
+  async bookService(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("entering to the user booking the controller function");
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const data = req.body;
       console.log("Received Data:", data);
-      const response = await this.bookingService.bookService(userId, data);
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      const serviceResponse = await this.bookingService.bookService(
+        userId,
+        data
+      );
       console.log(
         "response from the user service booking controller:",
-        response
+        serviceResponse
       );
-      res.status(response.status).json(response);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.CREATED)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to book service"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error ocured while booking the service:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server error",
-      });
+      console.log("error occurred while booking the service:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
-  async verifyStripeSession(req: Request, res: Response): Promise<void> {
+  async verifyStripeSession(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log(
         "entering to the verifyStripeSession in the user controller function for booking"
       );
 
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const sessionId = req.params.sessionId as string;
       console.log("userId in the stripe verify function:", userId);
       console.log("sessionId in the stripe verify function:", sessionId);
 
-      const result = await this.bookingService.verifyStripeSession(
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      const serviceResponse = await this.bookingService.verifyStripeSession(
         sessionId,
         userId
       );
 
       console.log(
-        "result from the veryfying stripe session in user controller:",
-        result
+        "result from the verifying stripe session in user controller:",
+        serviceResponse
       );
 
-      res.status(result.status).json(result);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("not completed")
+          ? HTTP_STATUS.NOT_COMPLETED
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to verify payment"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while veryfying the stripe session:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      console.log("error occurred while verifying the stripe session:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
-  async getAllBookings(req: Request, res: Response): Promise<void> {
+  async getAllBookings(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log("entering to the all bookings fetching for the user");
       const page = parseInt(req.query.page as string) || undefined;
       const limit = parseInt(req.query.limit as string) || undefined;
+      const userId = req.user?.id;
+      const search = req.query.search as string;
+      const filter = req.query.filter as string;
 
-      const response = await this.bookingService.getAllBookings({
+      const serviceResponse = await this.bookingService.getAllBookings({
         page,
         limit,
+        userId,
+        search,
+        filter,
+        role: "user",
       });
       console.log(
         "result from the fetching all bookings for users controller:",
-        response
+        serviceResponse
       );
-      res.status(response.status).json(response);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch bookings"
+            )
+          );
+      }
     } catch (error) {
       console.error("Error in getAllBookings controller:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Error fetching Bookings",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Error fetching bookings"));
     }
   }
 
-  async getBookingDetails(req: Request, res: Response): Promise<void> {
+  async getBookingDetails(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log("Controller: Getting booking details");
 
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const { bookingId } = req.params;
 
       if (!userId) {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json({
-          success: false,
-          message: "User not authenticated",
-        });
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
         return;
       }
 
       if (!bookingId) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json({
-          success: false,
-          message: "Booking ID is required",
-        });
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("Booking ID is required"));
         return;
       }
 
       console.log("Fetching booking details for:", bookingId, "User:", userId);
 
-      const response = await this.bookingService.getBookingById(bookingId, {
-        userId: userId,
-      });
+      const serviceResponse = await this.bookingService.getBookingById(
+        bookingId,
+        {
+          userId: userId,
+        }
+      );
 
-      res.status(response.status).json(response);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch booking details"
+            )
+          );
+      }
     } catch (error) {
       console.error("Error in getBookingDetails controller:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal server error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error"));
     }
   }
 
-  async addMoney(req: Request, res: Response): Promise<void> {
+  async addMoney(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log(
         "entering the function which adds the money to the user wallet"
       );
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const { amount } = req.body;
       console.log("userId in the add money controller:", userId);
       console.log("Received Data:", amount);
-      const result = await this.userService.addMoney(userId, amount);
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      const serviceResponse = await this.userService.addMoney(userId, amount);
       console.log(
         "result in the usercontroller for adding money in wallet:",
-        result
+        serviceResponse
       );
-      res.status(result.status).json(result);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to add money to wallet"
+            )
+          );
+      }
     } catch (error) {
       console.log(
-        "error occured in the user controller while adding the money to wallet:",
+        "error occurred in the user controller while adding the money to wallet:",
         error
       );
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
-  async verifyWalletStripeSession(req: Request, res: Response): Promise<void> {
+  async verifyWalletStripeSession(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log(
         "entering to the verifyStripeSession in the user controller function for wallet"
       );
 
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const sessionId = req.params.sessionId as string;
       console.log("userId in the verify stripe session for wallet:", userId);
       console.log(
@@ -656,81 +1005,158 @@ export class UserController implements IuserController {
         sessionId
       );
 
-      const result = await this.userService.verifyWalletStripeSession(
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      const serviceResponse = await this.userService.verifyWalletStripeSession(
         sessionId,
         userId
       );
 
       console.log(
-        "result from the veryfying stripe session in user controller:",
-        result
+        "result from the verifying stripe session in user controller:",
+        serviceResponse
       );
 
-      res.status(result.status).json(result);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("not completed")
+          ? HTTP_STATUS.NOT_COMPLETED
+          : serviceResponse.message?.includes("not belong")
+          ? HTTP_STATUS.FORBIDDEN
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to verify wallet payment"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while veryfying the stripe session:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      console.log("error occurred while verifying the stripe session:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
-  async getWalletBalance(req: Request, res: Response): Promise<void> {
+  async getWalletBalance(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log(
         "fetching the wallet balance for the user in the user controller function"
       );
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       console.log(
         "userId in the getWalletBalance function in user controller:",
         userId
       );
-      const response = await this.userService.getWalletBalance(userId);
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      const serviceResponse = await this.userService.getWalletBalance(userId);
       console.log(
         "response in the user controller for fetching the user wallet balance:",
-        response
+        serviceResponse
       );
-      res.status(response.status).json(response);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch wallet balance"
+            )
+          );
+      }
     } catch (error) {
       console.log(
-        "error occured while fetching the user wallet balance:",
+        "error occurred while fetching the user wallet balance:",
         error
       );
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
-  async getWalletTransactions(req: Request, res: Response): Promise<void> {
+  async getWalletTransactions(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log("fetching the wallet transactions by the user:");
       const page = parseInt(req.query.page as string) || undefined;
       const limit = parseInt(req.query.limit as string) || undefined;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       console.log(
         "userId in the getwallet transactions in the user controller:",
         userId
       );
-      const response = await this.userService.getAllWalletTransactions({
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      const serviceResponse = await this.userService.getAllWalletTransactions({
         page,
         limit,
         userId,
       });
 
-      console.log("response in the getWalletTransactions:", response);
-      res.status(response.status).json(response);
+      console.log("response in the getWalletTransactions:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch wallet transactions"
+            )
+          );
+      }
     } catch (error) {
       console.log(
-        "error occured while fetching all the wallet transactions of the user:",
+        "error occurred while fetching all the wallet transactions of the user:",
         error
       );
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -739,25 +1165,45 @@ export class UserController implements IuserController {
       console.log("Fetching chat history for booking");
       const { bookingId } = req.params;
 
-      const response = await this.chatService.getChatHistory(bookingId);
+      const serviceResponse = await this.chatService.getChatHistory(bookingId);
 
-      res.status(response.status).json(response);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch chat history"
+            )
+          );
+      }
     } catch (error) {
       console.log("Error fetching chat history:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
-  async sendChat(req: Request, res: Response): Promise<void> {
+  async sendChat(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("Sending chat message to the technician");
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const { bookingId } = req.params;
       const { messageText, technicianId } = req.body;
-      const io = (req as any).io;
+      const io = req.io;
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
 
       const chatData = {
         userId,
@@ -767,31 +1213,51 @@ export class UserController implements IuserController {
         senderType: "user" as const,
       };
 
-      const response = await this.chatService.sendChat(chatData);
+      const serviceResponse = await this.chatService.sendChat(chatData);
 
-      if (response.success && io && response.data) {
-        io.to(`booking_${bookingId}`).emit("new_message", response.data);
+      if (serviceResponse.success && io && serviceResponse.data) {
+        io.to(`booking_${bookingId}`).emit("new_message", serviceResponse.data);
         console.log(`Message broadcasted to booking_${bookingId} room`);
       }
-      res.status(response.status).json(response);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to send the chat"
+            )
+          );
+      }
     } catch (error) {
       console.log("Error sending chat:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
-  async cancelBooking(req: Request, res: Response): Promise<void> {
+  async cancelBooking(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      console.log("entering to the user controller that cancells the booking");
+      console.log("entering to the user controller that cancels the booking");
       const { bookingId } = req.params;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const { cancellationReason } = req.body;
       console.log("received Data:", cancellationReason);
 
-      const response = await this.bookingService.cancelBookingByUser(
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      const serviceResponse = await this.bookingService.cancelBookingByUser(
         userId,
         bookingId,
         cancellationReason
@@ -799,64 +1265,141 @@ export class UserController implements IuserController {
 
       console.log(
         "response from the booking service after cancelling the booking by user:",
-        response
+        serviceResponse
       );
-      res.status(response.status).json(response);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to cancel booking"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while user cancelling the booking:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Servor Error",
-        success: false,
-      });
+      console.log("error occurred while user cancelling the booking:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
-  async rateService(req: Request, res: Response): Promise<void> {
+  async rateService(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("entering the user controller which rate the services");
       const { bookingId } = req.params;
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       const { rating, review } = req.body;
 
       console.log("received data:", { bookingId, userId, rating, review });
 
-      const response = await this.bookingService.rateService(
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      const serviceResponse = await this.bookingService.rateService(
         userId,
         bookingId,
         rating,
         review || ""
       );
 
-      res.status(response.status).json(response);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to rate service"
+            )
+          );
+      }
     } catch (error) {
       console.error("Error in rateService controller:", error);
-      res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error"));
     }
   }
 
-  async logout(req: Request, res: Response): Promise<void> {
+  async getRating(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entered the function which fetched the booking rating for a specified booking"
+      );
+      const { bookingId } = req.params;
+      console.log("bookingId in the user controller:", bookingId);
+
+      const serviceResponse = await this.bookingService.getRating(bookingId);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch rating"
+            )
+          );
+      }
+    } catch (error) {
+      console.log(
+        "error occurred while fetching the rating for a booking:",
+        error
+      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async logout(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("entering the logout function from the user auth controller");
-      const role = (req as any).user?.role;
+      const role = req.user?.role;
       console.log("role in the user auth controller:", role);
       res.clearCookie(`${role}_refresh_token`, {
         httpOnly: true,
         secure: true,
         sameSite: "strict",
       });
-      res.status(HTTP_STATUS.OK).json({
-        success: true,
-        message: "Logged out successfully",
-      });
+      res
+        .status(HTTP_STATUS.OK)
+        .json(createSuccessResponse(null, "Logged out successfully"));
     } catch (error) {
       console.log("error occured while user logging out:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: true,
-        message: "Internal server error occured",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error occurred"));
     }
   }
 }

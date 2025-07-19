@@ -1,25 +1,23 @@
 import { injectable, inject } from "tsyringe";
 import { Roles } from "../config/roles";
 import {
-  loginData,
-  loginResponse,
+  LoginData,
+  LoginResponse,
 } from "../interfaces/DTO/IServices/IadminService";
-import { IadminRepository } from "../interfaces/Irepositories/IadminRepository";
-import { IadminService } from "../interfaces/Iservices/IadminService";
-import { HTTP_STATUS } from "../utils/httpStatus";
-import { IjwtService } from "../interfaces/Ijwt/Ijwt";
+import { IAdminRepository } from "../interfaces/Irepositories/IadminRepository";
+import { IAdminService } from "../interfaces/Iservices/IadminService";
+import { IJwtService } from "../interfaces/Ijwt/Ijwt";
 import { IPasswordHasher } from "../interfaces/IpasswordHasher/IpasswordHasher";
 
-
 @injectable()
-export class AdminService implements IadminService {
+export class AdminService implements IAdminService {
   constructor(
-    @inject("IadminRepository") private adminRepository: IadminRepository,
+    @inject("IAdminRepository") private adminRepository: IAdminRepository,
     @inject("IPasswordHasher") private passwordService: IPasswordHasher,
-    @inject("IjwtService") private jwtService: IjwtService
+    @inject("IJwtService") private jwtService: IJwtService
   ) {}
 
-  async adminLogin(data: loginData): Promise<loginResponse> {
+  async adminLogin(data: LoginData): Promise<LoginResponse> {
     try {
       console.log(
         "entered into the adminLogin function in the adminAuthService"
@@ -36,7 +34,6 @@ export class AdminService implements IadminService {
         return {
           success: false,
           message: "admin not found",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -48,7 +45,6 @@ export class AdminService implements IadminService {
         return {
           success: false,
           message: "invalid Password",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -80,7 +76,6 @@ export class AdminService implements IadminService {
         access_token,
         refresh_token,
         role: Roles.ADMIN,
-        status: HTTP_STATUS.OK,
         data: safeAdminData,
       };
     } catch (error) {
@@ -88,7 +83,6 @@ export class AdminService implements IadminService {
       return {
         success: false,
         message: "error occured during the adminLogin",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }

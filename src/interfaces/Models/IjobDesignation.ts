@@ -1,6 +1,6 @@
 import { Document } from "mongoose";
 
-export interface IjobDesignation extends Document {
+export interface IJobDesignation extends Document {
   designation: string;
-  status: Boolean;
+  status: boolean;
 }

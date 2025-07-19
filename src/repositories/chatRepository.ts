@@ -1,5 +1,5 @@
 import { CreateChatData } from "../interfaces/DTO/IRepository/IchatRepository";
-import { IchatRepository } from "../interfaces/Irepositories/IchatRepository";
+import { IChatRepository } from "../interfaces/Irepositories/IchatRepository";
 import { IChat } from "../interfaces/Models/Ichat";
 import chat from "../models/chatModel";
 import { BaseRepository } from "./baseRepository";
@@ -7,7 +7,7 @@ import mongoose from "mongoose";
 
 export class ChatRepository
   extends BaseRepository<IChat>
-  implements IchatRepository
+  implements IChatRepository
 {
   constructor() {
     super(chat);

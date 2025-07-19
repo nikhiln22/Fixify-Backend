@@ -1,8 +1,8 @@
-import { offerData } from "../DTO/IServices/IofferService";
+import { OfferData } from "../DTO/IServices/IofferService";
 import { IOffer } from "../Models/Ioffers";
 
 export interface IOfferRepository {
-  addOffer(data: offerData): Promise<IOffer>;
+  addOffer(data: OfferData): Promise<IOffer>;
   getAllOffers(options: {
     page?: number;
     limit?: number;

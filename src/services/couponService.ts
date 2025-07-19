@@ -1,8 +1,7 @@
 import { ICouponService } from "../interfaces/Iservices/IcouponService";
 import { inject, injectable } from "tsyringe";
-import { HTTP_STATUS } from "../utils/httpStatus";
 import { ICoupon } from "../interfaces/Models/Icoupon";
-import { couponData } from "../interfaces/DTO/IServices/IcouponService";
+import { CouponData } from "../interfaces/DTO/IServices/IcouponService";
 import { ICouponRepository } from "../interfaces/Irepositories/IcouponRepository";
 
 @injectable()
@@ -11,9 +10,8 @@ export class CouponService implements ICouponService {
     @inject("ICouponRepository") private couponRepository: ICouponRepository
   ) {}
 
-  async addCoupon(data: couponData): Promise<{
+  async addCoupon(data: CouponData): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: ICoupon;
   }> {
@@ -29,7 +27,6 @@ export class CouponService implements ICouponService {
 
       return {
         success: true,
-        status: HTTP_STATUS.CREATED,
         message: "coupon created successfully",
         data: response,
       };
@@ -37,7 +34,6 @@ export class CouponService implements ICouponService {
       console.log("error occured while add new coupon:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to create coupon",
       };
     }
@@ -50,7 +46,6 @@ export class CouponService implements ICouponService {
     filterStatus?: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       offers: ICoupon[];
@@ -79,7 +74,6 @@ export class CouponService implements ICouponService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "Coupons fetched successfully",
         data: {
           offers: result.data,
@@ -97,7 +91,6 @@ export class CouponService implements ICouponService {
       console.error("Error fetching coupons:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Something went wrong while fetching coupons",
       };
     }
@@ -105,7 +98,7 @@ export class CouponService implements ICouponService {
 
   async blockCoupon(
     id: string
-  ): Promise<{ message: string; status: number; offer?: ICoupon }> {
+  ): Promise<{ message: string; success: boolean; coupon?: ICoupon }> {
     try {
       console.log("entering the service layer that blocks the coupon:", id);
       const coupon = await this.couponRepository.findCouponById(id);
@@ -113,28 +106,28 @@ export class CouponService implements ICouponService {
 
       if (!coupon) {
         return {
+          success: false,
           message: "coupon not found",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
       const newStatus = !coupon.status;
-      let response = await this.couponRepository.blockCoupon(id, newStatus);
+      const response = await this.couponRepository.blockCoupon(id, newStatus);
       console.log(
         "Response after toggling coupon status from the coupon repository:",
         response
       );
 
       return {
+        success: true,
         message: `Coupon successfully ${newStatus ? "unblocked" : "blocked"}`,
-        offer: { ...coupon.toObject(), status: newStatus },
-        status: HTTP_STATUS.OK,
+        coupon: { ...coupon.toObject(), status: newStatus },
       };
     } catch (error) {
       console.error("Error toggling coupon status:", error);
       return {
         message: "Failed to toggle coupon status",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        success: false,
       };
     }
   }
@@ -152,7 +145,6 @@ export class CouponService implements ICouponService {
       valid_until?: Date;
     }
   ): Promise<{
-    status: number;
     success: boolean;
     message: string;
     data?: ICoupon;
@@ -166,7 +158,6 @@ export class CouponService implements ICouponService {
       if (!offer) {
         return {
           success: false,
-          status: HTTP_STATUS.NOT_FOUND,
           message: "coupon not found",
         };
       }
@@ -179,14 +170,12 @@ export class CouponService implements ICouponService {
       if (!updatedCoupon) {
         return {
           success: false,
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           message: "Failed to update Coupon",
         };
       }
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "Coupon updated successfully",
         data: updatedCoupon,
       };
@@ -194,7 +183,6 @@ export class CouponService implements ICouponService {
       console.error("Error updating coupon:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to update coupon",
       };
     }

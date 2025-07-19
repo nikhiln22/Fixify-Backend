@@ -1,11 +1,10 @@
-import { Itechnician } from "../../../interfaces/Models/Itechnician";
+import { ITechnician } from "../../../interfaces/Models/Itechnician";
 import { ITimeSlot } from "../../Models/ItimeSlot";
 
 export interface RegisterResponse {
   success: boolean;
-  userData?: Itechnician;
+  userData?: ITechnician;
   message: string;
-  status: number;
 }
 
 export interface SignupTechnicianData {
@@ -17,11 +16,10 @@ export interface SignupTechnicianData {
   updatedAt?: Date;
 }
 
-export interface tempTechnicianResponse {
+export interface TempTechnicianResponse {
   tempTechnicianId?: string;
   email?: string;
   success: boolean;
-  status: number;
   message?: string;
 }
 
@@ -30,27 +28,25 @@ export interface ResendOtpResponse {
   message: string;
   tempTechnicianId?: string;
   email?: string;
-  status: number;
 }
 
-export interface verifyOtpData {
+export interface VerifyOtpData {
   tempTechnicianId?: string;
   otp: string;
   email?: string;
   purpose?: string;
 }
 
-export interface loginResponse {
+export interface LoginResponse {
   success: boolean;
-  status: number;
   message: string;
   role?: string;
   access_token?: string;
   refresh_token?: string;
-  technician?: Itechnician;
+  technician?: ITechnician;
 }
 
-export interface loginData {
+export interface LoginData {
   email: string;
   password: string;
 }
@@ -63,7 +59,6 @@ export interface ForgotPasswordResponse {
   success: boolean;
   message: string;
   email?: string;
-  status: number;
 }
 
 export interface ResetPasswordData {
@@ -74,7 +69,6 @@ export interface ResetPasswordData {
 export interface ResetPasswordResponse {
   success: boolean;
   message: string;
-  status: number;
 }
 
 export interface TechnicianQualification {
@@ -91,10 +85,9 @@ export interface TechnicianQualification {
 
 export interface TechnicianQualificationUpdateResponse {
   success: boolean;
-  status: number;
   message: string;
   technician?: Pick<
-    Itechnician,
+    ITechnician,
     | "yearsOfExperience"
     | "Designation"
     | "About"
@@ -107,7 +100,6 @@ export interface TechnicianQualificationUpdateResponse {
 export interface TechnicianProfileResponse {
   message: string;
   success: boolean;
-  status: number;
   technician?: {
     username?: string;
     email?: string;
@@ -125,25 +117,21 @@ export interface TechnicianProfileResponse {
 export interface VerifyTechnicianServiceResponse {
   success: boolean;
   message: string;
-  status: number;
 }
 
 export interface RejectTechnicianServiceResponse {
   success: boolean;
   message: string;
-  status: number;
 }
 
 export interface ToggleTechnicianStatusResponse {
   message: string;
   success: boolean;
-  status: number;
-  technician?: Itechnician;
+  technician?: ITechnician;
 }
 
 export interface AddTimeSlotsResult {
   success: boolean;
   message: string;
-  status: number;
   data?: ITimeSlot[];
 }

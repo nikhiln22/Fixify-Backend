@@ -1,8 +1,7 @@
-import { IjobDesignation } from "../../Models/IjobDesignation";
+import { IJobDesignation } from "../../Models/IjobDesignation";
 
 export interface DesignationResponse {
-  success?:boolean,
-  status: number;
+  success: boolean;
   message: string;
-  data?: IjobDesignation | null;
+  data?: IJobDesignation | null;
 }

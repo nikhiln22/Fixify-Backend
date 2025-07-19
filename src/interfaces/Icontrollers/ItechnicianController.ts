@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 
-export interface ItechnicianController {
+export interface ITechnicianController {
   register(req: Request, res: Response): Promise<void>;
   verifyOtp(req: Request, res: Response): Promise<void>;
   resendOtp(req: Request, res: Response): Promise<void>;
@@ -21,5 +21,7 @@ export interface ItechnicianController {
   getChatHistory(req: Request, res: Response): Promise<void>;
   sendChat(req: Request, res: Response): Promise<void>;
   cancelBooking(req: Request, res: Response): Promise<void>;
+  getReviews(req: Request, res: Response): Promise<void>;
+  getRating(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

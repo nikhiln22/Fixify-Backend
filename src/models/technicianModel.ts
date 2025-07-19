@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
-import { Itechnician } from "../interfaces/Models/Itechnician";
+import { ITechnician } from "../interfaces/Models/Itechnician";
 
-const technicianSchema: Schema<Itechnician> = new Schema(
+const technicianSchema: Schema<ITechnician> = new Schema(
   {
     username: {
       type: String,
@@ -21,7 +21,7 @@ const technicianSchema: Schema<Itechnician> = new Schema(
     },
     status: {
       type: String,
-      enum:["Active","Blocked"]
+      enum: ["Active", "Blocked"],
     },
     is_verified: {
       type: Boolean,
@@ -32,7 +32,7 @@ const technicianSchema: Schema<Itechnician> = new Schema(
     },
     Designation: {
       type: mongoose.Schema.Types.ObjectId,
-      ref:"jobDesignation"
+      ref: "jobDesignation",
     },
     About: {
       type: String,
@@ -54,12 +54,16 @@ const technicianSchema: Schema<Itechnician> = new Schema(
         type: String,
       },
     ],
+    SubscriptionPlanId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "subscriptionPlan",
+    },
   },
   { timestamps: true }
 );
 
 technicianSchema.index({ longitude: 1, latitude: 1 });
 
-const technician = mongoose.model<Itechnician>("technician", technicianSchema);
+const technician = mongoose.model<ITechnician>("technician", technicianSchema);
 
 export default technician;

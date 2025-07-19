@@ -9,8 +9,8 @@ import { EmailType, APP_NAME } from "../config/emailConfig";
 import {
   ForgotPasswordRequest,
   ForgotPasswordResponse,
-  loginData,
-  loginResponse,
+  LoginData,
+  LoginResponse,
   RegisterResponse,
   RejectTechnicianServiceResponse,
   ResendOtpResponse,
@@ -20,45 +20,47 @@ import {
   TechnicianProfileResponse,
   TechnicianQualification,
   TechnicianQualificationUpdateResponse,
-  tempTechnicianResponse,
+  TempTechnicianResponse,
   ToggleTechnicianStatusResponse,
-  verifyOtpData,
+  VerifyOtpData,
   VerifyTechnicianServiceResponse,
 } from "../interfaces/DTO/IServices/ItechnicianService";
-import { ItempTechnicianRepository } from "../interfaces/Irepositories/ItempTechnicianRepository";
-import { ItechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
-import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
-import { ItempTechnician } from "../interfaces/Models/ItempTechnician";
-import { IemailService } from "../interfaces/Iemail/Iemail";
-import { HTTP_STATUS } from "../utils/httpStatus";
-import { IjwtService } from "../interfaces/Ijwt/Ijwt";
+import { ITempTechnicianRepository } from "../interfaces/Irepositories/ItempTechnicianRepository";
+import { ITechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
+import { ITechnicianService } from "../interfaces/Iservices/ItechnicianService";
+import { ITempTechnician } from "../interfaces/Models/ItempTechnician";
+import { IEmailService } from "../interfaces/Iemail/Iemail";
+import { IJwtService } from "../interfaces/Ijwt/Ijwt";
 import { IOTPService } from "../interfaces/Iotp/IOTP";
 import { IPasswordHasher } from "../interfaces/IpasswordHasher/IpasswordHasher";
-import { IredisService } from "../interfaces/Iredis/Iredis";
+import { IRedisService } from "../interfaces/Iredis/Iredis";
 import { OtpVerificationResult } from "../interfaces/Iotp/IOTP";
 import { inject, injectable } from "tsyringe";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
-import { Itechnician } from "../interfaces/Models/Itechnician";
+import { ITechnician } from "../interfaces/Models/Itechnician";
 import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
 import { IWalletTransaction } from "../interfaces/Models/IwalletTransaction";
 import { IWalletTransactionRepository } from "../interfaces/Irepositories/IwalletTransactionRepository";
+import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
+import { IRating } from "../interfaces/Models/Irating";
 
 @injectable()
-export class TechnicianService implements ItechnicianService {
+export class TechnicianService implements ITechnicianService {
   constructor(
-    @inject("ItechnicianRepository")
-    private technicianRepository: ItechnicianRepository,
-    @inject("ItempTechnicianRepository")
-    private tempTechnicianRepository: ItempTechnicianRepository,
-    @inject("IemailService") private emailService: IemailService,
+    @inject("ITechnicianRepository")
+    private technicianRepository: ITechnicianRepository,
+    @inject("ITempTechnicianRepository")
+    private tempTechnicianRepository: ITempTechnicianRepository,
+    @inject("IEmailService") private emailService: IEmailService,
     @inject("IOTPService") private otpService: IOTPService,
     @inject("IPasswordHasher") private passwordService: IPasswordHasher,
-    @inject("IjwtService") private jwtService: IjwtService,
-    @inject("IredisService") private redisService: IredisService,
+    @inject("IJwtService") private jwtService: IJwtService,
+    @inject("IRedisService") private redisService: IRedisService,
     @inject("IFileUploader") private fileUploader: IFileUploader,
     @inject("IWalletRepository") private walletRepository: IWalletRepository,
     @inject("IWalletTransactionRepository")
-    private walletTransactionRepository: IWalletTransactionRepository
+    private walletTransactionRepository: IWalletTransactionRepository,
+    @inject("IRatingRepository") private ratingRepository: IRatingRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -98,7 +100,6 @@ export class TechnicianService implements ItechnicianService {
       return {
         success: false,
         message: "OTP has expired or doesn't exist. Please request a new one",
-        status: HTTP_STATUS.BAD_REQUEST,
       };
     }
 
@@ -106,33 +107,30 @@ export class TechnicianService implements ItechnicianService {
       return {
         success: false,
         message: "Invalid OTP",
-        status: HTTP_STATUS.UNAUTHORIZED,
       };
     }
 
     return {
       success: true,
       message: "OTP verified successfully",
-      status: HTTP_STATUS.OK,
       email,
     };
   }
 
   async technicianSignUp(
     data: SignupTechnicianData
-  ): Promise<tempTechnicianResponse> {
+  ): Promise<TempTechnicianResponse> {
     try {
       console.log(
         "entering to the techniciansignup function in the technicianauth service"
       );
       console.log("data:", data);
       const { email, password } = data;
-      let result = await this.technicianRepository.findByEmail(email);
+      const result = await this.technicianRepository.findByEmail(email);
       if (result.success) {
         return {
           message: "technician already exists",
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
       const hashedPassword = await this.passwordService.hash(password);
@@ -146,7 +144,7 @@ export class TechnicianService implements ItechnicianService {
         ...data,
         password: hashedPassword,
         expiresAt,
-      } as ItempTechnician;
+      } as ITempTechnician;
 
       const response = await this.tempTechnicianRepository.createTempTechnician(
         tempTechnicianData
@@ -158,7 +156,6 @@ export class TechnicianService implements ItechnicianService {
         email,
         tempTechnicianId: response.tempTechnicianId.toString(),
         success: true,
-        status: HTTP_STATUS.CREATED,
       };
     } catch (error) {
       console.log("Error during technician signup:", error);
@@ -166,7 +163,7 @@ export class TechnicianService implements ItechnicianService {
     }
   }
 
-  async verifyOtp(data: verifyOtpData): Promise<RegisterResponse> {
+  async verifyOtp(data: VerifyOtpData): Promise<RegisterResponse> {
     try {
       console.log("entering to the verifyotp function in technicianService");
 
@@ -193,7 +190,6 @@ export class TechnicianService implements ItechnicianService {
           return {
             success: false,
             message: "Temporary Technician not found or expired",
-            status: HTTP_STATUS.NOT_FOUND,
           };
         }
         const tempTechnician = tempTechnicianResponse.tempTechnicianData;
@@ -209,7 +205,6 @@ export class TechnicianService implements ItechnicianService {
           return {
             success: false,
             message: verificationResult.message,
-            status: verificationResult.status,
           };
         }
 
@@ -249,7 +244,6 @@ export class TechnicianService implements ItechnicianService {
         return {
           message: "OTP verified successfully, Technician registered",
           success: true,
-          status: HTTP_STATUS.CREATED,
           userData: safeTechnician,
         };
       } else if (OtpPurpose.PASSWORD_RESET === purpose && email) {
@@ -264,7 +258,6 @@ export class TechnicianService implements ItechnicianService {
           return {
             success: false,
             message: "Technician not found with this email",
-            status: HTTP_STATUS.NOT_FOUND,
           };
         }
 
@@ -279,7 +272,6 @@ export class TechnicianService implements ItechnicianService {
         return {
           success: false,
           message: "Invalid verification request",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
     } catch (error) {
@@ -287,7 +279,6 @@ export class TechnicianService implements ItechnicianService {
       return {
         success: false,
         message: "An error occured during the otp verification",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -315,7 +306,6 @@ export class TechnicianService implements ItechnicianService {
         return {
           success: false,
           message: "technician not found",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -330,14 +320,12 @@ export class TechnicianService implements ItechnicianService {
             ? "registration"
             : "password reset"
         }`,
-        status: HTTP_STATUS.OK,
       };
     } catch (error) {
       console.log("error occured while resending the otp", error);
       return {
         success: false,
         message: "Error occured while resending the otp",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -354,7 +342,6 @@ export class TechnicianService implements ItechnicianService {
         return {
           success: false,
           message: "Technician not found with this email",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -368,14 +355,12 @@ export class TechnicianService implements ItechnicianService {
         success: true,
         message: "Password reset OTP sent to your email",
         email,
-        status: HTTP_STATUS.OK,
       };
     } catch (error) {
       console.log("Error during forgot password:", error);
       return {
         success: false,
         message: "An error occurred during password reset process",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -391,7 +376,6 @@ export class TechnicianService implements ItechnicianService {
         return {
           success: false,
           message: "technician not found with this email",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -406,7 +390,6 @@ export class TechnicianService implements ItechnicianService {
         return {
           success: false,
           message: "Failed to update password",
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         };
       }
 
@@ -416,19 +399,17 @@ export class TechnicianService implements ItechnicianService {
       return {
         success: true,
         message: "Password reset successful",
-        status: HTTP_STATUS.OK,
       };
     } catch (error) {
       console.log("Error during password reset:", error);
       return {
         success: false,
         message: "An error occurred during password reset",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
 
-  async login(data: loginData): Promise<loginResponse> {
+  async login(data: LoginData): Promise<LoginResponse> {
     try {
       console.log("entering to the login credentials verifying in service");
       const { email, password } = data;
@@ -438,7 +419,6 @@ export class TechnicianService implements ItechnicianService {
         return {
           success: false,
           message: "Technician not found",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -453,7 +433,6 @@ export class TechnicianService implements ItechnicianService {
         return {
           success: false,
           message: "invalid password",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -461,7 +440,6 @@ export class TechnicianService implements ItechnicianService {
         return {
           success: false,
           message: "Your account has been blocked. Please contact support.",
-          status: HTTP_STATUS.UNAUTHORIZED,
         };
       }
 
@@ -484,15 +462,13 @@ export class TechnicianService implements ItechnicianService {
         access_token,
         refresh_token,
         role: Roles.TECHNICIAN,
-        status: HTTP_STATUS.OK,
         technician: technician.technicianData,
       };
     } catch (error) {
-      console.log("error");
+      console.log("error", error);
       return {
         success: false,
         message: "error occured during the login",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -560,7 +536,6 @@ export class TechnicianService implements ItechnicianService {
       return {
         message: "Qualification submitted successfully",
         success: true,
-        status: HTTP_STATUS.OK,
         technician: result.technician,
       };
     } catch (error) {
@@ -568,17 +543,15 @@ export class TechnicianService implements ItechnicianService {
       return {
         message: "Failed to submit qualification",
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
 
   async getAllApplicants(options: { page?: number; limit?: number }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
-      applicants: Itechnician[];
+      applicants: ITechnician[];
       pagination: {
         total: number;
         page: number;
@@ -602,7 +575,6 @@ export class TechnicianService implements ItechnicianService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "technicians fetched successfully",
         data: {
           applicants: result.data,
@@ -620,7 +592,6 @@ export class TechnicianService implements ItechnicianService {
       console.error("Error fetching applicants:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Something went wrong while fetching applicants",
       };
     }
@@ -643,14 +614,12 @@ export class TechnicianService implements ItechnicianService {
         return {
           message: result.message || "Technician not found",
           success: false,
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
       return {
         message: "Technician profile fetched successfully",
         success: true,
-        status: HTTP_STATUS.OK,
         technician: {
           username: result.technicianData.username,
           email: result.technicianData.email,
@@ -669,7 +638,6 @@ export class TechnicianService implements ItechnicianService {
       return {
         message: "Failed to fetch technician profile",
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -687,7 +655,6 @@ export class TechnicianService implements ItechnicianService {
         return {
           success: false,
           message: "Technician not found",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -700,7 +667,6 @@ export class TechnicianService implements ItechnicianService {
         return {
           success: false,
           message: verificationResult.message,
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -729,14 +695,12 @@ export class TechnicianService implements ItechnicianService {
       return {
         success: true,
         message: "Technician verified successfully and notification email sent",
-        status: HTTP_STATUS.OK,
       };
     } catch (error) {
       console.log("Error during technician verification:", error);
       return {
         success: false,
         message: "An error occurred during technician verification",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -755,7 +719,6 @@ export class TechnicianService implements ItechnicianService {
         return {
           success: false,
           message: "Technician not found",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -769,7 +732,6 @@ export class TechnicianService implements ItechnicianService {
         return {
           success: false,
           message: rejectionResult.message,
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -800,14 +762,12 @@ export class TechnicianService implements ItechnicianService {
         success: true,
         message:
           "Technician application rejected successfully and notification email sent",
-        status: HTTP_STATUS.OK,
       };
     } catch (error) {
       console.log("Error during technician rejection:", error);
       return {
         success: false,
         message: "An error occurred during technician rejection",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -820,10 +780,9 @@ export class TechnicianService implements ItechnicianService {
     designation?: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
-      technicians: Itechnician[];
+      technicians: ITechnician[];
       pagination: {
         total: number;
         page: number;
@@ -850,7 +809,6 @@ export class TechnicianService implements ItechnicianService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "Technicians fetched successfully",
         data: {
           technicians: result.data,
@@ -868,7 +826,6 @@ export class TechnicianService implements ItechnicianService {
       console.error("Error fetching technicians:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Something went wrong while fetching users",
       };
     }
@@ -881,9 +838,8 @@ export class TechnicianService implements ItechnicianService {
     radius: number
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
-    data?: Itechnician[];
+    data?: ITechnician[];
   }> {
     try {
       console.log(
@@ -905,7 +861,6 @@ export class TechnicianService implements ItechnicianService {
           success: false,
           message:
             "Missing required parameters: designationId, longitude, or latitude",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -925,7 +880,6 @@ export class TechnicianService implements ItechnicianService {
       return {
         success: true,
         message: `Found ${nearbyTechnicians.length} nearby technicians within ${radius}km`,
-        status: HTTP_STATUS.OK,
         data: nearbyTechnicians,
       };
     } catch (error) {
@@ -936,7 +890,6 @@ export class TechnicianService implements ItechnicianService {
       return {
         success: false,
         message: "An error occurred while fetching nearby technicians",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -952,7 +905,6 @@ export class TechnicianService implements ItechnicianService {
         return {
           success: false,
           message: "TeChnician not found",
-          status: HTTP_STATUS.OK,
         };
       }
       const currentTechnician = technicianResult.technicianData;
@@ -961,7 +913,6 @@ export class TechnicianService implements ItechnicianService {
         return {
           success: false,
           message: "Cannot toggle status of unverified technician",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -974,7 +925,6 @@ export class TechnicianService implements ItechnicianService {
       return {
         success: true,
         message: `Technician ${newStatus.toLowerCase()} successfully`,
-        status: HTTP_STATUS.OK,
         technician: toggleResult.technicianData,
       };
     } catch (error) {
@@ -982,14 +932,12 @@ export class TechnicianService implements ItechnicianService {
       return {
         success: false,
         message: "An error occurred while toggling technician status",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
 
   async getWalletBalance(techncianId: string): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: { balance: number };
   }> {
@@ -1027,7 +975,6 @@ export class TechnicianService implements ItechnicianService {
           return {
             success: false,
             message: "Failed to create wallet",
-            status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           };
         }
       }
@@ -1035,7 +982,6 @@ export class TechnicianService implements ItechnicianService {
       return {
         success: true,
         message: "Wallet balance fetched successfully",
-        status: HTTP_STATUS.OK,
         data: {
           balance: fetchedWallet.balance,
         },
@@ -1048,7 +994,6 @@ export class TechnicianService implements ItechnicianService {
       return {
         success: false,
         message: "Internal Server Error",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -1059,7 +1004,6 @@ export class TechnicianService implements ItechnicianService {
     technicianId: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       transactions: IWalletTransaction[];
@@ -1092,7 +1036,6 @@ export class TechnicianService implements ItechnicianService {
       console.log("fetched wallet transactions for the user:", result);
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "User transactions fetched successfully",
         data: {
           transactions: result.data,
@@ -1110,9 +1053,119 @@ export class TechnicianService implements ItechnicianService {
       console.error("Error fetching user wallet transactions:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Something went wrong while fetching user wallet transactions",
       };
+    }
+  }
+
+  async getReviews(technicianId: string): Promise<{
+    success: boolean;
+    message: string;
+    reviews?: IRating[];
+    averageRating?: number;
+    totalReviews?: number;
+  }> {
+    try {
+      console.log("Fetching reviews for technician ID:", technicianId);
+
+      if (!technicianId) {
+        return {
+          success: false,
+          message: "Technician ID is required",
+        };
+      }
+
+      const technicianResult =
+        await this.technicianRepository.getTechnicianById(technicianId);
+      if (!technicianResult.success || !technicianResult.technicianData) {
+        return {
+          success: false,
+          message: "Technician not found",
+        };
+      }
+
+      const reviewsResult =
+        await this.ratingRepository.getRatingsByTechnicianId(technicianId);
+
+      console.log(
+        `Fetched ${reviewsResult.data.length} reviews for technician`
+      );
+      console.log(`Average rating: ${reviewsResult.averageRating}`);
+
+      return {
+        success: true,
+        message: "Reviews fetched successfully",
+        reviews: reviewsResult.data,
+        averageRating: reviewsResult.averageRating,
+        totalReviews: reviewsResult.total,
+      };
+    } catch (error) {
+      console.error("Error fetching technician reviews:", error);
+      return {
+        success: false,
+        message: "An error occurred while fetching reviews",
+      };
+    }
+  }
+
+  async getTechniciansWithSubscriptions(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    filterPlan?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      technicians: ITechnician[];
+      pagination: {
+        total: number;
+        page: number;
+        pages: number;
+        limit: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    };
+  }> {
+    try {
+      console.log(
+        "entered to the technician service that fetches the technicians with subscription plans"
+      );
+      const page = options.page || 1;
+      const limit = options.limit || 5;
+      const result =
+        await this.technicianRepository.getTechniciansWithSubscriptions({
+          page,
+          limit,
+          search: options.search,
+          filterPlan: options.filterPlan,
+        });
+      console.log("result from the technician service:", result);
+
+      return {
+        success: true,
+        message: "Technicians subscription plan fetched successfully",
+        data: {
+          technicians: result.data,
+          pagination: {
+            total: result.total,
+            page: result.page,
+            pages: result.pages,
+            limit: limit,
+            hasNextPage: result.page < result.pages,
+            hasPrevPage: page > 1,
+          },
+        },
+      };
+    } catch (error) {
+      console.log(
+        "error occured while fetching the technicians with subscription plans",
+        error
+      );
+      throw Error(
+        "error occured while fetching the technicians with subscription plans"
+      );
     }
   }
 }

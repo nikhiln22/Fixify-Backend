@@ -2,13 +2,13 @@ import { injectable } from "tsyringe";
 import { BaseRepository } from "./baseRepository";
 import { IRating } from "../interfaces/Models/Irating";
 import Rating from "../models/ratingModel";
-import { IratingRepository } from "../interfaces/Irepositories/IratingRepository";
-import { FilterQuery, Types, UpdateQuery } from "mongoose";
+import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
+import { Types } from "mongoose";
 
 @injectable()
 export class RatingRepository
   extends BaseRepository<IRating>
-  implements IratingRepository
+  implements IRatingRepository
 {
   constructor() {
     super(Rating);
@@ -50,8 +50,7 @@ export class RatingRepository
 
       const rating = await this.model
         .findOne({ bookingId: new Types.ObjectId(bookingId) })
-        .populate("userId", "username email")
-        .populate("serviceId", "name")
+        .populate("userId", "username image")
         .exec();
 
       return rating;
@@ -61,70 +60,46 @@ export class RatingRepository
     }
   }
 
-  //   async getRatingsByTechnicianId(
-  //     technicianId: string,
-  //     options?: {
-  //       page?: number;
-  //       limit?: number;
-  //     }
-  //   ): Promise<{
-  //     data: IRating[];
-  //     total: number;
-  //     averageRating: number;
-  //   }> {
-  //     try {
-  //       console.log("Fetching ratings for technician ID:", technicianId);
+  async getRatingsByTechnicianId(technicianId: string): Promise<{
+    data: IRating[];
+    total: number;
+    averageRating: number;
+  }> {
+    try {
+      console.log("Fetching ratings for technician ID:", technicianId);
 
-  //       const page = options?.page || 1;
-  //       const limit = options?.limit || 10;
+      const query = {
+        technicianId: new Types.ObjectId(technicianId),
+        ratingStatus: "Active",
+      };
 
-  //       const query = { technicianId: new Types.ObjectId(technicianId) };
+      const ratings = await this.model
+        .find(query)
+        .populate("userId", "username image")
+        .sort({ createdAt: -1 })
+        .exec();
 
-  //       const result = (await this.find(query, {
-  //         pagination: { page, limit },
-  //         sort: { createdAt: -1 },
-  //         populate: [
-  //           { path: "userId", select: "username" },
-  //           { path: "serviceId", select: "name" },
-  //         ],
-  //       })) as { data: IRating[]; total: number };
+      const averageRating =
+        ratings.length > 0
+          ? Number(
+              (
+                ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
+              ).toFixed(1)
+            )
+          : 0;
 
-  //       // Calculate average rating
-  //       const allRatings = await this.model.find(query).select("rating").exec();
+      console.log(
+        `Fetched ${ratings.length} ratings for technician. Average: ${averageRating}`
+      );
 
-  //       const averageRating =
-  //         allRatings.length > 0
-  //           ? Number(
-  //               (
-  //                 allRatings.reduce((sum, r) => sum + r.rating, 0) /
-  //                 allRatings.length
-  //               ).toFixed(1)
-  //             )
-  //           : 0;
-
-  //       console.log(
-  //         `Fetched ${result.data.length} ratings for technician. Average: ${averageRating}`
-  //       );
-
-  //       return {
-  //         data: result.data,
-  //         total: result.total,
-  //         averageRating,
-  //       };
-  //     } catch (error) {
-  //       console.error("Error fetching ratings by technician ID:", error);
-  //       throw error;
-  //     }
-  //   }
-
-  //   async updateRating(
-  //     filter: FilterQuery<IRating>,
-  //     update: UpdateQuery<IRating>
-  //   ): Promise<IRating | null> {
-  //     return await this.updateOne(filter, update);
-  //   }
-
-  //   async deleteRating(ratingId: string): Promise<IRating | null> {
-  //     return await this.deleteOne({ _id: ratingId });
-  //   }
+      return {
+        data: ratings,
+        total: ratings.length,
+        averageRating,
+      };
+    } catch (error) {
+      console.error("Error fetching ratings by technician ID:", error);
+      throw error;
+    }
+  }
 }

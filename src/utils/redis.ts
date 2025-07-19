@@ -1,8 +1,8 @@
 import Redis from 'ioredis';
-import { IredisService } from '../interfaces/Iredis/Iredis';
+import { IRedisService } from '../interfaces/Iredis/Iredis';
 import config from '../config/env';
 
-export class RedisService implements IredisService {
+export class RedisService implements IRedisService {
   private client: Redis;
   
   constructor() {

@@ -1,8 +1,8 @@
 import jwt, { Secret, SignOptions } from "jsonwebtoken";
-import { IjwtService } from "../interfaces/Ijwt/Ijwt";
+import { IJwtService } from "../interfaces/Ijwt/Ijwt";
 import config from "../config/env";
 
-export class JWTService implements IjwtService {
+export class JWTService implements IJwtService {
   generateAccessToken(Id: string, role: string): string {
     try {
       const options: SignOptions = {

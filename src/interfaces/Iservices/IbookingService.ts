@@ -3,8 +3,9 @@ import {
   CreateBookingRequest,
 } from "../DTO/IServices/IuserService";
 import { IBooking } from "../Models/Ibooking";
+import { IRating } from "../Models/Irating";
 
-export interface IbookingService {
+export interface IBookingService {
   bookService(
     userId: string,
     data: CreateBookingRequest
@@ -17,12 +18,12 @@ export interface IbookingService {
     page?: number;
     limit?: number;
     technicianId?: string;
+    userId?: string;
     search?: string;
     filter?: string;
     role?: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       bookings: IBooking[];
@@ -45,7 +46,6 @@ export interface IbookingService {
     bookingId: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       otp: string;
@@ -58,7 +58,6 @@ export interface IbookingService {
     otp: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
   }>;
   cancelBookingByUser(
@@ -67,7 +66,6 @@ export interface IbookingService {
     cancellationReason: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       booking: IBooking;
@@ -79,7 +77,6 @@ export interface IbookingService {
     cancellationReason: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       booking: IBooking;
@@ -92,10 +89,15 @@ export interface IbookingService {
     review: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       booking: IBooking;
     };
+  }>;
+
+  getRating(bookingId: string): Promise<{
+    success: boolean;
+    message: string;
+    data?: IRating | null;
   }>;
 }

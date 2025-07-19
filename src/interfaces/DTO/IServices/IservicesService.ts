@@ -1,32 +1,29 @@
 import { IService } from "../../Models/Iservice";
-import { Icategory } from "../../Models/Icategory";
+import { ICategory } from "../../Models/ICategory";
 
 export interface ServiceData {
   name: string;
   price: number;
   description: string;
   categoryId: string;
-  designationId:string;
+  designationId: string;
   imageFile?: string;
   serviceId?: string;
 }
 
 export interface AddServiceResponse {
   success: boolean;
-  status: number;
   message: string;
   data?: IService;
 }
 
 export interface ToggleServiceStatusResponse {
-  status: number;
   success: boolean;
   message: string;
   data?: IService;
 }
 
 export interface UpdatedServiceResponse {
-  status: number;
   success: boolean;
   message: string;
   data?: IService;
@@ -34,35 +31,30 @@ export interface UpdatedServiceResponse {
 
 export interface AddCategoryResponse {
   success: boolean;
-  status: number;
   message: string;
-  data?: Icategory;
+  data?: ICategory;
 }
 
-export interface getCategoriesResponse {
-  status: number;
+export interface GetCategoriesResponse {
   message: string;
-  categories?: Icategory[];
+  categories?: ICategory[];
   total?: number;
   totalPages?: number;
 }
 
 export interface ToggleCategoryStatusResponse {
-  status: number;
   success: boolean;
   message: string;
-  data?: Icategory;
+  data?: ICategory;
 }
 
 export interface UpdatedCategoryResponse {
-  status: number;
   success: boolean;
   message: string;
-  data?: Icategory;
+  data?: ICategory;
 }
 
-export interface getServiceDetailsResponse {
-  status: number;
+export interface GetServiceDetailsResponse {
   success: boolean;
   message: string;
   data?: {

@@ -2,7 +2,6 @@ import { IAddressService } from "../interfaces/Iservices/IaddressService";
 import { inject, injectable } from "tsyringe";
 import { IAddressRepository } from "../interfaces/Irepositories/IaddressRepository";
 import { IUserAddress } from "../interfaces/Models/Iaddress";
-import { HTTP_STATUS } from "../utils/httpStatus";
 import { Types } from "mongoose";
 
 @injectable()
@@ -17,7 +16,6 @@ export class AddressService implements IAddressService {
   ): Promise<{
     success: boolean;
     message: string;
-    status: number;
     data?: IUserAddress;
   }> {
     try {
@@ -32,7 +30,6 @@ export class AddressService implements IAddressService {
         return {
           success: false,
           message: "Full address,longitude and latitude are required",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -56,14 +53,12 @@ export class AddressService implements IAddressService {
 
       return {
         success: true,
-        status: HTTP_STATUS.CREATED,
         message: "Address added successfully",
         data: savedAddress,
       };
     } catch (error) {
       console.log("error occured while adding the new Address:", error);
       return {
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         success: false,
         message: "Internal Server Error",
       };
@@ -73,7 +68,6 @@ export class AddressService implements IAddressService {
   async getUserAddresses(userId: string): Promise<{
     success: boolean;
     message: string;
-    status: number;
     data?: IUserAddress[];
   }> {
     try {
@@ -83,7 +77,6 @@ export class AddressService implements IAddressService {
         return {
           success: false,
           message: "Invalid User Id",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -98,7 +91,6 @@ export class AddressService implements IAddressService {
       return {
         success: true,
         message: "User addresses retrieved successfully",
-        status: HTTP_STATUS.OK,
         data: userAddresses,
       };
     } catch (error) {
@@ -106,7 +98,6 @@ export class AddressService implements IAddressService {
       return {
         success: false,
         message: "Internal Server Error",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -114,30 +105,27 @@ export class AddressService implements IAddressService {
   async deleteAddress(
     addressId: string,
     userId: string
-  ): Promise<{ success: boolean; message: string; status: number }> {
+  ): Promise<{ success: boolean; message: string }> {
     try {
       console.log("deleting the user address from the address service");
       console.log("userId from the address service:", userId);
       console.log("addressId from the address service:", addressId);
 
-
       if (!addressId || !userId) {
         return {
           success: false,
           message: "Address ID and User ID are required",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
       const existingAddress = await this.addressRepository.findById(addressId);
 
-      console.log("existingAddress in address service:",existingAddress);
+      console.log("existingAddress in address service:", existingAddress);
 
       if (!existingAddress) {
         return {
           success: false,
           message: "Address not found",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -145,7 +133,6 @@ export class AddressService implements IAddressService {
         return {
           success: false,
           message: "Unauthorized: Address does not belong to this user",
-          status: HTTP_STATUS.FORBIDDEN,
         };
       }
 
@@ -157,21 +144,18 @@ export class AddressService implements IAddressService {
         return {
           success: false,
           message: "Failed to delete address",
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         };
       }
 
       return {
         success: true,
         message: "Address deleted successfully",
-        status: HTTP_STATUS.OK,
       };
     } catch (error) {
       console.log("Error occurred while deleting address:", error);
       return {
         success: false,
         message: "Internal Server Error",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }

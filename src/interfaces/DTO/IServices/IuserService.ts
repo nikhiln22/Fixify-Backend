@@ -1,11 +1,10 @@
 import { IBooking } from "../../Models/Ibooking";
-import { Iuser } from "../../Models/Iuser";
+import { IUser } from "../../Models/Iuser";
 
 export interface RegisterResponse {
   success: boolean;
-  userData?: Iuser;
+  userData?: IUser;
   message: string;
-  status: number;
 }
 
 export interface SignupUserData {
@@ -19,11 +18,10 @@ export interface SignupUserData {
   updatedAt: Date;
 }
 
-export interface tempUserResponse {
+export interface TempUserResponse {
   tempUserId?: string;
   email?: string;
   success: boolean;
-  status: number;
   message?: string;
 }
 
@@ -32,27 +30,25 @@ export interface ResendOtpResponse {
   message: string;
   tempUserId?: string;
   email?: string;
-  status: number;
 }
 
-export interface verifyOtpData {
+export interface VerifyOtpData {
   tempUserId?: string;
   otp: string;
   email?: string;
   purpose?: string;
 }
 
-export interface loginResponse {
+export interface LoginResponse {
   success: boolean;
-  status: number;
   message: string;
   role?: string;
-  user?: Pick<Iuser, "username" | "email" | "phone" | "image">;
+  user?: Pick<IUser, "username" | "email" | "phone" | "image">;
   access_token?: string;
   refresh_token?: string;
 }
 
-export interface loginData {
+export interface LoginData {
   email: string;
   password: string;
 }
@@ -65,7 +61,6 @@ export interface ForgotPasswordResponse {
   success: boolean;
   message: string;
   email?: string;
-  status: number;
 }
 
 export interface ResetPasswordData {
@@ -76,26 +71,24 @@ export interface ResetPasswordData {
 export interface ResetPasswordResponse {
   success: boolean;
   message: string;
-  status: number;
 }
 
 export interface ToggleUserStatusResponse {
+  success: boolean;
   message: string;
-  user?: Iuser;
+  user?: IUser;
 }
 
 export interface UserProfileResponse {
   message: string;
   success: boolean;
-  status: number;
-  user?: Iuser;
+  user?: IUser;
 }
 
 export interface EditProfileResponse {
   success: boolean;
   message: string;
-  status: number;
-  user?: Iuser;
+  user?: IUser;
 }
 
 export interface UserProfileUpdateData {
@@ -116,14 +109,12 @@ export interface CreateBookingRequest {
 
 export interface BookServiceResponse {
   success: boolean;
-  status: number;
   message: string;
   data?: IBooking | null;
 }
 
 export interface AddMoneyResponse {
   success: boolean;
-  status: number;
   message: string;
   data?: {
     checkoutUrl: string;

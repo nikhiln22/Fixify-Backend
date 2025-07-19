@@ -1,32 +1,32 @@
-import { Itechnician } from "../../Models/Itechnician";
-import { ItempTechnician } from "../../Models/ItempTechnician";
+import { ITechnician } from "../../Models/Itechnician";
+import { ITempTechnician } from "../../Models/ItempTechnician";
 
-export interface findByEmailResponse {
+export interface FindByEmailResponse {
   success: boolean;
-  technicianData?: Itechnician;
+  technicianData?: ITechnician;
 }
 
-export interface createTempTechnicianResponse {
+export interface CreateTempTechnicianResponse {
   success: boolean;
-  tempTechnicianId: String;
+  tempTechnicianId: string;
 }
 
-export interface findTempTechnicianById {
+export interface FindTempTechnicianById {
   success: boolean;
-  tempTechnicianData?: ItempTechnician;
+  tempTechnicianData?: ITempTechnician;
   message?: string;
 }
 
-export interface createTechnician {
+export interface CreateTechnician {
   username: string;
   email: string;
   phone: number;
   password: string;
 }
 
-export interface findTempTechnicianByEmail {
+export interface FindTempTechnicianByEmail {
   success: boolean;
-  tempTechnicianData?: ItempTechnician;
+  tempTechnicianData?: ITempTechnician;
   message?: string;
 }
 
@@ -50,7 +50,7 @@ export interface UpdateTechnicianQualificationResponse {
   success: boolean;
   message: string;
   technician?: Pick<
-    Itechnician,
+    ITechnician,
     | "yearsOfExperience"
     | "Designation"
     | "About"
@@ -60,16 +60,16 @@ export interface UpdateTechnicianQualificationResponse {
   >;
 }
 
-export interface findByIdResponse {
+export interface FindByIdResponse {
   success: boolean;
-  technicianData?: Itechnician | null;
+  technicianData?: ITechnician | null;
   message?: string;
 }
 
 export interface VerifyTechnicianResponse {
   success: boolean;
   message: string;
-  technicianData?: Itechnician;
+  technicianData?: ITechnician;
 }
 
 export interface RejectTechnicianResponse {

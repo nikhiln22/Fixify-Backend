@@ -1,5 +1,5 @@
 import { IOffer } from "../interfaces/Models/Ioffers";
-import mongoose, { Schema, Types } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const offerSchema: Schema<IOffer> = new Schema(
   {

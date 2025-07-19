@@ -1,10 +1,10 @@
-import { IjwtService } from "../interfaces/Ijwt/Ijwt";
-import { IauthService } from "../interfaces/Iservices/IauthService";
+import { IJwtService } from "../interfaces/Ijwt/Ijwt";
+import { IAuthService } from "../interfaces/Iservices/IauthService";
 import { inject, injectable } from "tsyringe";
 
 @injectable()
-export class AuthService implements IauthService {
-  constructor(@inject("IjwtService") private jwtService: IjwtService) {}
+export class AuthService implements IAuthService {
+  constructor(@inject("IJwtService") private jwtService: IJwtService) {}
 
   async refreshAccessToken(
     refreshToken: string,
@@ -24,7 +24,7 @@ export class AuthService implements IauthService {
         throw new Error("Invalid or expired refresh token");
       }
 
-      const tokenRole = payload.role
+      const tokenRole = payload.role;
 
       console.log("tokenRole:", tokenRole);
 
@@ -35,7 +35,7 @@ export class AuthService implements IauthService {
       if (tokenRole !== expectedRole) {
         throw new Error("Token role mismatch");
       }
-      console.log("payload from authaservice:",payload);
+      console.log("payload from authaservice:", payload);
       const newAccessToken = this.jwtService.generateAccessToken(
         payload.Id,
         payload.role

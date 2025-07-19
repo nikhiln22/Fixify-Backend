@@ -14,13 +14,12 @@ export interface ITimeSlotService {
   ): Promise<AddTimeSlotsResult>;
 
   getTimeSlots(
-    technicianId: String,
+    technicianId: string,
     includePast: boolean,
     additionalFilters?: { [key: string]: any }
   ): Promise<{
     success: boolean;
     message: string;
-    status: number;
     data?: ITimeSlot[];
   }>;
 
@@ -30,7 +29,6 @@ export interface ITimeSlotService {
   ): Promise<{
     success: boolean;
     message: string;
-    status: number;
     data?: ITimeSlot;
   }>;
 
@@ -41,7 +39,6 @@ export interface ITimeSlotService {
   ): Promise<{
     success: boolean;
     message: string;
-    status: number;
     data?: ITimeSlot;
   }>;
 }

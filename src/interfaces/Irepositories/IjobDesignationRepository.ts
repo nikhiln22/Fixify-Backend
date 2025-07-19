@@ -1,20 +1,23 @@
-import { IjobDesignation } from "../Models/IjobDesignation";
+import { IJobDesignation } from "../Models/IjobDesignation";
 
-export interface IjobDesignationRepository {
-  addDesignation(designation: string): Promise<IjobDesignation>;
+export interface IJobDesignationRepository {
+  addDesignation(designation: string): Promise<IJobDesignation>;
   getAllDesignations(options?: {
     page?: number;
     limit?: number;
     search?: string;
-    status?:string;
+    status?: string;
   }): Promise<{
-    data: IjobDesignation[];
+    data: IJobDesignation[];
     total: number;
     page: number;
     limit: number;
     pages: number;
-  }>
-  findByName(name: string): Promise<IjobDesignation | null>;
-  blockDesignation(id:string,status:boolean): Promise<IjobDesignation | null>;
-  findById(id: string): Promise<IjobDesignation | null>;
+  }>;
+  findByName(name: string): Promise<IJobDesignation | null>;
+  blockDesignation(
+    id: string,
+    status: boolean
+  ): Promise<IJobDesignation | null>;
+  findById(id: string): Promise<IJobDesignation | null>;
 }

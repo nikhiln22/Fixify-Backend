@@ -1,19 +1,17 @@
-import { IchatService } from "../interfaces/Iservices/IchatService";
-import { HTTP_STATUS } from "../utils/httpStatus";
-import { IchatRepository } from "../interfaces/Irepositories/IchatRepository";
+import { IChatService } from "../interfaces/Iservices/IchatService";
+import { IChatRepository } from "../interfaces/Irepositories/IchatRepository";
 import { inject, injectable } from "tsyringe";
 import { IChat } from "../interfaces/Models/Ichat";
 import { CreateChatData } from "../interfaces/DTO/IRepository/IchatRepository";
 
 @injectable()
-export class ChatService implements IchatService {
+export class ChatService implements IChatService {
   constructor(
-    @inject("IchatRepository") private chatRepository: IchatRepository
+    @inject("IChatRepository") private chatRepository: IChatRepository
   ) {}
 
   async getChatHistory(bookingId: string): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: IChat[];
   }> {
@@ -23,7 +21,6 @@ export class ChatService implements IchatService {
       if (!bookingId) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "Booking ID is required",
         };
       }
@@ -36,7 +33,6 @@ export class ChatService implements IchatService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "Chat history fetched successfully",
         data: chatMessages,
       };
@@ -44,7 +40,6 @@ export class ChatService implements IchatService {
       console.error("Error in ChatService getChatHistory:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to fetch chat history",
       };
     }
@@ -52,7 +47,6 @@ export class ChatService implements IchatService {
 
   async sendChat(chatData: CreateChatData): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: IChat;
   }> {
@@ -62,7 +56,6 @@ export class ChatService implements IchatService {
       if (!chatData.userId) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "User ID is required",
         };
       }
@@ -70,7 +63,6 @@ export class ChatService implements IchatService {
       if (!chatData.technicianId) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "Technician ID is required",
         };
       }
@@ -78,7 +70,6 @@ export class ChatService implements IchatService {
       if (!chatData.bookingId) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "Booking ID is required",
         };
       }
@@ -86,7 +77,6 @@ export class ChatService implements IchatService {
       if (!chatData.messageText || !chatData.messageText.trim()) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "Message text cannot be empty",
         };
       }
@@ -97,7 +87,6 @@ export class ChatService implements IchatService {
       ) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "Sender type must be either 'user' or 'technician'",
         };
       }
@@ -108,7 +97,6 @@ export class ChatService implements IchatService {
 
       return {
         success: true,
-        status: HTTP_STATUS.CREATED,
         message: "Message sent successfully",
         data: savedMessage,
       };
@@ -116,7 +104,6 @@ export class ChatService implements IchatService {
       console.error("Error in ChatService sendChat:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to send chat message",
       };
     }

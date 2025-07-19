@@ -4,7 +4,7 @@ import coupon from "../models/couponModel";
 import { ICouponRepository } from "../interfaces/Irepositories/IcouponRepository";
 import { injectable } from "tsyringe";
 import { FilterQuery } from "mongoose";
-import { couponData } from "../interfaces/DTO/IServices/IcouponService";
+import { CouponData } from "../interfaces/DTO/IServices/IcouponService";
 
 @injectable()
 export class CouponRepository
@@ -15,7 +15,7 @@ export class CouponRepository
     super(coupon);
   }
 
-  async addCoupon(data: couponData): Promise<ICoupon> {
+  async addCoupon(data: CouponData): Promise<ICoupon> {
     try {
       console.log("creating offer in repository:", data);
       const newOffer = await this.create(data);
@@ -93,7 +93,7 @@ export class CouponRepository
 
   async blockCoupon(id: string, status: boolean): Promise<void> {
     try {
-      let response = await this.updateOne({ _id: id }, { status: status });
+      const response = await this.updateOne({ _id: id }, { status: status });
       console.log("blocking the coupon in the coupon repository:", response);
     } catch (error) {
       throw new Error("Failed to block coupon: " + error);

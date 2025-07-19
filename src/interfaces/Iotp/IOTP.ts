@@ -1,11 +1,9 @@
-
 export interface IOTPService {
-    generateOtp(): string;
+  generateOtp(): string;
 }
 
 export interface OtpVerificationResult {
-    success: boolean;
-    message: string;
-    status: number;
-    email?: string;
-  }
+  success: boolean;
+  message: string;
+  email?: string;
+}

@@ -1,6 +1,6 @@
 import { IService } from "../Models/Iservice";
 
-export interface IserviceRepository {
+export interface IServiceRepository {
   addService(serviceData: {
     name: string;
     price: number;

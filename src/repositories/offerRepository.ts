@@ -3,7 +3,7 @@ import { IOffer } from "../interfaces/Models/Ioffers";
 import offer from "../models/offerModel";
 import { IOfferRepository } from "../interfaces/Irepositories/IofferRepository";
 import { injectable } from "tsyringe";
-import { offerData } from "../interfaces/DTO/IServices/IofferService";
+import { OfferData } from "../interfaces/DTO/IServices/IofferService";
 import { FilterQuery } from "mongoose";
 
 @injectable()
@@ -15,7 +15,7 @@ export class OfferRepository
     super(offer);
   }
 
-  async addOffer(data: offerData): Promise<IOffer> {
+  async addOffer(data: OfferData): Promise<IOffer> {
     try {
       console.log("creating offer in repository:", data);
       const newOffer = await this.create(data);
@@ -82,7 +82,7 @@ export class OfferRepository
 
   async blockOffer(id: string, status: boolean): Promise<void> {
     try {
-      let response = await this.updateOne({ _id: id }, { status: status });
+      const response = await this.updateOne({ _id: id }, { status: status });
       console.log("blocking the offer in the offer repository:", response);
     } catch (error) {
       throw new Error("Failed to block offer: " + error);

@@ -2,9 +2,9 @@ import {
   CreateBookingRequest,
   BookServiceResponse,
 } from "../interfaces/DTO/IServices/IuserService";
-import { IbookingService } from "../interfaces/Iservices/IbookingService";
+import { IBookingService } from "../interfaces/Iservices/IbookingService";
 import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
-import { IbookingRepository } from "../interfaces/Irepositories/IbookingRespository";
+import { IBookingRepository } from "../interfaces/Irepositories/IbookingRespository";
 import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
 import { IPaymentRepository } from "../interfaces/Irepositories/IpaymentRepository";
 import { HTTP_STATUS } from "../utils/httpStatus";
@@ -13,28 +13,29 @@ import { IBooking } from "../interfaces/Models/Ibooking";
 import { stripe } from "../config/stripeConfig";
 import config from "../config/env";
 import { IOTPService } from "../interfaces/Iotp/IOTP";
-import { IredisService } from "../interfaces/Iredis/Iredis";
+import { IRedisService } from "../interfaces/Iredis/Iredis";
 import {
   OtpPurpose,
   BOOKING_OTP_EXPIRATION_SECONDS,
   OTP_PREFIX,
 } from "../config/otpConfig";
-import { IemailService } from "../interfaces/Iemail/Iemail";
+import { IEmailService } from "../interfaces/Iemail/Iemail";
 import { EmailType, APP_NAME } from "../config/emailConfig";
 import { ITimeSlot } from "../interfaces/Models/ItimeSlot";
-import { IratingRepository } from "../interfaces/Irepositories/IratingRepository";
+import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
+import { IRating } from "../interfaces/Models/Irating";
 
 @injectable()
-export class BookingService implements IbookingService {
+export class BookingService implements IBookingService {
   constructor(
-    @inject("IbookingRepository") private bookingRepository: IbookingRepository,
+    @inject("IBookingRepository") private bookingRepository: IBookingRepository,
     @inject("ITimeSlotService") private timeSlotService: ITimeSlotService,
     @inject("IWalletRepository") private walletRepository: IWalletRepository,
     @inject("IPaymentRepository") private paymentRepository: IPaymentRepository,
     @inject("IOTPService") private otpService: IOTPService,
-    @inject("IredisService") private redisService: IredisService,
-    @inject("IemailService") private emailService: IemailService,
-    @inject("IratingRepository") private ratingRepository: IratingRepository
+    @inject("IRedisService") private redisService: IRedisService,
+    @inject("IEmailService") private emailService: IEmailService,
+    @inject("IRatingRepository") private ratingRepository: IRatingRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -109,7 +110,6 @@ export class BookingService implements IbookingService {
         return {
           success: false,
           message: "User ID is required",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -117,7 +117,6 @@ export class BookingService implements IbookingService {
         return {
           success: false,
           message: "Technician ID is required",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -125,7 +124,6 @@ export class BookingService implements IbookingService {
         return {
           success: false,
           message: "Service ID is required",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -133,7 +131,6 @@ export class BookingService implements IbookingService {
         return {
           success: false,
           message: "Address ID is required",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -141,7 +138,6 @@ export class BookingService implements IbookingService {
         return {
           success: false,
           message: "Time slot ID is required",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -149,7 +145,6 @@ export class BookingService implements IbookingService {
         return {
           success: false,
           message: "Booking amount is required",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -157,7 +152,6 @@ export class BookingService implements IbookingService {
         return {
           success: false,
           message: "Payment method is required",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -165,7 +159,6 @@ export class BookingService implements IbookingService {
         return {
           success: false,
           message: "Payment method must be either 'Online' or 'Wallet'",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -179,7 +172,6 @@ export class BookingService implements IbookingService {
         return {
           success: false,
           message: slotBooking.message,
-          status: slotBooking.status,
         };
       }
 
@@ -203,7 +195,6 @@ export class BookingService implements IbookingService {
             return {
               success: false,
               message: "Wallet not found for the user",
-              status: HTTP_STATUS.NOT_FOUND,
             };
           }
 
@@ -216,7 +207,6 @@ export class BookingService implements IbookingService {
             return {
               success: false,
               message: "Insufficient wallet balance",
-              status: HTTP_STATUS.BAD_REQUEST,
             };
           }
 
@@ -232,7 +222,7 @@ export class BookingService implements IbookingService {
 
           console.log("Booking created successfully:", newBooking);
 
-          let newBookingId = newBooking._id.toString().slice(-8);
+          const newBookingId = newBooking._id.toString().slice(-8);
 
           const walletUpdate =
             await this.walletRepository.updateWalletBalanceWithTransaction(
@@ -256,7 +246,7 @@ export class BookingService implements IbookingService {
             (data.bookingAmount - fixifyShare).toFixed(2)
           );
 
-          let newPayment = await this.paymentRepository.createPayment({
+          const newPayment = await this.paymentRepository.createPayment({
             userId: userId,
             bookingId: newBooking._id.toString(),
             technicianId: data.technicianId,
@@ -284,7 +274,6 @@ export class BookingService implements IbookingService {
               requiresPayment: false,
               paymentCompleted: true,
             },
-            status: HTTP_STATUS.CREATED,
           };
         } catch (walletError) {
           console.error("Wallet payment failed:", walletError);
@@ -298,7 +287,6 @@ export class BookingService implements IbookingService {
           return {
             success: false,
             message: "Wallet payment failed. Please try again.",
-            status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           };
         }
       }
@@ -354,7 +342,6 @@ export class BookingService implements IbookingService {
             checkoutUrl: session.url,
             requiresPayment: true,
           },
-          status: HTTP_STATUS.CREATED,
         };
       } catch (paymentError) {
         console.error("Payment intent creation failed:", paymentError);
@@ -368,7 +355,6 @@ export class BookingService implements IbookingService {
         return {
           success: false,
           message: "Failed to create payment intent. Please try again.",
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         };
       }
     } catch (error) {
@@ -376,7 +362,6 @@ export class BookingService implements IbookingService {
       return {
         success: false,
         message: "Failed to create booking",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -398,7 +383,6 @@ export class BookingService implements IbookingService {
         return {
           success: false,
           message: "Payment not completed or session not found",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -410,7 +394,6 @@ export class BookingService implements IbookingService {
         return {
           success: false,
           message: "Invalid or missing booking ID in session metadata",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -427,7 +410,6 @@ export class BookingService implements IbookingService {
         return {
           success: false,
           message: "Booking not found",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -444,7 +426,6 @@ export class BookingService implements IbookingService {
             paymentMethod: "Online",
             paymentCompleted: true,
           },
-          status: HTTP_STATUS.OK,
         };
       }
 
@@ -459,7 +440,6 @@ export class BookingService implements IbookingService {
         return {
           success: false,
           message: "Failed to update booking status",
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         };
       }
 
@@ -471,7 +451,7 @@ export class BookingService implements IbookingService {
         (booking.bookingAmount - fixifyShare).toFixed(2)
       );
 
-      let newPayment = await this.paymentRepository.createPayment({
+      const newPayment = await this.paymentRepository.createPayment({
         userId: userId,
         bookingId: bookingId,
         technicianId: booking.technicianId._id.toString(),
@@ -497,7 +477,6 @@ export class BookingService implements IbookingService {
           paymentMethod: "Online",
           paymentCompleted: true,
         },
-        status: HTTP_STATUS.OK,
       };
     } catch (error) {
       console.log(
@@ -507,7 +486,6 @@ export class BookingService implements IbookingService {
       return {
         success: false,
         message: "Internal server error",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -516,12 +494,12 @@ export class BookingService implements IbookingService {
     page?: number;
     limit?: number;
     technicianId?: string;
+    userId?: string;
     search?: string;
     filter?: string;
     role?: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       bookings: IBooking[];
@@ -542,12 +520,13 @@ export class BookingService implements IbookingService {
       const search = options.search;
       const filter = options.filter;
       const role = options.role || "admin";
-      const { technicianId } = options;
+      const { technicianId, userId } = options;
 
       const result = await this.bookingRepository.getAllBookings({
         page,
         limit,
         technicianId,
+        userId,
         search,
         filter,
         role,
@@ -557,7 +536,6 @@ export class BookingService implements IbookingService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: technicianId
           ? "Technician bookings fetched successfully"
           : "Bookings fetched successfully",
@@ -577,7 +555,6 @@ export class BookingService implements IbookingService {
       console.error("Error fetching bookings:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Something went wrong while fetching bookings",
       };
     }
@@ -598,7 +575,6 @@ export class BookingService implements IbookingService {
         return {
           success: false,
           message: "Invalid booking ID format",
-          status: HTTP_STATUS.BAD_REQUEST,
         };
       }
 
@@ -620,7 +596,6 @@ export class BookingService implements IbookingService {
           success: false,
           message:
             "Booking not found or you don't have permission to view this booking",
-          status: HTTP_STATUS.NOT_FOUND,
         };
       }
 
@@ -628,14 +603,12 @@ export class BookingService implements IbookingService {
         success: true,
         message: "Booking details retrieved successfully",
         data: booking,
-        status: HTTP_STATUS.OK,
       };
     } catch (error) {
       console.error("Error in getBookingById service:", error);
       return {
         success: false,
         message: "Failed to retrieve booking details",
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       };
     }
   }
@@ -774,7 +747,6 @@ export class BookingService implements IbookingService {
     otp: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
   }> {
     try {
@@ -786,7 +758,6 @@ export class BookingService implements IbookingService {
       if (!technicianId || !bookingId || !otp) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "Technician ID, Booking ID, and OTP are required",
         };
       }
@@ -798,7 +769,6 @@ export class BookingService implements IbookingService {
       if (!booking) {
         return {
           success: false,
-          status: HTTP_STATUS.NOT_FOUND,
           message: "Booking not found",
         };
       }
@@ -806,7 +776,6 @@ export class BookingService implements IbookingService {
       if (booking.technicianId._id.toString() !== technicianId) {
         return {
           success: false,
-          status: HTTP_STATUS.FORBIDDEN,
           message: "You are not authorized to complete this booking",
         };
       }
@@ -814,7 +783,6 @@ export class BookingService implements IbookingService {
       if (booking.bookingStatus !== "Booked") {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: `Cannot complete booking with status: ${booking.bookingStatus}`,
         };
       }
@@ -837,7 +805,6 @@ export class BookingService implements IbookingService {
       if (!updatedBooking) {
         return {
           success: false,
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           message: "Failed to update booking status",
         };
       }
@@ -895,14 +862,12 @@ export class BookingService implements IbookingService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "Service completed successfully",
       };
     } catch (error) {
       console.error("Error in verifyCompletionOtp:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to verify completion OTP",
       };
     }
@@ -914,7 +879,6 @@ export class BookingService implements IbookingService {
     cancellationReason: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       booking: IBooking;
@@ -929,7 +893,6 @@ export class BookingService implements IbookingService {
       if (!userId || !bookingId || !cancellationReason) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "User ID, Booking ID, and cancellation reason are required",
         };
       }
@@ -940,7 +903,6 @@ export class BookingService implements IbookingService {
       if (!booking) {
         return {
           success: false,
-          status: HTTP_STATUS.NOT_FOUND,
           message: "Booking not found",
         };
       }
@@ -948,7 +910,6 @@ export class BookingService implements IbookingService {
       if (booking.userId._id.toString() !== userId) {
         return {
           success: false,
-          status: HTTP_STATUS.FORBIDDEN,
           message: "You are not authorized to cancel this booking",
         };
       }
@@ -956,7 +917,6 @@ export class BookingService implements IbookingService {
       if (booking.bookingStatus !== "Booked") {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: `Cannot cancel booking with status: ${booking.bookingStatus}`,
         };
       }
@@ -965,7 +925,6 @@ export class BookingService implements IbookingService {
       if (!timeSlot || !timeSlot.date || !timeSlot.startTime) {
         return {
           success: false,
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           message: "Booking time slot information not found",
         };
       }
@@ -999,7 +958,6 @@ export class BookingService implements IbookingService {
       if (!payment) {
         return {
           success: false,
-          status: HTTP_STATUS.NOT_FOUND,
           message: "Payment record not found",
         };
       }
@@ -1017,7 +975,6 @@ export class BookingService implements IbookingService {
       if (!updatedBooking) {
         return {
           success: false,
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           message: "Failed to update booking status",
         };
       }
@@ -1073,7 +1030,6 @@ export class BookingService implements IbookingService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message:
           refundAmount > 0
             ? `Booking cancelled successfully. ₹${refundAmount} refunded to your wallet.`
@@ -1086,7 +1042,6 @@ export class BookingService implements IbookingService {
       console.error("Error in cancelBookingByUser:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to cancel booking",
       };
     }
@@ -1098,7 +1053,6 @@ export class BookingService implements IbookingService {
     cancellationReason: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: { booking: IBooking };
   }> {
@@ -1111,7 +1065,6 @@ export class BookingService implements IbookingService {
       if (!technicianId || !bookingId || !cancellationReason) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message:
             "Technician ID, Booking ID, and cancellation reason are required",
         };
@@ -1123,7 +1076,6 @@ export class BookingService implements IbookingService {
       if (!booking) {
         return {
           success: false,
-          status: HTTP_STATUS.NOT_FOUND,
           message: "Booking not found",
         };
       }
@@ -1131,7 +1083,6 @@ export class BookingService implements IbookingService {
       if (booking.technicianId._id.toString() !== technicianId) {
         return {
           success: false,
-          status: HTTP_STATUS.FORBIDDEN,
           message: "You are not authorized to cancel this booking",
         };
       }
@@ -1139,7 +1090,6 @@ export class BookingService implements IbookingService {
       if (booking.bookingStatus !== "Booked") {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: `Cannot cancel booking with status: ${booking.bookingStatus}`,
         };
       }
@@ -1148,7 +1098,6 @@ export class BookingService implements IbookingService {
       if (!timeSlot || !timeSlot.date || !timeSlot.startTime) {
         return {
           success: false,
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           message: "Booking time slot information not found",
         };
       }
@@ -1171,7 +1120,6 @@ export class BookingService implements IbookingService {
       if (isToday) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "Cannot cancel bookings scheduled for today",
         };
       }
@@ -1179,7 +1127,6 @@ export class BookingService implements IbookingService {
       if (hoursUntilService < 2) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "Cannot cancel bookings with less than 2 hours notice",
         };
       }
@@ -1194,7 +1141,6 @@ export class BookingService implements IbookingService {
       if (!payment) {
         return {
           success: false,
-          status: HTTP_STATUS.NOT_FOUND,
           message: "Payment record not found",
         };
       }
@@ -1212,7 +1158,6 @@ export class BookingService implements IbookingService {
       if (!updatedBooking) {
         return {
           success: false,
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           message: "Failed to update booking status",
         };
       }
@@ -1271,7 +1216,6 @@ export class BookingService implements IbookingService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: `Booking cancelled successfully. Customer will receive a full refund of ₹${fullRefundAmount}.`,
         data: {
           booking: updatedBooking,
@@ -1281,7 +1225,6 @@ export class BookingService implements IbookingService {
       console.error("Error in cancelBookingByTechnician:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to cancel booking",
       };
     }
@@ -1294,7 +1237,6 @@ export class BookingService implements IbookingService {
     review: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: { booking: IBooking };
   }> {
@@ -1310,7 +1252,6 @@ export class BookingService implements IbookingService {
       if (!userId || !bookingId || rating === undefined || rating === null) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "User ID, Booking ID, and rating are required",
         };
       }
@@ -1318,7 +1259,6 @@ export class BookingService implements IbookingService {
       if (rating < 1 || rating > 5 || !Number.isInteger(rating)) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "Rating must be an integer between 1 and 5",
         };
       }
@@ -1326,7 +1266,6 @@ export class BookingService implements IbookingService {
       if (review && review.trim().length > 500) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "Review cannot exceed 500 characters",
         };
       }
@@ -1339,7 +1278,6 @@ export class BookingService implements IbookingService {
       if (!booking) {
         return {
           success: false,
-          status: HTTP_STATUS.NOT_FOUND,
           message:
             "Booking not found or you don't have permission to rate this service",
         };
@@ -1348,7 +1286,6 @@ export class BookingService implements IbookingService {
       if (booking.bookingStatus !== "Completed") {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "You can only rate completed services",
         };
       }
@@ -1356,7 +1293,6 @@ export class BookingService implements IbookingService {
       if (booking.isRated) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "This service has already been rated",
         };
       }
@@ -1367,7 +1303,6 @@ export class BookingService implements IbookingService {
       if (existingRating) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "Rating already exists for this booking",
         };
       }
@@ -1391,7 +1326,6 @@ export class BookingService implements IbookingService {
       if (!updatedBooking) {
         return {
           success: false,
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
           message: "Failed to update booking status after rating",
         };
       }
@@ -1402,7 +1336,6 @@ export class BookingService implements IbookingService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: "Service rated successfully",
         data: {
           booking: updatedBooking,
@@ -1412,8 +1345,35 @@ export class BookingService implements IbookingService {
       console.error("Error in rateService:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to rate service",
+      };
+    }
+  }
+
+  async getRating(bookingId: string): Promise<{
+    success: boolean;
+    message: string;
+    data?: IRating | null;
+  }> {
+    try {
+      console.log(
+        "entering to the booking service getting the rating for the booking"
+      );
+      console.log("bookingId in the booking service:", bookingId);
+      const response = await this.ratingRepository.getRatingByBookingId(
+        bookingId
+      );
+      console.log("response from the rating repository:", response);
+      return {
+        success: true,
+        message: "Rating fetched successfully",
+        data: response,
+      };
+    } catch (error) {
+      console.log("error occured while fetching the rating:", error);
+      return {
+        success: false,
+        message: "Failed to fetch the rating",
       };
     }
   }

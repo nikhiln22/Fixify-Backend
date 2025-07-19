@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 
-export interface IadminController {
+export interface IAdminController {
   login(req: Request, res: Response): Promise<void>;
   getAllUsers(req: Request, res: Response): Promise<void>;
   toggleUserStatus(req: Request, res: Response): Promise<void>;
@@ -20,5 +20,9 @@ export interface IadminController {
   getAllCoupons(req: Request, res: Response): Promise<void>;
   blockCoupon(req: Request, res: Response): Promise<void>;
   updateCoupon(req: Request, res: Response): Promise<void>;
+  getRating(req: Request, res: Response): Promise<void>;
+  addSubscriptionPlan(req: Request, res: Response): Promise<void>;
+  getAllSubscriptionPlans(req: Request, res: Response): Promise<void>;
+  getSubscriptionhistory(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

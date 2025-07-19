@@ -1,12 +1,16 @@
 import {
-  createTempTechnicianResponseDTO,
-  findTempTechnicianByEmailDTO,
-  findTempTechnicianByIdDTO,
+  CreateTempTechnicianResponse,
+  FindTempTechnicianByEmail,
+  FindTempTechnicianById,
 } from "../DTO/IRepository/ItechnicianRepository";
-import { ItempTechnician } from "../Models/ItempTechnician";
+import { ITempTechnician } from "../Models/ItempTechnician";
 
-export interface ItempTechnicianRepository {
-  createTempTechnician(technicianData: ItempTechnician ): Promise<createTempTechnicianResponseDTO>;
-  findTempTechnicianById(tempTechnicianId: String): Promise<findTempTechnicianByIdDTO>;
-  findTempTechnicianByEmail(email: string): Promise<findTempTechnicianByEmailDTO>;
+export interface ITempTechnicianRepository {
+  createTempTechnician(
+    technicianData: ITempTechnician
+  ): Promise<CreateTempTechnicianResponse>;
+  findTempTechnicianById(
+    tempTechnicianId: string
+  ): Promise<FindTempTechnicianById>;
+  findTempTechnicianByEmail(email: string): Promise<FindTempTechnicianByEmail>;
 }

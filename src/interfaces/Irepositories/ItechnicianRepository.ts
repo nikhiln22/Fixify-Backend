@@ -1,19 +1,19 @@
 import {
-  createTechnician,
-  findByEmailResponse,
-  findByIdResponse,
+  CreateTechnician,
+  FindByEmailResponse,
+  FindByIdResponse,
   RejectTechnicianResponse,
   TechnicianQualification,
   UpdatePasswordResponse,
   UpdateTechnicianQualificationResponse,
   VerifyTechnicianResponse,
 } from "../DTO/IRepository/ItechnicianRepository";
-import { Itechnician } from "../Models/Itechnician";
+import { ITechnician } from "../Models/Itechnician";
 
-export interface ItechnicianRepository {
-  createTechnician(technicianData: createTechnician): Promise<Itechnician>;
-  findByEmail(email: string): Promise<findByEmailResponse>;
-  getTechnicianById(id: string): Promise<findByIdResponse>;
+export interface ITechnicianRepository {
+  createTechnician(technicianData: CreateTechnician): Promise<ITechnician>;
+  findByEmail(email: string): Promise<FindByEmailResponse>;
+  getTechnicianById(id: string): Promise<FindByIdResponse>;
   updatePassword(
     email: string,
     hashedPassword: string
@@ -23,7 +23,7 @@ export interface ItechnicianRepository {
     qualificationData: TechnicianQualification
   ): Promise<UpdateTechnicianQualificationResponse>;
   getAllApplicants(options: { page?: number; limit?: number }): Promise<{
-    data: Itechnician[];
+    data: ITechnician[];
     total: number;
     page: number;
     limit: number;
@@ -38,7 +38,7 @@ export interface ItechnicianRepository {
     status?: string;
     designation?: string;
   }): Promise<{
-    data: Itechnician[];
+    data: ITechnician[];
     total: number;
     page: number;
     limit: number;
@@ -50,12 +50,25 @@ export interface ItechnicianRepository {
   ): Promise<{
     success: boolean;
     message?: string;
-    technicianData?: Itechnician;
+    technicianData?: ITechnician;
   }>;
   nearbyTechnicians(
     designationId: string,
     userLongitude: number,
     userLatitude: number,
     radius: number
-  ): Promise<Itechnician[]>;
+  ): Promise<ITechnician[]>;
+
+  getTechniciansWithSubscriptions(options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    filterPlan?: string;
+  }): Promise<{
+    data: ITechnician[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  }>;
 }

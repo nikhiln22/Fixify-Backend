@@ -3,29 +3,29 @@ import {
   EditProfileResponse,
   ForgotPasswordRequest,
   ForgotPasswordResponse,
-  loginData,
-  loginResponse,
+  LoginData,
+  LoginResponse,
   RegisterResponse,
   ResendOtpResponse,
   ResetPasswordData,
   ResetPasswordResponse,
   SignupUserData,
-  tempUserResponse,
+  TempUserResponse,
   ToggleUserStatusResponse,
   UserProfileResponse,
-  verifyOtpData,
+  VerifyOtpData,
 } from "../DTO/IServices/IuserService";
-import { Iuser } from "../../interfaces/Models/Iuser";
+import { IUser } from "../../interfaces/Models/Iuser";
 import { IWallet } from "../Models/Iwallet";
 import { IWalletTransaction } from "../Models/IwalletTransaction";
 
-export interface IuserService {
-  userSignUp(data: SignupUserData): Promise<tempUserResponse>;
-  verifyOtp(data: verifyOtpData): Promise<RegisterResponse>;
+export interface IUserService {
+  userSignUp(data: SignupUserData): Promise<TempUserResponse>;
+  verifyOtp(data: VerifyOtpData): Promise<RegisterResponse>;
   resendOtp(data: string): Promise<ResendOtpResponse>;
   forgotPassword(data: ForgotPasswordRequest): Promise<ForgotPasswordResponse>;
   resetPassword(data: ResetPasswordData): Promise<ResetPasswordResponse>;
-  login(data: loginData): Promise<loginResponse>;
+  login(data: LoginData): Promise<LoginResponse>;
   getAllUsers(options: {
     page?: number;
     limit?: number;
@@ -33,10 +33,9 @@ export interface IuserService {
     status?: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
-      users: Iuser[];
+      users: IUser[];
       pagination: {
         total: number;
         page: number;
@@ -56,7 +55,6 @@ export interface IuserService {
     userId: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       wallet: IWallet | null;
@@ -65,7 +63,6 @@ export interface IuserService {
   }>;
   getWalletBalance(userId: string): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: { balance: number };
   }>;
@@ -75,7 +72,6 @@ export interface IuserService {
     userId: string;
   }): Promise<{
     success: boolean;
-    status: number;
     message: string;
     data?: {
       transactions: IWalletTransaction[];

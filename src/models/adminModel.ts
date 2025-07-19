@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
-import { Iadmin } from "../interfaces/Models/Iadmin";
+import { IAdmin } from "../interfaces/Models/Iadmin";
 
-const adminSchema: Schema<Iadmin> = new Schema(
+const adminSchema: Schema<IAdmin> = new Schema(
   {
     email: {
       type: String,
@@ -22,6 +22,6 @@ const adminSchema: Schema<Iadmin> = new Schema(
   }
 );
 
-const Admin = mongoose.model<Iadmin>("admin", adminSchema);
+const Admin = mongoose.model<IAdmin>("admin", adminSchema);
 
 export default Admin;

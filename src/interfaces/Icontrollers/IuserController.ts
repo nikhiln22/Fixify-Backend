@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 
-export interface IuserController {
+export interface IUserController {
   register(req: Request, res: Response): Promise<void>;
   verifyOtp(req: Request, res: Response): Promise<void>;
   resendOtp(req: Request, res: Response): Promise<void>;
@@ -28,5 +28,6 @@ export interface IuserController {
   sendChat(req: Request, res: Response): Promise<void>;
   cancelBooking(req: Request, res: Response): Promise<void>;
   rateService(req: Request, res: Response): Promise<void>;
+  getRating(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

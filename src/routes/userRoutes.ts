@@ -178,6 +178,12 @@ export class UserRoutes {
     );
 
     this.router.get(
+      "/rating/:bookingId",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.getRating.bind(userController)
+    );
+
+    this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.USER),
       userController.logout.bind(userController)

@@ -1,63 +1,83 @@
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../utils/httpStatus";
-import { IadminController } from "../interfaces/Icontrollers/IadminController";
+import { IAdminController } from "../interfaces/Icontrollers/IadminController";
 import { inject, injectable } from "tsyringe";
-import { IuserService } from "../interfaces/Iservices/IuserService";
-import { IadminService } from "../interfaces/Iservices/IadminService";
-import { ItechnicianService } from "../interfaces/Iservices/ItechnicianService";
-import { IbookingService } from "../interfaces/Iservices/IbookingService";
+import { IUserService } from "../interfaces/Iservices/IuserService";
+import { IAdminService } from "../interfaces/Iservices/IadminService";
+import { ITechnicianService } from "../interfaces/Iservices/ItechnicianService";
+import { IBookingService } from "../interfaces/Iservices/IbookingService";
 import { IOfferService } from "../interfaces/Iservices/IofferService";
 import { ICouponService } from "../interfaces/Iservices/IcouponService";
+import { ISubscriptionPlanService } from "../interfaces/Iservices/IsubscriptionPlanService";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+} from "../utils/responseHelper";
+import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
 
 @injectable()
-export class AdminController implements IadminController {
+export class AdminController implements IAdminController {
   constructor(
-    @inject("IuserService")
-    private userService: IuserService,
-    @inject("IadminService")
-    private adminService: IadminService,
-    @inject("ItechnicianService")
-    private technicianService: ItechnicianService,
-    @inject("IbookingService") private bookingService: IbookingService,
+    @inject("IUserService")
+    private userService: IUserService,
+    @inject("IAdminService")
+    private adminService: IAdminService,
+    @inject("ITechnicianService")
+    private technicianService: ITechnicianService,
+    @inject("IBookingService") private bookingService: IBookingService,
     @inject("IOfferService") private offerService: IOfferService,
-    @inject("ICouponService") private couponService: ICouponService
+    @inject("ICouponService") private couponService: ICouponService,
+    @inject("ISubscriptionPlanService")
+    private subscriptionPlanService: ISubscriptionPlanService
   ) {}
 
   async login(req: Request, res: Response): Promise<void> {
     try {
-      console.log("entering to the admin controller function fro admin login");
+      console.log("entering to the admin controller function for admin login");
       const data = req.body;
       console.log("data:", data);
-      const response = await this.adminService.adminLogin(data);
-      console.log("response from the admin login controller:", response);
 
-      res.cookie(
-        `${response.role?.toLowerCase()}_refresh_token`,
-        response.refresh_token,
-        {
-          httpOnly: true,
-          secure: true,
-          sameSite: "strict",
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        }
-      );
+      const serviceResponse = await this.adminService.adminLogin(data);
+      console.log("response from the admin login controller:", serviceResponse);
 
-      if (response.success) {
-        res.status(response.status).json({
-          success: response.success,
-          message: response.message,
-          data: response,
-        });
+      if (serviceResponse.success) {
+        res.cookie(
+          `${serviceResponse.role?.toLowerCase()}_refresh_token`,
+          serviceResponse.refresh_token,
+          {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+          }
+        );
+
+        res.status(HTTP_STATUS.OK).json(
+          createSuccessResponse(
+            {
+              admin: serviceResponse.data,
+              access_token: serviceResponse.access_token,
+              role: serviceResponse.role,
+            },
+            serviceResponse.message
+          )
+        );
       } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("invalid")
+          ? HTTP_STATUS.UNAUTHORIZED
+          : HTTP_STATUS.BAD_REQUEST;
+
         res
-          .status(response.status)
-          .json({ success: response.success, message: response.message });
+          .status(statusCode)
+          .json(createErrorResponse(serviceResponse.message || "Login failed"));
       }
     } catch (error) {
-      console.log("error occured while logging the admin:", error);
+      console.log("error occurred while logging the admin:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ success: false, message: "Internal Server Error" });
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -69,22 +89,38 @@ export class AdminController implements IadminController {
       const search = (req.query.search as string) || undefined;
       const status = (req.query.status as string) || undefined;
 
-      const result = await this.userService.getAllUsers({
+      const serviceResponse = await this.userService.getAllUsers({
         page,
         limit,
         search,
         status,
       });
 
-      console.log("result from the fetching all users controller:", result);
-      res.status(result.status).json(result);
+      console.log(
+        "result from the fetching all users controller:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch users"
+            )
+          );
+      }
     } catch (error) {
       console.error("Error in getAllUsers controller:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Error fetching users",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Error fetching users"));
     }
   }
 
@@ -92,14 +128,31 @@ export class AdminController implements IadminController {
     try {
       const { id } = req.params;
 
-      const response = await this.userService.toggleUserStatus(id);
+      const serviceResponse = await this.userService.toggleUserStatus(id);
 
-      res.status(HTTP_STATUS.OK).json(response);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.user, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to toggle user status"
+            )
+          );
+      }
     } catch (error) {
       console.error("Error in toggleUserStatus controller:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal server error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error"));
     }
   }
 
@@ -109,26 +162,39 @@ export class AdminController implements IadminController {
       const page = parseInt(req.query.page as string) || undefined;
       const limit = parseInt(req.query.limit as string) || undefined;
 
-      const result = await this.technicianService.getAllApplicants({
+      const serviceResponse = await this.technicianService.getAllApplicants({
         page,
         limit,
       });
 
       console.log(
         "result from the fetching all applicants from admin controller:",
-        result
+        serviceResponse
       );
-      res.status(result.status).json(result);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch applicants"
+            )
+          );
+      }
     } catch (error) {
       console.error(
         "Error in fetching all applicants in admin controller:",
         error
       );
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Error fetching Applicants",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Error fetching applicants"));
     }
   }
 
@@ -141,18 +207,32 @@ export class AdminController implements IadminController {
         applicantId
       );
 
-      const response = await this.technicianService.verifyTechnician(
+      const serviceResponse = await this.technicianService.verifyTechnician(
         applicantId
       );
-      console.log("Response from verifying the applicant:", response);
+      console.log("Response from verifying the applicant:", serviceResponse);
 
-      res.status(response.status).json(response);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(createSuccessResponse(null, serviceResponse.message));
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to verify applicant"
+            )
+          );
+      }
     } catch (error) {
       console.log("Error occurred while verifying the applicant:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -168,19 +248,33 @@ export class AdminController implements IadminController {
       );
       console.log("Rejection reason:", reason);
 
-      const response = await this.technicianService.rejectTechnician(
+      const serviceResponse = await this.technicianService.rejectTechnician(
         applicantId,
         reason
       );
-      console.log("Response from rejecting the applicant:", response);
+      console.log("Response from rejecting the applicant:", serviceResponse);
 
-      res.status(response.status).json(response);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(createSuccessResponse(null, serviceResponse.message));
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to reject applicant"
+            )
+          );
+      }
     } catch (error) {
       console.log("Error occurred while rejecting the applicant:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -189,18 +283,38 @@ export class AdminController implements IadminController {
       console.log("fetching the technician profile from the admin controller");
       const technicianId = req.params.technicianId;
       console.log("technicianId from the admin controller:", technicianId);
-      const response = await this.technicianService.getTechnicianProfile(
+
+      const serviceResponse = await this.technicianService.getTechnicianProfile(
         technicianId
       );
-      console.log("response from the technician profile:", response);
-      res.status(response.status).json(response);
+      console.log("response from the technician profile:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(
+              serviceResponse.technician,
+              serviceResponse.message
+            )
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch technician profile"
+            )
+          );
+      }
     } catch (error) {
       console.log("Error fetching technician profile:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server Error",
-        success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -213,7 +327,7 @@ export class AdminController implements IadminController {
       const status = (req.query.status as string) || undefined;
       const designation = (req.query.designation as string) || undefined;
 
-      const result = await this.technicianService.getAllTechnicians({
+      const serviceResponse = await this.technicianService.getAllTechnicians({
         page,
         limit,
         search,
@@ -223,19 +337,32 @@ export class AdminController implements IadminController {
 
       console.log(
         "result from the fetching all technicians from admin controller:",
-        result
+        serviceResponse
       );
-      res.status(result.status).json(result);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch technicians"
+            )
+          );
+      }
     } catch (error) {
       console.error(
         "Error in getting all technician from admin controller:",
         error
       );
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Error fetching users",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Error fetching technicians"));
     }
   }
 
@@ -243,14 +370,35 @@ export class AdminController implements IadminController {
     try {
       const { id } = req.params;
 
-      const response = await this.technicianService.toggleTechnicianStatus(id);
+      const serviceResponse =
+        await this.technicianService.toggleTechnicianStatus(id);
 
-      res.status(HTTP_STATUS.OK).json(response);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(
+              serviceResponse.technician,
+              serviceResponse.message
+            )
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to toggle technician status"
+            )
+          );
+      }
     } catch (error) {
       console.error("Error in toggleTechnicianStatus controller:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal server error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error"));
     }
   }
 
@@ -264,7 +412,7 @@ export class AdminController implements IadminController {
 
       console.log("filter status in the admin controller:", filter);
 
-      const result = await this.bookingService.getAllBookings({
+      const serviceResponse = await this.bookingService.getAllBookings({
         page,
         limit,
         search,
@@ -272,16 +420,34 @@ export class AdminController implements IadminController {
         role: "admin",
       });
 
-      res.status(HTTP_STATUS.OK).json(result);
       console.log(
         "result from fetching all the bookings for the admin controller:",
-        result
+        serviceResponse
       );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch bookings"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while fetchning the bookings for the admin");
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal server error",
-      });
+      console.log(
+        "error occurred while fetching the bookings for the admin",
+        error
+      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error"));
     }
   }
 
@@ -292,24 +458,42 @@ export class AdminController implements IadminController {
       const { bookingId } = req.params;
 
       if (!bookingId) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json({
-          success: false,
-          message: "Booking ID is required",
-        });
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("Booking ID is required"));
         return;
       }
 
       console.log("Fetching booking details for admin:", bookingId);
 
-      const response = await this.bookingService.getBookingById(bookingId, {});
+      const serviceResponse = await this.bookingService.getBookingById(
+        bookingId,
+        {}
+      );
 
-      res.status(response.status).json(response);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch booking details"
+            )
+          );
+      }
     } catch (error) {
       console.error("Error in getBookingDetails controller:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal server error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error"));
     }
   }
 
@@ -336,15 +520,28 @@ export class AdminController implements IadminController {
 
       console.log("processed offer data:", offerData);
 
-      const response = await this.offerService.addOffer(offerData);
+      const serviceResponse = await this.offerService.addOffer(offerData);
 
-      res.status(response.status).json(response);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.CREATED)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to add offer"
+            )
+          );
+      }
     } catch (error) {
       console.error("Error in addOffer controller:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: false,
-        message: "Internal Server Error",
-      });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -356,19 +553,35 @@ export class AdminController implements IadminController {
       const search = (req.query.search as string) || undefined;
       const filterStatus = (req.query.filterStatus as string) || undefined;
       console.log("filterStatus in adminController:", filterStatus);
-      const response = await this.offerService.getAllOffers({
+
+      const serviceResponse = await this.offerService.getAllOffers({
         page,
         limit,
         search,
         filterStatus,
       });
-      console.log("response in the fetching all offers:", response);
-      res.status(response.status).json(response);
+      console.log("response in the fetching all offers:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch offers"
+            )
+          );
+      }
     } catch (error) {
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server Error",
-        success: false,
-      });
+      console.log("error occurred while fetching offers:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -379,15 +592,36 @@ export class AdminController implements IadminController {
       );
       const { id } = req.params;
       console.log("offerId in the block offer function:", id);
-      const response = await this.offerService.blockOffer(id);
-      console.log("response from the block offer function:", response);
-      res.status(response.status).json(response);
+
+      const serviceResponse = await this.offerService.blockOffer(id);
+      console.log("response from the block offer function:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(
+              serviceResponse.offer,
+              serviceResponse.message
+            )
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to block offer"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while blocking the offer:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server Error",
-        success: false,
-      });
+      console.log("error occurred while blocking the offer:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -396,11 +630,11 @@ export class AdminController implements IadminController {
       console.log("updating the existing offer from the admin controller:");
       const offerId = req.params.offerId;
       console.log("offerId:", offerId);
+
       if (!offerId) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json({
-          success: false,
-          message: "Offer ID is required",
-        });
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("Offer ID is required"));
         return;
       }
 
@@ -432,59 +666,57 @@ export class AdminController implements IadminController {
         valid_until?: Date;
       } = {};
 
-      if (title !== undefined) {
-        updateData.title = title;
-      }
-
-      if (description !== undefined) {
-        updateData.description = description;
-      }
-
-      if (offer_type !== undefined) {
-        updateData.offer_type = offer_type;
-      }
-
-      if (discount_type !== undefined) {
-        updateData.discount_type = discount_type;
-      }
-
-      if (discount_value !== undefined) {
+      if (title !== undefined) updateData.title = title;
+      if (description !== undefined) updateData.description = description;
+      if (offer_type !== undefined) updateData.offer_type = offer_type;
+      if (discount_type !== undefined) updateData.discount_type = discount_type;
+      if (discount_value !== undefined)
         updateData.discount_value = discount_value;
-      }
-
-      if (max_discount !== undefined) {
-        updateData.max_discount = max_discount;
-      }
-
-      if (min_booking_amount !== undefined) {
+      if (max_discount !== undefined) updateData.max_discount = max_discount;
+      if (min_booking_amount !== undefined)
         updateData.min_booking_amount = min_booking_amount;
-      }
-
-      if (service_id !== undefined) {
-        updateData.service_id = service_id;
-      }
-
-      if (valid_until !== undefined) {
-        updateData.valid_until = valid_until;
-      }
+      if (service_id !== undefined) updateData.service_id = service_id;
+      if (valid_until !== undefined) updateData.valid_until = valid_until;
 
       if (Object.keys(updateData).length === 0) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json({
-          success: false,
-          message: "No update data provided",
-        });
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("No update data provided"));
         return;
       }
 
-      const response = await this.offerService.updateOffer(offerId, updateData);
-      console.log("after updating the offer from the offer service:", response);
-      res.status(response.status).json(response);
+      const serviceResponse = await this.offerService.updateOffer(
+        offerId,
+        updateData
+      );
+      console.log(
+        "after updating the offer from the offer service:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to update offer"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while updating the offer:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server Error",
-        success: false,
-      });
+      console.log("error occurred while updating the offer:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -508,22 +740,34 @@ export class AdminController implements IadminController {
           : undefined,
       };
 
-      console.log("processed offer data:", couponData);
+      console.log("processed coupon data:", couponData);
 
-      const response = await this.couponService.addCoupon(couponData);
-
+      const serviceResponse = await this.couponService.addCoupon(couponData);
       console.log(
         "response after adding the coupon in admin controller:",
-        response
+        serviceResponse
       );
 
-      res.status(response.status).json(response);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.CREATED)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to add coupon"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while adding the coupon:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server Error",
-        success: false,
-      });
+      console.log("error occurred while adding the coupon:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -534,19 +778,35 @@ export class AdminController implements IadminController {
       const limit = parseInt(req.query.limit as string) || undefined;
       const search = (req.query.search as string) || undefined;
       const filterStatus = (req.query.filterStatus as string) || undefined;
-      const response = await this.couponService.getAllCoupons({
+
+      const serviceResponse = await this.couponService.getAllCoupons({
         page,
         limit,
         search,
         filterStatus,
       });
-      console.log("response in the fetching all coupons:", response);
-      res.status(response.status).json(response);
+      console.log("response in the fetching all coupons:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch coupons"
+            )
+          );
+      }
     } catch (error) {
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server Error",
-        success: false,
-      });
+      console.log("error occurred while fetching coupons:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -556,16 +816,37 @@ export class AdminController implements IadminController {
         "entering to the block coupon function in the admin controller"
       );
       const { id } = req.params;
-      console.log("couponId in the block offer function:", id);
-      const response = await this.couponService.blockCoupon(id);
-      console.log("response from the block coupon function:", response);
-      res.status(response.status).json(response);
+      console.log("couponId in the block coupon function:", id);
+
+      const serviceResponse = await this.couponService.blockCoupon(id);
+      console.log("response from the block coupon function:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(
+              serviceResponse.coupon,
+              serviceResponse.message
+            )
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to block coupon"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while blocking the Coupon:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server Error",
-        success: false,
-      });
+      console.log("error occurred while blocking the coupon:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
@@ -574,11 +855,11 @@ export class AdminController implements IadminController {
       console.log("updating the existing coupon from the admin controller:");
       const couponId = req.params.couponId;
       console.log("couponId:", couponId);
+
       if (!couponId) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json({
-          success: false,
-          message: "Coupon ID is required",
-        });
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("Coupon ID is required"));
         return;
       }
 
@@ -606,86 +887,275 @@ export class AdminController implements IadminController {
         valid_until?: Date;
       } = {};
 
-      if (code !== undefined) {
-        updateData.code = code;
-      }
-
-      if (title !== undefined) {
-        updateData.title = title;
-      }
-
-      if (description !== undefined) {
-        updateData.description = description;
-      }
-
-      if (discount_type !== undefined) {
-        updateData.discount_type = discount_type;
-      }
-
-      if (discount_value !== undefined) {
+      if (code !== undefined) updateData.code = code;
+      if (title !== undefined) updateData.title = title;
+      if (description !== undefined) updateData.description = description;
+      if (discount_type !== undefined) updateData.discount_type = discount_type;
+      if (discount_value !== undefined)
         updateData.discount_value = discount_value;
-      }
-
-      if (max_discount !== undefined) {
-        updateData.max_discount = max_discount;
-      }
-
-      if (min_booking_amount !== undefined) {
+      if (max_discount !== undefined) updateData.max_discount = max_discount;
+      if (min_booking_amount !== undefined)
         updateData.min_booking_amount = min_booking_amount;
-      }
-
-      if (valid_until !== undefined) {
-        updateData.valid_until = valid_until;
-      }
+      if (valid_until !== undefined) updateData.valid_until = valid_until;
 
       if (Object.keys(updateData).length === 0) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json({
-          success: false,
-          message: "No update data provided",
-        });
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("No update data provided"));
         return;
       }
 
-      const response = await this.couponService.updateCoupon(
+      const serviceResponse = await this.couponService.updateCoupon(
         couponId,
         updateData
       );
       console.log(
         "after updating the coupon from the coupon service:",
-        response
+        serviceResponse
       );
-      res.status(response.status).json(response);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to update coupon"
+            )
+          );
+      }
     } catch (error) {
-      console.log("error occured while updating the coupon:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        message: "Internal Server Error",
-        success: false,
-      });
+      console.log("error occurred while updating the coupon:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
-  async logout(req: Request, res: Response): Promise<void> {
+  async getRating(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entered the function which fetched the booking rating for a specified booking"
+      );
+      const { bookingId } = req.params;
+      console.log("bookingId in the admin controller:", bookingId);
+
+      const serviceResponse = await this.bookingService.getRating(bookingId);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch rating"
+            )
+          );
+      }
+    } catch (error) {
+      console.log(
+        "error occurred while fetching the rating for a booking:",
+        error
+      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async addSubscriptionPlan(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering to the function adding the subscription plan");
+      console.log("Received Data:", req.body);
+
+      const { planName, commissionRate, monthlyPrice } = req.body;
+
+      if (!planName || !commissionRate || monthlyPrice === undefined) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              "planName, commissionRate, and monthlyPrice are required"
+            )
+          );
+        return;
+      }
+
+      if (!["BASIC", "PRO", "ELITE"].includes(planName)) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("planName must be BASIC, PRO, or ELITE"));
+        return;
+      }
+
+      if (
+        typeof commissionRate !== "number" ||
+        typeof monthlyPrice !== "number"
+      ) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              "commissionRate and monthlyPrice must be numbers"
+            )
+          );
+        return;
+      }
+
+      const serviceResponse =
+        await this.subscriptionPlanService.addSubscriptionPlan(
+          planName,
+          commissionRate,
+          monthlyPrice
+        );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.CREATED)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to add subscription plan"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error occurred while adding the subscription plan:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getAllSubscriptionPlans(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("fetching the subscription plans for the admin");
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+      const search = (req.query.search as string) || undefined;
+      const filterStatus = (req.query.filterStatus as string) || undefined;
+
+      const serviceResponse =
+        await this.subscriptionPlanService.getAllSubscriptionPlans({
+          page,
+          limit,
+          search,
+          filterStatus,
+        });
+      console.log(
+        "response in the fetching all Subscription Plans:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch Subscription Plans"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error occurred while fetching subscription plans:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getSubscriptionhistory(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("fetching the technician subscription history for the admin");
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+      const filterPlan = (req.query.filterPlan as string) || undefined;
+
+      const serviceResponse =
+        await this.technicianService.getTechniciansWithSubscriptions({
+          page,
+          limit,
+          filterPlan,
+        });
+
+      console.log(
+        "response in the fetching technician Subscription history:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message ||
+                "Failed to fetch technician Subscription History"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error occurred while fetching subscription history:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async logout(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log(
         "entering the logout function from the admin auth controller"
       );
-      const role = (req as any).user?.role;
+      const role = req.user?.role;
       console.log("role in the admin auth controller:", role);
+
       res.clearCookie(`${role}_refresh_token`, {
         httpOnly: true,
         secure: true,
         sameSite: "strict",
       });
-      res.status(HTTP_STATUS.OK).json({
-        success: true,
-        message: "Logged out successfully",
-      });
+
+      res
+        .status(HTTP_STATUS.OK)
+        .json(createSuccessResponse(null, "Logged out successfully"));
     } catch (error) {
-      console.log("error occured while admin logging out:", error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        success: true,
-        message: "Internal server error occured",
-      });
+      console.log("error occurred while admin logging out:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error occurred"));
     }
   }
 }
