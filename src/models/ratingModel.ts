@@ -10,7 +10,7 @@ const ratingSchema: Schema<IRating> = new Schema(
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "user",
       required: true,
     },
     technicianId: {

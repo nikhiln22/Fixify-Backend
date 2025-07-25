@@ -42,8 +42,10 @@ import { IChatService } from "../interfaces/Iservices/IchatService";
 import { IChatRepository } from "../interfaces/Irepositories/IchatRepository";
 import { ChatService } from "../services/chatService";
 import { ChatRepository } from "../repositories/chatRepository";
+import { IUserController } from "../interfaces/Icontrollers/IuserController";
+import { UserController } from "../controllers/userController";
 
-
+container.registerSingleton<IUserController>("IUserController",UserController);
 container.registerSingleton<IUserService>("IUserService",UserService);
 container.registerSingleton<IUserRepository>("IUserRepository", UserRepository);
 container.registerSingleton<ITempUserRepository>("ITempUserRepository", TempUserRepository);

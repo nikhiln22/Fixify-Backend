@@ -23,6 +23,8 @@ export interface IAdminController {
   getRating(req: Request, res: Response): Promise<void>;
   addSubscriptionPlan(req: Request, res: Response): Promise<void>;
   getAllSubscriptionPlans(req: Request, res: Response): Promise<void>;
+  blockSubscriptionPlan(req: Request, res: Response): Promise<void>;
+  updateSubscriptionPlan(req: Request, res: Response): Promise<void>;
   getSubscriptionhistory(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

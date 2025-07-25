@@ -329,7 +329,7 @@ export class EmailTemplateService {
     
     Booking ID: #${bookingId ? bookingId.slice(-8).toUpperCase() : "N/A"}
     
-    What to do: When your technician asks for the verification code, simply tell them the 6-digit number above.
+    What to do: When your technician asks for the verification code, simply tell them the 4-digit number above.
     
     This verification process ensures:
     - Service has been completed to your satisfaction

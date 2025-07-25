@@ -71,4 +71,17 @@ export interface ITechnicianRepository {
     limit: number;
     pages: number;
   }>;
+  getActiveSubscriptionPlan(technicianId: string): Promise<{
+    success: boolean;
+    subscriptionData?: {
+      planName: string;
+      status: string;
+      commissionRate: number;
+      walletCreditDelay: number;
+      profileBoost: boolean;
+      durationInMonths: number;
+      expiresAt?: string;
+      amount: number;
+    };
+  }>;
 }

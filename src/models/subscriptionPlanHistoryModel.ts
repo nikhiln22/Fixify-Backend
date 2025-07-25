@@ -16,6 +16,7 @@ const subscriptionPlanHistorySchema: Schema<ISubscriptionPlanHistory> =
       },
       amount: {
         type: Number,
+        required: true,
       },
       paymentId: {
         type: mongoose.Schema.Types.ObjectId,

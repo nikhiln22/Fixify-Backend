@@ -75,11 +75,10 @@ export interface TechnicianQualification {
   experience: string;
   designation: string;
   about: string;
-  city: string;
   address: string;
   latitude: number;
   longitude: number;
-  profilePhoto: Express.Multer.File;
+  profilePhoto?: Express.Multer.File;
   certificates?: Express.Multer.File[];
 }
 
@@ -134,4 +133,15 @@ export interface AddTimeSlotsResult {
   success: boolean;
   message: string;
   data?: ITimeSlot[];
+}
+
+export interface TechnicianQualificationSaveData {
+  experience: string;
+  designation: string;
+  about: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  profilePhoto?: string;
+  certificates?: string[];
 }

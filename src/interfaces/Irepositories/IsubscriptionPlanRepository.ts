@@ -1,15 +1,21 @@
 import { ISubscriptionPlan } from "../Models/IsubscriptionPlan";
 
 export interface ISubscriptionPlanRepository {
-  addSubscriptionPlan(
-    planName: "BASIC" | "PRO" | "ELITE",
-    commissionRate: number,
-    monthlyPrice: number
-  ): Promise<ISubscriptionPlan>;
+  addSubscriptionPlan(data: {
+    planName: string;
+    commissionRate: number;
+    price: number;
+    WalletCreditDelay: number;
+    profileBoost: boolean;
+    durationInMonths: number;
+    description?: string;
+  }): Promise<ISubscriptionPlan>;
 
-  findByPlanName(
-    planName: "BASIC" | "PRO" | "ELITE"
-  ): Promise<ISubscriptionPlan | null>;
+  findByPlanName(planName: string): Promise<ISubscriptionPlan | null>;
+
+  findSubscriptionPlanById(id: string): Promise<ISubscriptionPlan | null>;
+
+  blockSubscriptionPlan(id: string, status: boolean): Promise<void>;
 
   getAllSubscriptionPlans(options: {
     page?: number;
@@ -23,4 +29,19 @@ export interface ISubscriptionPlanRepository {
     limit: number;
     pages: number;
   }>;
+  updateSubscriptionPlan(
+    id: string,
+    updateData: {
+      planName?: string;
+      commissionRate?: number;
+      price?: number;
+      WalletCreditDelay?: number;
+      profileBoost?: boolean;
+      durationInMonths?: number;
+      description?: string;
+    }
+  ): Promise<ISubscriptionPlan | null>;
+  getActiveTechniciansCount(): Promise<number>;
+  getPaidSubscribersCount(): Promise<number>;
+  getMonthlyRevenue(): Promise<number>;
 }

@@ -41,16 +41,12 @@ export class AdminController implements IAdminController {
       console.log("response from the admin login controller:", serviceResponse);
 
       if (serviceResponse.success) {
-        res.cookie(
-          `${serviceResponse.role?.toLowerCase()}_refresh_token`,
-          serviceResponse.refresh_token,
-          {
-            httpOnly: true,
-            secure: true,
-            sameSite: "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-          }
-        );
+        res.cookie("refresh_token", serviceResponse.refresh_token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
 
         res.status(HTTP_STATUS.OK).json(
           createSuccessResponse(
@@ -983,46 +979,105 @@ export class AdminController implements IAdminController {
       console.log("entering to the function adding the subscription plan");
       console.log("Received Data:", req.body);
 
-      const { planName, commissionRate, monthlyPrice } = req.body;
-
-      if (!planName || !commissionRate || monthlyPrice === undefined) {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            createErrorResponse(
-              "planName, commissionRate, and monthlyPrice are required"
-            )
-          );
-        return;
-      }
-
-      if (!["BASIC", "PRO", "ELITE"].includes(planName)) {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(createErrorResponse("planName must be BASIC, PRO, or ELITE"));
-        return;
-      }
+      const {
+        planName,
+        commissionRate,
+        price,
+        WalletCreditDelay,
+        profileBoost,
+        durationInMonths,
+        description,
+      } = req.body;
 
       if (
-        typeof commissionRate !== "number" ||
-        typeof monthlyPrice !== "number"
+        !planName ||
+        commissionRate === undefined ||
+        price === undefined ||
+        WalletCreditDelay === undefined ||
+        profileBoost === undefined ||
+        durationInMonths === undefined
       ) {
         res
           .status(HTTP_STATUS.BAD_REQUEST)
           .json(
             createErrorResponse(
-              "commissionRate and monthlyPrice must be numbers"
+              "planName, commissionRate, monthlyPrice, WalletCreditDelay, profileBoost, and durationInMonths are required"
             )
           );
         return;
       }
 
+      if (
+        typeof commissionRate !== "number" ||
+        typeof price !== "number" ||
+        typeof WalletCreditDelay !== "number" ||
+        typeof durationInMonths !== "number"
+      ) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              "Invalid data types: commissionRate, monthlyPrice, WalletCreditDelay, and durationInMonths must be numbers"
+            )
+          );
+        return;
+      }
+
+      if (typeof profileBoost !== "boolean") {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("profileBoost must be boolean"));
+        return;
+      }
+
+      if (commissionRate < 0 || commissionRate > 100) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse("commissionRate must be between 0 and 100")
+          );
+        return;
+      }
+
+      if (price < 0) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("monthlyPrice cannot be negative"));
+        return;
+      }
+
+      if (WalletCreditDelay < 0) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("WalletCreditDelay cannot be negative"));
+        return;
+      }
+
+      if (durationInMonths < 1) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("durationInMonths must be at least 1"));
+        return;
+      }
+
+      const subscriptionPlanData = {
+        planName,
+        commissionRate,
+        price,
+        WalletCreditDelay,
+        profileBoost,
+        durationInMonths,
+        description: description || undefined,
+      };
+
+      console.log("Processed subscription plan data:", subscriptionPlanData);
+
       const serviceResponse =
         await this._subscriptionPlanService.addSubscriptionPlan(
-          planName,
-          commissionRate,
-          monthlyPrice
+          subscriptionPlanData
         );
+
+      console.log("Service response:", serviceResponse);
 
       if (serviceResponse.success) {
         res
@@ -1090,18 +1145,222 @@ export class AdminController implements IAdminController {
     }
   }
 
+  async updateSubscriptionPlan(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "updating the existing subscription plan from the admin controller:"
+      );
+      const subscriptionPlanId = req.params.subscriptionPlanId;
+      console.log("subscriptionPlanId:", subscriptionPlanId);
+
+      if (!subscriptionPlanId) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("Subscription Plan ID is required"));
+        return;
+      }
+
+      console.log("req.body:", req.body);
+
+      const {
+        planName,
+        commissionRate,
+        price,
+        WalletCreditDelay,
+        profileBoost,
+        durationInMonths,
+        description,
+      } = req.body;
+
+      const updateData: {
+        planName?: string;
+        commissionRate?: number;
+        price?: number;
+        WalletCreditDelay?: number;
+        profileBoost?: boolean;
+        durationInMonths?: number;
+        description?: string;
+      } = {};
+
+      if (planName !== undefined) updateData.planName = planName;
+      if (commissionRate !== undefined)
+        updateData.commissionRate = commissionRate;
+      if (price !== undefined) updateData.price = price;
+      if (WalletCreditDelay !== undefined)
+        updateData.WalletCreditDelay = WalletCreditDelay;
+      if (profileBoost !== undefined) updateData.profileBoost = profileBoost;
+      if (durationInMonths !== undefined)
+        updateData.durationInMonths = durationInMonths;
+      if (description !== undefined) updateData.description = description;
+
+      if (Object.keys(updateData).length === 0) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("No update data provided"));
+        return;
+      }
+
+      if (updateData.commissionRate !== undefined) {
+        if (
+          typeof updateData.commissionRate !== "number" ||
+          updateData.commissionRate < 0 ||
+          updateData.commissionRate > 100
+        ) {
+          res
+            .status(HTTP_STATUS.BAD_REQUEST)
+            .json(
+              createErrorResponse(
+                "commissionRate must be a number between 0 and 100"
+              )
+            );
+          return;
+        }
+      }
+
+      if (updateData.price !== undefined) {
+        if (typeof updateData.price !== "number" || updateData.price < 0) {
+          res
+            .status(HTTP_STATUS.BAD_REQUEST)
+            .json(createErrorResponse("price must be a non-negative number"));
+          return;
+        }
+      }
+
+      if (updateData.WalletCreditDelay !== undefined) {
+        if (
+          typeof updateData.WalletCreditDelay !== "number" ||
+          updateData.WalletCreditDelay < 0
+        ) {
+          res
+            .status(HTTP_STATUS.BAD_REQUEST)
+            .json(
+              createErrorResponse(
+                "WalletCreditDelay must be a non-negative number"
+              )
+            );
+          return;
+        }
+      }
+
+      if (updateData.durationInMonths !== undefined) {
+        if (
+          typeof updateData.durationInMonths !== "number" ||
+          updateData.durationInMonths < 0
+        ) {
+          res
+            .status(HTTP_STATUS.BAD_REQUEST)
+            .json(
+              createErrorResponse(
+                "durationInMonths must be a non-negative number"
+              )
+            );
+          return;
+        }
+      }
+
+      if (updateData.profileBoost !== undefined) {
+        if (typeof updateData.profileBoost !== "boolean") {
+          res
+            .status(HTTP_STATUS.BAD_REQUEST)
+            .json(createErrorResponse("profileBoost must be a boolean"));
+          return;
+        }
+      }
+
+      const serviceResponse =
+        await this._subscriptionPlanService.updateSubscriptionPlan(
+          subscriptionPlanId,
+          updateData
+        );
+      console.log(
+        "after updating the subscription plan from the subscription plan service:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to update subscription plan"
+            )
+          );
+      }
+    } catch (error) {
+      console.log(
+        "error occurred while updating the subscription plan:",
+        error
+      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async blockSubscriptionPlan(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entering to the block subscription plan function in the admin controller"
+      );
+      const { id } = req.params;
+      console.log("subscriptionPlanId in the block Subscription plan:", id);
+
+      const serviceResponse =
+        await this._subscriptionPlanService.blockSubscriptionPlan(id);
+      console.log("response from the block coupon function:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(
+              serviceResponse.coupon,
+              serviceResponse.message
+            )
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to block coupon"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error occurred while blocking the coupon:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
   async getSubscriptionhistory(req: Request, res: Response): Promise<void> {
     try {
       console.log("fetching the technician subscription history for the admin");
       const page = parseInt(req.query.page as string) || undefined;
       const limit = parseInt(req.query.limit as string) || undefined;
-      const filterPlan = (req.query.filterPlan as string) || undefined;
+      const search = (req.query.search as string) || undefined;
+      const filterStatus = (req.query.filterStatus as string) || undefined;
 
       const serviceResponse =
-        await this._technicianService.getTechniciansWithSubscriptions({
+        await this._subscriptionPlanService.getTechniciansWithSubscriptions({
           page,
           limit,
-          filterPlan,
+          search,
+          filterStatus,
         });
 
       console.log(
@@ -1141,7 +1400,7 @@ export class AdminController implements IAdminController {
       const role = req.user?.role;
       console.log("role in the admin auth controller:", role);
 
-      res.clearCookie(`${role}_refresh_token`, {
+      res.clearCookie("refresh_token", {
         httpOnly: true,
         secure: true,
         sameSite: "strict",

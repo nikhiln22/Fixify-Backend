@@ -13,6 +13,7 @@ import {
   TempTechnicianResponse,
   ToggleTechnicianStatusResponse,
   VerifyOtpData,
+  TechnicianQualificationUpdateResponse,
 } from "../DTO/IServices/ItechnicianService";
 import { IRating } from "../Models/Irating";
 import { ITechnician } from "../Models/Itechnician";
@@ -37,7 +38,7 @@ export interface ITechnicianService {
       profilePhoto?: Express.Multer.File;
       certificates?: Express.Multer.File[];
     }
-  ): Promise<any>;
+  ): Promise<TechnicianQualificationUpdateResponse>;
   getAllApplicants(options: { page?: number; limit?: number }): Promise<{
     success: boolean;
     message: string;
@@ -135,24 +136,18 @@ export interface ITechnicianService {
     totalReviews?: number;
   }>;
 
-  getTechniciansWithSubscriptions(options: {
-    page?: number;
-    limit?: number;
-    search?: string;
-    filterPlan?: string;
-  }): Promise<{
+  getTechnicianActiveSubscriptionPlan(technicianId: string): Promise<{
     success: boolean;
     message: string;
     data?: {
-      technicians: ITechnician[];
-      pagination: {
-        total: number;
-        page: number;
-        pages: number;
-        limit: number;
-        hasNextPage: boolean;
-        hasPrevPage: boolean;
-      };
+      planName: string;
+      status: string;
+      commissionRate: number;
+      walletCreditDelay: number;
+      profileBoost: boolean;
+      durationInMonths: number;
+      expiresAt?: string;
+      amount: number;
     };
   }>;
 }

@@ -47,9 +47,6 @@ export interface IBookingService {
   ): Promise<{
     success: boolean;
     message: string;
-    data?: {
-      otp: string;
-    };
   }>;
 
   verifyCompletionOtp(

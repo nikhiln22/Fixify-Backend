@@ -1,11 +1,11 @@
 import express, { Router } from "express";
 import { container } from "../di/container";
-import { JobController } from "../controllers/jobController";
 import { AuthMiddleware } from "../middlewares/AuthMiddleware";
 import { Roles } from "../config/roles";
 import { LocalUpload } from "../config/multerConfig";
-import { ServiceController } from "../controllers/serviceController";
-import { AdminController } from "../controllers/adminController";
+import { IAdminController } from "../interfaces/Icontrollers/IadminController";
+import { IServiceController } from "../interfaces/Icontrollers/IserviceController";
+import { IJobController } from "../interfaces/Icontrollers/IjobController";
 
 export class AdminRoutes {
   private router: Router;
@@ -20,11 +20,13 @@ export class AdminRoutes {
   }
 
   private setupRoutes() {
-    const jobController = container.resolve(JobController);
+    const jobController = container.resolve<IJobController>("IJobController");
 
-    const serviceController = container.resolve(ServiceController);
+    const serviceController =
+      container.resolve<IServiceController>("IServiceController");
 
-    const adminController = container.resolve(AdminController);
+    const adminController =
+      container.resolve<IAdminController>("IAdminController");
 
     this.router.post("/login", adminController.login.bind(adminController));
 
@@ -222,6 +224,24 @@ export class AdminRoutes {
       "/subscriptionplans",
       this.authMiddleware.authenticate(Roles.ADMIN),
       adminController.getAllSubscriptionPlans.bind(adminController)
+    );
+
+    this.router.patch(
+      "/blocksubscriptionplan/:id",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.blockSubscriptionPlan.bind(adminController)
+    );
+
+    this.router.put(
+      "/updatesubscriptionplan/:subscriptionPlanId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.updateSubscriptionPlan.bind(adminController)
+    );
+
+    this.router.get(
+      "/subscriptionhistory",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.getSubscriptionhistory.bind(adminController)
     );
 
     this.router.get(

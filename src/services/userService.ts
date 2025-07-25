@@ -214,7 +214,8 @@ export class UserService implements IUserService {
           : { ...newUser };
         console.log("newUserObj:", newUserObj);
 
-        const { password, ...safeUser } = newUserObj;
+        const safeUser = { ...newUserObj };
+        delete safeUser.password;
         console.log("safeUser:", safeUser);
 
         const redisKey = this.getOtpRedisKey(
@@ -432,8 +433,7 @@ export class UserService implements IUserService {
         message: "Login Successfull",
         access_token,
         refresh_token,
-        role: Roles.USER,
-        user: {
+        data: {
           username: user.userData.username,
           email: user.userData.email,
           phone: user.userData.phone,
@@ -582,7 +582,7 @@ export class UserService implements IUserService {
         };
       }
 
-      const profileDataToSave: any = {};
+      const profileDataToSave: UserProfileUpdateData = {};
 
       if (updateData.username) {
         profileDataToSave.username = updateData.username;
