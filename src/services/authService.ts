@@ -8,7 +8,7 @@ export class AuthService implements IAuthService {
 
   async refreshAccessToken(
     refreshToken: string,
-    role: string
+    requestedRole: string
   ): Promise<{
     success: boolean;
     data?: string;
@@ -30,26 +30,28 @@ export class AuthService implements IAuthService {
         };
       }
 
-      const tokenRole = payload.role;
-      console.log("tokenRole:", tokenRole);
+      const tokenRole = payload.role.toLowerCase();
+      const expectedRole = requestedRole.toLowerCase();
 
-      const expectedRole = role.toLowerCase();
-      console.log("expectedRole:", expectedRole);
+      console.log("tokenRole from JWT:", tokenRole);
+      console.log("requestedRole from frontend:", expectedRole);
 
       if (tokenRole !== expectedRole) {
         return {
           success: false,
-          message: "Token role mismatch",
+          message: "Token role mismatch - unauthorized role access",
         };
       }
 
       console.log("payload from authservice:", payload);
+
+      // Generate new access token with the original role from the refresh token
       const newAccessToken = this._jwtService.generateAccessToken(
         payload.Id,
-        payload.role
+        payload.role // Use original role from refresh token
       );
 
-      console.log("newAccessToken:", newAccessToken);
+      console.log("newAccessToken generated successfully");
 
       return {
         success: true,
@@ -57,10 +59,7 @@ export class AuthService implements IAuthService {
         message: "Access token refreshed successfully",
       };
     } catch (error: any) {
-      console.error(
-        "Error in RefreshService.refreshAccessToken:",
-        error.message
-      );
+      console.error("Error in AuthService.refreshAccessToken:", error.message);
       return {
         success: false,
         message: "Unable to refresh access token",

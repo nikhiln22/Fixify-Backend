@@ -19,6 +19,7 @@ import {
   SignupTechnicianData,
   TechnicianProfileResponse,
   TechnicianQualification,
+  TechnicianQualificationSaveData,
   TechnicianQualificationUpdateResponse,
   TempTechnicianResponse,
   ToggleTechnicianStatusResponse,
@@ -233,7 +234,10 @@ export class TechnicianService implements ITechnicianService {
           : { ...newTechnician };
         console.log("newUserObj:", newTechnicianObj);
 
-        const { password, ...safeTechnician } = newTechnicianObj;
+        const safeTechnician = { ...newTechnicianObj };
+
+        delete safeTechnician.password;
+
         console.log("safeTechnician:", safeTechnician);
 
         const redisKey = this.getOtpRedisKey(
@@ -488,7 +492,7 @@ export class TechnicianService implements ITechnicianService {
         technicianId
       );
 
-      const qualificationDataToSave: any = {
+      const qualificationDataToSave: TechnicianQualificationSaveData = {
         experience: qualificationData.experience,
         designation: qualificationData.designation,
         longitude: qualificationData.longitude,
@@ -618,6 +622,12 @@ export class TechnicianService implements ITechnicianService {
         };
       }
 
+      const designation =
+        typeof result.technicianData.Designation === "object"
+          ? (result.technicianData.Designation as { designation?: string })
+              ?.designation
+          : result.technicianData.Designation;
+
       return {
         message: "Technician profile fetched successfully",
         success: true,
@@ -627,7 +637,7 @@ export class TechnicianService implements ITechnicianService {
           phone: result.technicianData.phone,
           is_verified: result.technicianData.is_verified,
           yearsOfExperience: result.technicianData.yearsOfExperience,
-          Designation: (result.technicianData.Designation as any).designation,
+          Designation: designation,
           address: result.technicianData.address,
           About: result.technicianData.About,
           image: result.technicianData.image,
@@ -1109,64 +1119,45 @@ export class TechnicianService implements ITechnicianService {
     }
   }
 
-  async getTechniciansWithSubscriptions(options: {
-    page?: number;
-    limit?: number;
-    search?: string;
-    filterPlan?: string;
-  }): Promise<{
+  async getTechnicianActiveSubscriptionPlan(technicianId: string): Promise<{
     success: boolean;
     message: string;
     data?: {
-      technicians: ITechnician[];
-      pagination: {
-        total: number;
-        page: number;
-        pages: number;
-        limit: number;
-        hasNextPage: boolean;
-        hasPrevPage: boolean;
-      };
+      planName: string;
+      status: string;
+      commissionRate: number;
+      walletCreditDelay: number;
+      profileBoost: boolean;
+      durationInMonths: number;
+      expiresAt?: string;
+      amount: number;
     };
   }> {
     try {
-      console.log(
-        "entered to the technician service that fetches the technicians with subscription plans"
+      console.log("Service: Getting technician active subscription plan");
+
+      const result = await this._technicianRepository.getActiveSubscriptionPlan(
+        technicianId
       );
-      const page = options.page || 1;
-      const limit = options.limit || 5;
-      const result =
-        await this._technicianRepository.getTechniciansWithSubscriptions({
-          page,
-          limit,
-          search: options.search,
-          filterPlan: options.filterPlan,
-        });
-      console.log("result from the technician service:", result);
+
+      if (!result.success || !result.subscriptionData) {
+        return {
+          success: false,
+          message: "No active subscription found for technician",
+        };
+      }
 
       return {
         success: true,
-        message: "Technicians subscription plan fetched successfully",
-        data: {
-          technicians: result.data,
-          pagination: {
-            total: result.total,
-            page: result.page,
-            pages: result.pages,
-            limit: limit,
-            hasNextPage: result.page < result.pages,
-            hasPrevPage: page > 1,
-          },
-        },
+        message: "Active subscription plan fetched successfully",
+        data: result.subscriptionData,
       };
     } catch (error) {
-      console.log(
-        "error occured while fetching the technicians with subscription plans",
-        error
-      );
-      throw Error(
-        "error occured while fetching the technicians with subscription plans"
-      );
+      console.log("Error in service getting subscription plan:", error);
+      return {
+        success: false,
+        message: "Error occurred while fetching subscription plan",
+      };
     }
   }
 }

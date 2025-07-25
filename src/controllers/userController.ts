@@ -149,23 +149,18 @@ export class UserController implements IUserController {
       console.log("response from the login controller", serviceResponse);
 
       if (serviceResponse.success) {
-        res.cookie(
-          `${serviceResponse.role?.toLowerCase()}_refresh_token`,
-          serviceResponse.refresh_token,
-          {
-            httpOnly: true,
-            secure: true,
-            sameSite: "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-          }
-        );
+        res.cookie("refresh_token", serviceResponse.refresh_token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
 
         res.status(HTTP_STATUS.OK).json(
           createSuccessResponse(
             {
-              user: serviceResponse.user,
+              user: serviceResponse.data,
               access_token: serviceResponse.access_token,
-              role: serviceResponse.role,
             },
             serviceResponse.message
           )
@@ -1389,7 +1384,7 @@ export class UserController implements IUserController {
       console.log("entering the logout function from the user auth controller");
       const role = req.user?.role;
       console.log("role in the user auth controller:", role);
-      res.clearCookie(`${role}_refresh_token`, {
+      res.clearCookie("refresh_token", {
         httpOnly: true,
         secure: true,
         sameSite: "strict",

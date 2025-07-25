@@ -5,16 +5,31 @@ const SubscriptrionPlanSchema: Schema<ISubscriptionPlan> = new Schema(
   {
     planName: {
       type: String,
-      enum: ["BASIC", "PRO", "ELITE"],
+      required: true,
+      unique: true,
+    },
+    price: {
+      type: Number,
       required: true,
     },
     commissionRate: {
       type: Number,
       required: true,
     },
-    monthlyPrice: {
+    WalletCreditDelay: {
       type: Number,
       required: true,
+    },
+    profileBoost: {
+      type: Boolean,
+      default: false,
+    },
+    durationInMonths: {
+      type: Number,
+      required: true,
+    },
+    description: {
+      type: String,
     },
     status: {
       type: Boolean,

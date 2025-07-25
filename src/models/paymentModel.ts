@@ -6,17 +6,19 @@ const paymentSchema: Schema<IPayment> = new Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
     },
     bookingId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "booking",
-      required: true,
     },
     technicianId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "technician",
       required: true,
+    },
+    subscriptionPlanId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "subscriptionPlan",
     },
     amountPaid: {
       type: Number,
@@ -24,11 +26,9 @@ const paymentSchema: Schema<IPayment> = new Schema(
     },
     fixifyShare: {
       type: Number,
-      required: true,
     },
     technicianShare: {
       type: Number,
-      required: true,
     },
     paymentMethod: {
       type: String,

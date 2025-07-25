@@ -171,16 +171,12 @@ export class TechnicianController implements ITechnicianController {
       );
 
       if (serviceResponse.success) {
-        res.cookie(
-          `${serviceResponse.role?.toLowerCase()}_refresh_token`,
-          serviceResponse.refresh_token,
-          {
-            httpOnly: true,
-            secure: true,
-            sameSite: "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-          }
-        );
+        res.cookie("refresh_token", serviceResponse.refresh_token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
 
         res.status(HTTP_STATUS.OK).json(
           createSuccessResponse(
@@ -832,9 +828,7 @@ export class TechnicianController implements ITechnicianController {
       if (serviceResponse.success) {
         res
           .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
+          .json(createSuccessResponse(serviceResponse.message));
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
           ? HTTP_STATUS.NOT_FOUND
@@ -1186,6 +1180,46 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
+  async getMySubscription(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log("Controller: Getting technician subscription");
+
+      const technicianId = req.user?.id;
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Technician ID is required"));
+        return;
+      }
+
+      const serviceResponse =
+        await this._technicianService.getTechnicianActiveSubscriptionPlan(
+          technicianId
+        );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json(createErrorResponse(serviceResponse.message));
+      }
+    } catch (error) {
+      console.error("Error in getMySubscription controller:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
   async logout(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log(
@@ -1194,7 +1228,7 @@ export class TechnicianController implements ITechnicianController {
       const role = req.user?.role;
       console.log("role in the technician auth controller:", role);
 
-      res.clearCookie(`${role}_refresh_token`, {
+      res.clearCookie("refresh_token", {
         httpOnly: true,
         secure: true,
         sameSite: "strict",

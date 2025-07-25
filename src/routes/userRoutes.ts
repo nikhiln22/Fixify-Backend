@@ -1,6 +1,6 @@
 import express, { Router } from "express";
 import { container } from "../di/container";
-import { UserController } from "../controllers/userController";
+import { IUserController } from "../interfaces/Icontrollers/IuserController";
 import { AuthMiddleware } from "../middlewares/AuthMiddleware";
 import { Roles } from "../config/roles";
 import { LocalUpload } from "../config/multerConfig";
@@ -18,7 +18,8 @@ export class UserRoutes {
   }
 
   private setupRoutes() {
-    const userController = container.resolve(UserController);
+    const userController =
+      container.resolve<IUserController>("IUserController");
 
     this.router.post("/login", userController.login.bind(userController));
 

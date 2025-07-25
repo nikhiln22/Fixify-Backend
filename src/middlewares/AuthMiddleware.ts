@@ -131,7 +131,7 @@ export class AuthMiddleware {
       const isActive = await this.checkUserStatus(userId, role);
 
       if (!isActive) {
-        res.clearCookie(`${role.toLowerCase()}_refresh_token`, {
+        res.clearCookie(`refresh_token`, {
           httpOnly: true,
           secure: true,
           sameSite: "strict",
@@ -174,7 +174,7 @@ export class AuthMiddleware {
 
         const isActive = await this.checkUserStatus(payload.Id, role);
         if (!isActive) {
-          res.clearCookie(`${role.toLowerCase()}_refresh_token`, {
+          res.clearCookie(`refresh_token`, {
             httpOnly: true,
             secure: true,
             sameSite: "strict",

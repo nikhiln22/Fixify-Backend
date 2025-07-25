@@ -622,7 +622,6 @@ export class BookingService implements IBookingService {
     success: boolean;
     status: number;
     message: string;
-    data?: { otp: string };
   }> {
     try {
       console.log(
@@ -731,7 +730,6 @@ export class BookingService implements IBookingService {
         success: true,
         status: HTTP_STATUS.OK,
         message: "Completion OTP generated and sent to customer successfully",
-        data: { otp },
       };
     } catch (error) {
       console.error("Error in generateCompletionOtp:", error);
@@ -818,6 +816,20 @@ export class BookingService implements IBookingService {
         console.log("found payment in booking repository:", payment);
 
         if (payment && !payment.technicianPaid) {
+          if (
+            payment.technicianShare === undefined ||
+            payment.technicianShare === null
+          ) {
+            console.error(
+              "Technician share not found for booking payment:",
+              bookingId
+            );
+            return {
+              success: false,
+              message: "Payment data incomplete - technician share not found",
+            };
+          }
+
           let technicianWallet =
             await this._walletRepository.getWalletByOwnerId(
               technicianId,

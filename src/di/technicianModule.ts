@@ -36,8 +36,11 @@ import { IWalletTransactionRepository } from "../interfaces/Irepositories/Iwalle
 import { WalletTransactionRepository } from "../repositories/walletTransactionRepository";
 import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
 import { RatingRepository } from "../repositories/ratingRepository";
+import { ITechnicianController } from "../interfaces/Icontrollers/ItechnicianController";
+import { TechnicianController } from "../controllers/technicianController";
 
 
+container.registerSingleton<ITechnicianController>("ITechnicianController",TechnicianController)
 container.registerSingleton<ITechnicianService>("ITechnicianService", TechnicianService);
 container.registerSingleton<ITechnicianRepository>("ITechnicianRepository", TechnicianRepository);
 container.registerSingleton<ITempTechnicianRepository>("ITempTechnicianRepository", TempTechnicianRepository);

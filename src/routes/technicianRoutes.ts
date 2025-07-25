@@ -1,9 +1,9 @@
 import express, { Router } from "express";
 import { container } from "../di/container";
-import { TechnicianController } from "../controllers/technicianController";
 import { AuthMiddleware } from "../middlewares/AuthMiddleware";
 import { Roles } from "../config/roles";
 import { LocalUpload } from "../config/multerConfig";
+import { ITechnicianController } from "../interfaces/Icontrollers/ItechnicianController";
 
 export class TechnicianRoutes {
   private router: Router;
@@ -18,7 +18,9 @@ export class TechnicianRoutes {
   }
 
   private setupRoutes() {
-    const technicianController = container.resolve(TechnicianController);
+    const technicianController = container.resolve<ITechnicianController>(
+      "ITechnicianController"
+    );
 
     this.router.post(
       "/login",
@@ -151,6 +153,12 @@ export class TechnicianRoutes {
       "/rating/:bookingId",
       this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
       technicianController.getRating.bind(technicianController)
+    );
+
+    this.router.get(
+      "/subscription",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
+      technicianController.getMySubscription.bind(technicianController)
     );
 
     this.router.get(

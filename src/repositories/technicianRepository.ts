@@ -14,6 +14,7 @@ import {
 import { BaseRepository } from "./baseRepository";
 import { injectable } from "tsyringe";
 import { FilterQuery } from "mongoose";
+import { ISubscriptionPlan } from "../interfaces/Models/IsubscriptionPlan";
 
 @injectable()
 export class TechnicianRepository
@@ -490,14 +491,13 @@ export class TechnicianRepository
         filteredTechnicians = result.data.filter((technician) => {
           const plan = technician.SubscriptionPlanId as {
             planName: string;
-            monthlyPrice: number;
+            price: number;
             commissionRate: number;
           };
           return plan?.planName === options.filterPlan;
         });
       }
 
-      // Return the same structure as getAllTechnicians
       return {
         data: filteredTechnicians,
         total: result.total,
@@ -511,6 +511,71 @@ export class TechnicianRepository
         error
       );
       throw new Error("Failed to fetch technicians with subscription plans");
+    }
+  }
+
+  async getActiveSubscriptionPlan(technicianId: string): Promise<{
+    success: boolean;
+    subscriptionData?: {
+      planName: string;
+      status: string;
+      commissionRate: number;
+      walletCreditDelay: number;
+      profileBoost: boolean;
+      durationInMonths: number;
+      amount: number;
+    };
+  }> {
+    try {
+      console.log(
+        "Getting active subscription plan for technician:",
+        technicianId
+      );
+
+      const technicianData = await this.model
+        .findById(technicianId)
+        .populate("SubscriptionPlanId")
+        .exec();
+
+      if (!technicianData) {
+        return { success: false };
+      }
+
+      if (!technicianData.SubscriptionPlanId) {
+        return { success: false };
+      }
+
+      const subscriptionPlan =
+        technicianData.SubscriptionPlanId as ISubscriptionPlan;
+
+      let expiresAt: string | undefined = undefined;
+
+      if (subscriptionPlan.durationInMonths > 0) {
+        const startDate = new Date(technicianData.createdAt);
+        const expiryDate = new Date(startDate);
+        expiryDate.setMonth(
+          expiryDate.getMonth() + subscriptionPlan.durationInMonths
+        );
+        expiresAt = expiryDate.toISOString();
+      }
+
+      const subscriptionData = {
+        planName: subscriptionPlan.planName,
+        status: technicianData.status === "Active" ? "Active" : "Expired",
+        commissionRate: subscriptionPlan.commissionRate,
+        walletCreditDelay: subscriptionPlan.WalletCreditDelay,
+        profileBoost: subscriptionPlan.profileBoost,
+        durationInMonths: subscriptionPlan.durationInMonths,
+        startDate: technicianData.createdAt.toISOString(),
+        expiresAt,
+        amount: subscriptionPlan.price,
+      };
+
+      console.log("Found subscription data:", subscriptionData);
+      return { success: true, subscriptionData };
+    } catch (error) {
+      console.log("Error getting active subscription plan:", error);
+      throw new Error("Failed to get active subscription plan");
     }
   }
 }

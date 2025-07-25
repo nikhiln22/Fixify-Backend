@@ -14,6 +14,7 @@ import {
   ToggleUserStatusResponse,
   UserProfileResponse,
   VerifyOtpData,
+  UserProfileUpdateData,
 } from "../DTO/IServices/IuserService";
 import { IUser } from "../../interfaces/Models/Iuser";
 import { IWallet } from "../Models/Iwallet";
@@ -48,7 +49,10 @@ export interface IUserService {
   }>;
   toggleUserStatus(id: string): Promise<ToggleUserStatusResponse>;
   getUserProfile(technicianId: string): Promise<UserProfileResponse>;
-  editProfile(userId: string, updateData: any): Promise<EditProfileResponse>;
+  editProfile(
+    userId: string,
+    updateData: UserProfileUpdateData
+  ): Promise<EditProfileResponse>;
   addMoney(userId: string, amount: number): Promise<AddMoneyResponse>;
   verifyWalletStripeSession(
     sessionId: string,
