@@ -1379,6 +1379,10 @@ export class UserController implements IUserController {
     }
   }
 
+  async getCoupons(req: Request, res: Response): Promise<void> {
+    
+  }
+
   async logout(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("entering the logout function from the user auth controller");

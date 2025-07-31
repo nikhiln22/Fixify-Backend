@@ -30,5 +30,6 @@ export interface IUserController {
   cancelBooking(req: Request, res: Response): Promise<void>;
   rateService(req: Request, res: Response): Promise<void>;
   getRating(req: Request, res: Response): Promise<void>;
+  getCoupons(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }
