@@ -34,10 +34,18 @@ export class TempTechnicianRepository
       const tempTechnicianId = (
         savedTemporaryTechnician._id as mongoose.Types.ObjectId
       ).toString();
+
+      const email = savedTemporaryTechnician.email;
+
+      console.log(
+        "email from the temp technician createTempTechnician repository:",
+        email
+      );
+
       if (!savedTemporaryTechnician) {
         throw new Error("cannot be saved");
       }
-      return { success: true, tempTechnicianId };
+      return { success: true, tempTechnicianId, email };
     } catch (error) {
       console.log(error);
       throw new Error("Error occured while creating new technician");

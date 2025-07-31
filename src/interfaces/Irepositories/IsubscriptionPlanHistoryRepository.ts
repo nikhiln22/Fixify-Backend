@@ -6,6 +6,7 @@ export interface ISubscriptionPlanHistoryRepository {
     limit?: number;
     search?: string;
     filterStatus?: string;
+    technicianId?: string;
   }): Promise<{
     data: ISubscriptionPlanHistory[];
     total: number;
@@ -13,4 +14,15 @@ export interface ISubscriptionPlanHistoryRepository {
     limit: number;
     pages: number;
   }>;
+  createHistory(historyData: {
+    technicianId: string;
+    subscriptionPlanId: string;
+    paymentId?: string;
+    amount: number;
+    status: "Active" | "Expired";
+  }): Promise<ISubscriptionPlanHistory>;
+  updateSubscriptionHistory(
+    technicianId: string
+  ): Promise<ISubscriptionPlanHistory | null>;
+  findAllActiveSubscriptions(): Promise<ISubscriptionPlanHistory[]>;
 }

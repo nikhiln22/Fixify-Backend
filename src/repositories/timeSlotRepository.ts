@@ -116,14 +116,12 @@ export class TimeSlotRepository
 
   private timeStringToMinutes(timeStr: string): number {
     const time12HourRegex = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i;
-    let hours: number;
-    let minutes: number;
 
     const match = timeStr.match(time12HourRegex);
     if (!match) return 0;
 
-    hours = parseInt(match[1]);
-    minutes = parseInt(match[2]);
+    let hours = parseInt(match[1]);
+    const minutes = parseInt(match[2]);
     const period = match[3].toUpperCase();
 
     if (period === "AM" && hours === 12) {
@@ -134,10 +132,11 @@ export class TimeSlotRepository
 
     return hours * 60 + minutes;
   }
+
   async getTimeSlots(
     technicianId: string,
     includePast: boolean,
-    additionalFilters?: { [key: string]: any }
+    additionalFilters?: { [key: string]: string | number | boolean | Date }
   ): Promise<ITimeSlot[]> {
     try {
       console.log(
@@ -160,6 +159,13 @@ export class TimeSlotRepository
       if (!includePast) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        const now = new Date();
+        const currentTime = now.getHours() * 60 + now.getMinutes();
+        const todayDateString = `${String(now.getDate()).padStart(
+          2,
+          "0"
+        )}-${String(now.getMonth() + 1).padStart(2, "0")}-${now.getFullYear()}`;
+
         const filteredSlots = allSlots.filter((slot) => {
           const [day, month, year] = slot.date.split("-");
           const slotDate = new Date(
@@ -168,17 +174,24 @@ export class TimeSlotRepository
             parseInt(day)
           );
           slotDate.setHours(0, 0, 0, 0);
-          return slotDate >= today;
+
+          if (slotDate < today) return false;
+
+          if (slot.date === todayDateString) {
+            if (!slot.startTime) return false;
+            const [startHour, startMinute] = slot.startTime
+              .split(":")
+              .map(Number);
+            const slotTimeInMinutes = startHour * 60 + startMinute;
+            return slotTimeInMinutes > currentTime;
+          }
+
+          return true;
         });
 
-        console.log(
-          "Found time slots in repository (after filtering):",
-          filteredSlots.length
-        );
         return filteredSlots;
       }
 
-      console.log("Found time slots in repository:", allSlots.length);
       return allSlots;
     } catch (error) {
       console.error("Error fetching time slots from repository:", error);

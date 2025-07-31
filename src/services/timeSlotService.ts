@@ -211,7 +211,7 @@ export class TimeSlotService implements ITimeSlotService {
   async getTimeSlots(
     technicianId: string,
     includePast: boolean,
-    additionalFilters?: { [key: string]: any }
+    additionalFilters?: { [key: string]: string | number | boolean | Date }
   ): Promise<{
     success: boolean;
     message: string;
@@ -304,6 +304,8 @@ export class TimeSlotService implements ITimeSlotService {
       };
     }
   }
+
+  
   async updateSlotBookingStatus(
     technicianId: string,
     slotId: string,
@@ -319,11 +321,12 @@ export class TimeSlotService implements ITimeSlotService {
         isBooked
       );
 
-      const updatedSlot = await this._timeSlotRepository.updateSlotBookingStatus(
-        technicianId,
-        slotId,
-        isBooked
-      );
+      const updatedSlot =
+        await this._timeSlotRepository.updateSlotBookingStatus(
+          technicianId,
+          slotId,
+          isBooked
+        );
 
       const action = isBooked ? "booked" : "unbooked";
 

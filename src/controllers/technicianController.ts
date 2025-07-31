@@ -7,6 +7,7 @@ import { HTTP_STATUS } from "../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
 import { IBookingService } from "../interfaces/Iservices/IbookingService";
 import { IChatService } from "../interfaces/Iservices/IchatService";
+import { ISubscriptionPlanService } from "../interfaces/Iservices/IsubscriptionPlanService";
 import {
   createErrorResponse,
   createSuccessResponse,
@@ -23,7 +24,9 @@ export class TechnicianController implements ITechnicianController {
     @inject("ITimeSlotService")
     private _timeSlotService: ITimeSlotService,
     @inject("IBookingService") private _bookingService: IBookingService,
-    @inject("IChatService") private _chatService: IChatService
+    @inject("IChatService") private _chatService: IChatService,
+    @inject("ISubscriptionPlanService")
+    private _subscriptionPlanService: ISubscriptionPlanService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {
@@ -1214,6 +1217,224 @@ export class TechnicianController implements ITechnicianController {
       }
     } catch (error) {
       console.error("Error in getMySubscription controller:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getSubscriptionHistory(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log("fetching the subscription history for the technicians");
+      const technicianId = req.user?.id;
+
+      const page = parseInt(req.query.page as string) || undefined;
+      const limit = parseInt(req.query.limit as string) || undefined;
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Technician ID is required"));
+        return;
+      }
+
+      const serviceResponse =
+        await this._subscriptionPlanService.getSubscriptionHistory({
+          page,
+          limit,
+          technicianId,
+        });
+      console.log(
+        "serviceResponse from the subscription service",
+        serviceResponse
+      );
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json(createErrorResponse(serviceResponse.message));
+      }
+    } catch (error) {
+      console.log(
+        "error occured while fetching the subscription history for technician:",
+        error
+      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getAllSubscriptionPlans(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entered to the technician controller that fetches the subscription plans"
+      );
+
+      const serviceResponse =
+        await this._subscriptionPlanService.getAllSubscriptionPlans({
+          page: undefined,
+          limit: undefined,
+          search: undefined,
+          filterStatus: "active",
+        });
+
+      console.log(
+        "serviceResponse from getting all subscription plans:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success && serviceResponse.data) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(
+              serviceResponse.data.subscriptionPlans,
+              serviceResponse.message
+            )
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch subscription plans"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error occurred while fetching subscription plans:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async purchaseSubscriptionPlan(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log(
+        "entered to the technician controller that purchases the subsciption plan"
+      );
+      const technicianId = req.user?.id;
+      const { planId } = req.body;
+      console.log(
+        "technicianId in the purchase subscription plan controller:",
+        technicianId
+      );
+      console.log(
+        "planId in the purchase subscription plan technician controller:",
+        planId
+      );
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Technician ID is required"));
+        return;
+      }
+      const serviceResponse =
+        await this._subscriptionPlanService.purchaseSubscriptionPlan(
+          technicianId,
+          planId
+        );
+
+      console.log(
+        "service response in the purchase subscription plan controller:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(
+              serviceResponse.data,
+              serviceResponse.message || "Checkout session created successfully"
+            )
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to create checkout session"
+            )
+          );
+      }
+    } catch (error) {
+      console.log(
+        "error occured while purchasing the subscription plan:",
+        error
+      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async verifyStripeSession(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const sessionId = req.params.sessionId as string;
+      const technicianId = req.user?.id;
+      console.log(
+        "technicianId in the stripe verify function in technician controller:",
+        technicianId
+      );
+      console.log(
+        "sessionId in the stripe verify function technician controller:",
+        sessionId
+      );
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Technician not authenticated"));
+        return;
+      }
+
+      const serviceResponse =
+        await this._subscriptionPlanService.verifyStripeSession(
+          technicianId,
+          sessionId
+        );
+
+      console.log(
+        "result from the verifying stripe session in technician controller:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("not completed")
+          ? HTTP_STATUS.NOT_COMPLETED
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to verify payment"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error occurred while verifying the stripe session:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal Server Error"));

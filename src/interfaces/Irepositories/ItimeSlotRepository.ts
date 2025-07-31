@@ -22,13 +22,13 @@ export interface ITimeSlotRepository {
   getTimeSlots(
     technicianId: string,
     includePast: boolean,
-    additionalFilters?: { [key: string]: any }
+    additionalFilters?: { [key: string]: string | number | boolean | Date }
   ): Promise<ITimeSlot[]>;
   updateSlotBookingStatus(
     technicianId: string,
     slotId: string,
     isBooked: boolean
-  ): Promise<ITimeSlot> 
+  ): Promise<ITimeSlot>;
   findSlotById(technicianId: string, slotId: string): Promise<ITimeSlot | null>;
   toggleSlotAvailability(slotId: string): Promise<ITimeSlot>;
 }

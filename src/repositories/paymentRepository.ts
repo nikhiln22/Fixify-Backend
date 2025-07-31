@@ -22,17 +22,42 @@ export class PaymentRepository
       );
       console.log("paymentData in the createPayment Method:", paymentData);
 
-      const mongoPaymentData: Partial<IPayment> = {
-        ...paymentData,
-        userId: new Types.ObjectId(paymentData.userId),
-        bookingId: new Types.ObjectId(paymentData.bookingId),
-        technicianId: new Types.ObjectId(paymentData.technicianId),
-      };
+      const mongoPaymentData: Partial<IPayment> = {};
+
+      mongoPaymentData.technicianId = new Types.ObjectId(
+        paymentData.technicianId
+      );
+      mongoPaymentData.amountPaid = paymentData.amountPaid;
+      mongoPaymentData.paymentMethod = paymentData.paymentMethod;
+      mongoPaymentData.paymentStatus = paymentData.paymentStatus;
+
+      if (paymentData.userId) {
+        mongoPaymentData.userId = new Types.ObjectId(paymentData.userId);
+      }
+      if (paymentData.bookingId) {
+        mongoPaymentData.bookingId = new Types.ObjectId(paymentData.bookingId);
+      }
+      if (paymentData.subscriptionPlanId) {
+        mongoPaymentData.subscriptionPlanId = new Types.ObjectId(
+          paymentData.subscriptionPlanId
+        );
+      }
+
+      if (paymentData.fixifyShare !== undefined) {
+        mongoPaymentData.fixifyShare = paymentData.fixifyShare;
+      }
+      if (paymentData.technicianShare !== undefined) {
+        mongoPaymentData.technicianShare = paymentData.technicianShare;
+      }
+
+      if (paymentData.creditReleaseDate !== undefined) {
+        mongoPaymentData.creditReleaseDate = paymentData.creditReleaseDate;
+      }
 
       const newPayment = await this.create(mongoPaymentData);
       return newPayment;
     } catch (error) {
-      console.log("error occured while creating an payment:", error);
+      console.log("error occurred while creating a payment:", error);
       throw error;
     }
   }
@@ -76,6 +101,28 @@ export class PaymentRepository
       return updatedPayment;
     } catch (error) {
       console.log("error occurred while updating payment:", error);
+      throw error;
+    }
+  }
+
+  // In PaymentRepository.findPaymentsReadyForCredit()
+  async findPaymentsReadyForCredit(): Promise<IPayment[]> {
+    try {
+      console.log("Finding payments ready for credit release...");
+
+      const currentDate = new Date();
+
+      const payments = await this.findAll({
+        creditReleaseDate: { $lte: currentDate },
+        technicianPaid: false,
+        paymentStatus: "Paid",
+        technicianShare: { $exists: true, $gt: 0 }, 
+      });
+
+      console.log(`Found ${payments.length} payments ready for credit`);
+      return payments;
+    } catch (error) {
+      console.log("Error finding payments ready for credit:", error);
       throw error;
     }
   }

@@ -2,6 +2,7 @@ import {
   CreateTechnician,
   FindByEmailResponse,
   FindByIdResponse,
+  INearbyTechnicianResponse,
   RejectTechnicianResponse,
   TechnicianQualification,
   UpdatePasswordResponse,
@@ -57,7 +58,7 @@ export interface ITechnicianRepository {
     userLongitude: number,
     userLatitude: number,
     radius: number
-  ): Promise<ITechnician[]>;
+  ): Promise<INearbyTechnicianResponse[]>;
 
   getTechniciansWithSubscriptions(options: {
     page?: number;
@@ -84,4 +85,8 @@ export interface ITechnicianRepository {
       amount: number;
     };
   }>;
+  updateSubscriptionPlan(
+    technicianId: string,
+    planId: string
+  ): Promise<{ data: ITechnician } | null>;
 }

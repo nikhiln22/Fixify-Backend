@@ -38,6 +38,12 @@ import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository
 import { RatingRepository } from "../repositories/ratingRepository";
 import { ITechnicianController } from "../interfaces/Icontrollers/ItechnicianController";
 import { TechnicianController } from "../controllers/technicianController";
+import { ISubscriptionExpiryService } from "../interfaces/Iservices/IsubscriptionExpiryService";
+import { SubscriptionExpiryService } from "../services/subscriptionExpiryService";
+import { IWalletCreditService } from "../interfaces/Iservices/IwalletCreditService";
+import { WalletCreditService } from "../services/walletCreditService";
+import { ICronService } from "../interfaces/Icron/Icron";
+import { CronService } from "../utils/cron";
 
 
 container.registerSingleton<ITechnicianController>("ITechnicianController",TechnicianController)
@@ -59,3 +65,6 @@ container.registerSingleton<IWalletRepository>("IWalletRepository",WalletReposit
 container.registerSingleton<IChatService>("IchatService",ChatService);
 container.registerSingleton<IWalletTransactionRepository>("IWalletTransactionRepository",WalletTransactionRepository);
 container.registerSingleton<IRatingRepository>("IRatingRepository",RatingRepository);
+container.registerSingleton<ISubscriptionExpiryService>("ISubscriptionExpiryService",SubscriptionExpiryService);
+container.registerSingleton<IWalletCreditService>("IWalletCreditService",WalletCreditService);
+container.registerSingleton<ICronService>("ICronService",CronService)

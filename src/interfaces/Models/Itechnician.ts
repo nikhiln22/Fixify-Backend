@@ -17,7 +17,7 @@ export interface ITechnician extends Document {
   longitude?: number;
   latitude?: number;
   address?: string;
-  SubscriptionPlanId?: string | ISubscriptionPlan;
+  subscriptionPlanId?: string | ISubscriptionPlan;
   createdAt: Date;
   updatedAt: Date;
 }

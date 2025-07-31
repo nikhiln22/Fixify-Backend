@@ -24,6 +24,7 @@ import { EmailType, APP_NAME } from "../config/emailConfig";
 import { ITimeSlot } from "../interfaces/Models/ItimeSlot";
 import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
 import { IRating } from "../interfaces/Models/Irating";
+import { ITechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
 
 @injectable()
 export class BookingService implements IBookingService {
@@ -37,7 +38,9 @@ export class BookingService implements IBookingService {
     @inject("IOTPService") private _otpService: IOTPService,
     @inject("IRedisService") private _redisService: IRedisService,
     @inject("IEmailService") private _emailService: IEmailService,
-    @inject("IRatingRepository") private _ratingRepository: IRatingRepository
+    @inject("IRatingRepository") private _ratingRepository: IRatingRepository,
+    @inject("ITechnicianRepository")
+    private _technicianRepository: ITechnicianRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -240,12 +243,38 @@ export class BookingService implements IBookingService {
             throw new Error("Failed to process wallet payment");
           }
 
-          const fixifySharePercentage = 0.2;
+          const technicianPlan =
+            await this._technicianRepository.getActiveSubscriptionPlan(
+              data.technicianId
+            );
+
+          console.log(
+            "fetched technician subscription plan in booking service:",
+            technicianPlan
+          );
+
+          if (!technicianPlan || !technicianPlan.subscriptionData) {
+            throw new Error("No active subscription plan found for technician");
+          }
+
+          const commissionRate = technicianPlan.subscriptionData.commissionRate;
+          const walletCreditDelay =
+            technicianPlan.subscriptionData.walletCreditDelay;
+
+          console.log("technician's commission Rate:", commissionRate);
+          console.log("technician's wallet credit Delays:", walletCreditDelay);
+
+          const fixifySharePercentage = commissionRate / 100;
           const fixifyShare = parseFloat(
             (data.bookingAmount * fixifySharePercentage).toFixed(2)
           );
           const technicianShare = parseFloat(
             (data.bookingAmount - fixifyShare).toFixed(2)
+          );
+
+          const creditReleaseDate = new Date();
+          creditReleaseDate.setDate(
+            creditReleaseDate.getDate() + walletCreditDelay
           );
 
           const newPayment = await this._paymentRepository.createPayment({
@@ -257,6 +286,7 @@ export class BookingService implements IBookingService {
             technicianShare: technicianShare,
             paymentMethod: "Wallet",
             paymentStatus: "Paid",
+            creditReleaseDate: creditReleaseDate,
             technicianPaid: false,
             refundStatus: "Not Refunded",
           });
@@ -445,7 +475,28 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const fixifySharePercentage = 0.2;
+      const technicianPlan =
+        await this._technicianRepository.getActiveSubscriptionPlan(
+          booking.technicianId.toString()
+        );
+
+      console.log(
+        "fetched technician subscription plan in booking service:",
+        technicianPlan
+      );
+
+      if (!technicianPlan || !technicianPlan.subscriptionData) {
+        throw new Error("No active subscription plan found for technician");
+      }
+
+      const commissionRate = technicianPlan.subscriptionData.commissionRate;
+      const walletCreditDelay =
+        technicianPlan.subscriptionData.walletCreditDelay;
+
+      console.log("technician's commission Rate:", commissionRate);
+      console.log("technician's wallet credit Delays:", walletCreditDelay);
+
+      const fixifySharePercentage = commissionRate / 100;
       const fixifyShare = parseFloat(
         (booking.bookingAmount * fixifySharePercentage).toFixed(2)
       );
@@ -453,15 +504,21 @@ export class BookingService implements IBookingService {
         (booking.bookingAmount - fixifyShare).toFixed(2)
       );
 
+      const creditReleaseDate = new Date();
+      creditReleaseDate.setDate(
+        creditReleaseDate.getDate() + walletCreditDelay
+      );
+
       const newPayment = await this._paymentRepository.createPayment({
         userId: userId,
-        bookingId: bookingId,
-        technicianId: booking.technicianId._id.toString(),
+        bookingId: booking._id.toString(),
+        technicianId: booking.technicianId.toString(),
         amountPaid: booking.bookingAmount,
         fixifyShare: fixifyShare,
         technicianShare: technicianShare,
-        paymentMethod: "Online",
+        paymentMethod: "Wallet",
         paymentStatus: "Paid",
+        creditReleaseDate: creditReleaseDate,
         technicianPaid: false,
         refundStatus: "Not Refunded",
       });
@@ -809,64 +866,6 @@ export class BookingService implements IBookingService {
         };
       }
 
-      try {
-        const payment = await this._paymentRepository.findByBookingId(
-          bookingId
-        );
-        console.log("found payment in booking repository:", payment);
-
-        if (payment && !payment.technicianPaid) {
-          if (
-            payment.technicianShare === undefined ||
-            payment.technicianShare === null
-          ) {
-            console.error(
-              "Technician share not found for booking payment:",
-              bookingId
-            );
-            return {
-              success: false,
-              message: "Payment data incomplete - technician share not found",
-            };
-          }
-
-          let technicianWallet =
-            await this._walletRepository.getWalletByOwnerId(
-              technicianId,
-              "technician"
-            );
-
-          if (!technicianWallet) {
-            console.log("Technician wallet not found, creating new wallet");
-            technicianWallet = await this._walletRepository.createWallet(
-              technicianId,
-              "technician"
-            );
-            console.log("Created new wallet for technician:", technicianWallet);
-          }
-
-          await this._walletRepository.updateWalletBalanceWithTransaction(
-            technicianId,
-            "technician",
-            payment.technicianShare,
-            "Credit",
-            `Payment for completed service - Booking #${bookingId.slice(-8)}`,
-            bookingId
-          );
-
-          await this._paymentRepository.updatePayment(payment._id.toString(), {
-            technicianPaid: true,
-            technicianPaidAt: new Date(),
-          });
-
-          console.log(
-            `Technician paid ₹${payment.technicianShare} for booking ${bookingId}`
-          );
-        }
-      } catch (paymentError) {
-        console.error("Error paying technician:", paymentError);
-      }
-
       const redisKey = this.getOtpRedisKey(
         bookingId,
         OtpPurpose.BOOKING_COMPLETION
@@ -874,12 +873,13 @@ export class BookingService implements IBookingService {
       await this._redisService.delete(redisKey);
 
       console.log(
-        `Booking ${bookingId} completed successfully by technician ${technicianId}`
+        `Booking ${bookingId} completed successfully by technician ${technicianId}. Payment will be processed according to subscription plan.`
       );
 
       return {
         success: true,
-        message: "Service completed successfully",
+        message:
+          "Service completed successfully. Payment will be credited according to your subscription plan.",
       };
     } catch (error) {
       console.error("Error in verifyCompletionOtp:", error);

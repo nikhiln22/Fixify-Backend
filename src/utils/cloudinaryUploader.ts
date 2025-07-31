@@ -20,6 +20,11 @@ export class CloudinaryUploader implements IFileUploader {
 
       this.cleanupFile(filePath);
 
+      console.log(
+        "result from the upload file method in the cloudinary uploader class:",
+        result
+      );
+
       return result.public_id;
     } catch (error) {
       console.error("Error uploading to Cloudinary:", error);

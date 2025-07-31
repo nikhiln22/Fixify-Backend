@@ -1,6 +1,8 @@
 import { App } from "./app";
 import config from "./config/env";
 import { database } from "./config/database";
+import { container } from "./di/container";
+import { ICronService } from "./interfaces/Icron/Icron";
 
 class Server {
   private appInstance: App;
@@ -18,6 +20,9 @@ class Server {
           `Fixify Server is running at http://localhost:${config.PORT}`
         );
       });
+
+      const cronService = container.resolve<ICronService>("ICronService");
+      cronService.startCronJobs();
     } catch (error) {
       console.error("Server failed to start due to database error:", error);
       process.exit(1);

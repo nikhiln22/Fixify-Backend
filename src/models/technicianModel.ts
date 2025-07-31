@@ -54,7 +54,7 @@ const technicianSchema: Schema<ITechnician> = new Schema(
         type: String,
       },
     ],
-    SubscriptionPlanId: {
+    subscriptionPlanId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "subscriptionPlan",
     },

@@ -4,6 +4,11 @@ import { ISubscriptionPlan } from "../interfaces/Models/IsubscriptionPlan";
 import { ISubscriptionPlanRepository } from "../interfaces/Irepositories/IsubscriptionPlanRepository";
 import { ISubscriptionPlanHistory } from "../interfaces/Models/IsubscriptionPlanHistory";
 import { ISubscriptionPlanHistoryRepository } from "../interfaces/Irepositories/IsubscriptionPlanHistoryRepository";
+import config from "../config/env";
+import { stripe } from "../config/stripeConfig";
+import { IPaymentRepository } from "../interfaces/Irepositories/IpaymentRepository";
+import { ITechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
+import { CreatePaymentData } from "../interfaces/DTO/IRepository/IpayementRepository";
 
 @injectable()
 export class SubscriptionPlanService implements ISubscriptionPlanService {
@@ -11,7 +16,11 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
     @inject("ISubscriptionPlanRepository")
     private _subscriptionPlanRepository: ISubscriptionPlanRepository,
     @inject("ISubscriptionPlanHistoryRepository")
-    private _subscriptionPlanHistoryRepository: ISubscriptionPlanHistoryRepository
+    private _subscriptionPlanHistoryRepository: ISubscriptionPlanHistoryRepository,
+    @inject("IPaymentRepository")
+    private _paymentRepository: IPaymentRepository,
+    @inject("ITechnicianRepository")
+    private _technicianRepository: ITechnicianRepository
   ) {}
 
   async addSubscriptionPlan(data: {
@@ -262,11 +271,12 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
     }
   }
 
-  async getTechniciansWithSubscriptions(options: {
+  async getSubscriptionHistory(options: {
     page?: number;
     limit?: number;
     search?: string;
     filterStatus?: string;
+    technicianId?: string;
   }): Promise<{
     success: boolean;
     message: string;
@@ -283,11 +293,9 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
     };
   }> {
     try {
-      console.log(
-        "entered to the technician service that fetches the technicians with subscription plans"
-      );
       const page = options.page || 1;
       const limit = options.limit || 5;
+
       const result =
         await this._subscriptionPlanHistoryRepository.getSubscriptionPlansHistory(
           {
@@ -295,33 +303,224 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
             limit,
             search: options.search,
             filterStatus: options.filterStatus,
+            technicianId: options.technicianId,
           }
         );
-      console.log("result from the technician service:", result);
 
       return {
         success: true,
-        message: "Technicians subscription plan fetched successfully",
+        message: "Subscription history fetched successfully",
         data: {
           subscriptionPlanHistory: result.data,
           pagination: {
             total: result.total,
             page: result.page,
             pages: result.pages,
-            limit: limit,
+            limit: result.limit,
             hasNextPage: result.page < result.pages,
-            hasPrevPage: page > 1,
+            hasPrevPage: result.page > 1,
           },
         },
       };
     } catch (error) {
+      console.log("Error occurred while fetching subscription history:", error);
+      return {
+        success: false,
+        message: "Error occurred while fetching subscription history",
+      };
+    }
+  }
+
+  async purchaseSubscriptionPlan(
+    technicianId: string,
+    planId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: { checkoutUrl: string };
+  }> {
+    try {
       console.log(
-        "error occured while fetching the technicians with subscription plans",
-        error
+        "entered to the subscription plan service purchase subscription plan function"
       );
-      throw Error(
-        "error occured while fetching the technicians with subscription plans"
+      console.log("planId in the purchase subscription plan service:", planId);
+      console.log(
+        "technicianId in the purchase subscription plan service:",
+        technicianId
       );
+
+      const subscriptionPlan =
+        await this._subscriptionPlanRepository.findSubscriptionPlanById(planId);
+
+      console.log("found subscription plan:", subscriptionPlan);
+
+      if (!subscriptionPlan) {
+        return {
+          success: false,
+          message: "Subscription plan didnt found",
+        };
+      }
+
+      const amountInCents = Math.round(subscriptionPlan?.price * 100);
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        mode: "payment",
+        line_items: [
+          {
+            price_data: {
+              currency: "inr",
+              product_data: {
+                name: `${subscriptionPlan.planName} Subscription Plan`,
+                description:
+                  subscriptionPlan.description ||
+                  `${subscriptionPlan.planName} plan with ${subscriptionPlan.commissionRate}% commission rate`,
+              },
+              unit_amount: amountInCents,
+            },
+            quantity: 1,
+          },
+        ],
+        metadata: {
+          planId: planId,
+          planName: subscriptionPlan.planName,
+          durationInMonths: subscriptionPlan.durationInMonths.toString(),
+          price: subscriptionPlan.price,
+        },
+        success_url: `${config.CLIENT_URL}/technician/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${config.CLIENT_URL}/technician/subscription?cancelled=true`,
+      });
+
+      if (!session.url) {
+        return {
+          success: false,
+          message: "Failed to create checkout URL",
+        };
+      }
+      return {
+        success: true,
+        message: "Checkout session created successfully",
+        data: {
+          checkoutUrl: session.url,
+        },
+      };
+    } catch (error) {
+      console.error("Error in purchaseSubscriptionPlan:", error);
+      return {
+        success: false,
+        message: "Failed to create checkout session. Please try again.",
+      };
+    }
+  }
+
+  async verifyStripeSession(
+    technicianId: string,
+    sessionId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      currentSubscription: ISubscriptionPlan;
+      newHistoryEntry: ISubscriptionPlanHistory;
+    };
+  }> {
+    try {
+      console.log(
+        "entered to the subscriptionplan service that verifies the stripe session"
+      );
+      console.log(
+        "technicianId in the subscription plan service:",
+        technicianId
+      );
+      console.log("sessionId in the subscription plan service:", sessionId);
+
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+      if (!session || session.payment_status !== "paid") {
+        return {
+          success: false,
+          message: "Payment not completed or session not found",
+        };
+      }
+
+      const planId = session.metadata?.planId;
+      const amount = session.metadata?.price;
+
+      if (!planId || !technicianId || !amount) {
+        return {
+          success: false,
+          message: "Invalid or missing planId, amount in the session metadata",
+        };
+      }
+
+      const paymentData: CreatePaymentData = {
+        technicianId: technicianId,
+        subscriptionPlanId: planId,
+        amountPaid: parseInt(amount),
+        paymentMethod: "Online",
+        paymentStatus: "Paid",
+      };
+
+      const createdPayment = await this._paymentRepository.createPayment(
+        paymentData
+      );
+
+      if (!createdPayment) {
+        return {
+          message: "failed to complete the payment",
+          success: false,
+        };
+      }
+
+      await this._subscriptionPlanHistoryRepository.updateSubscriptionHistory(
+        technicianId
+      );
+
+      const subscriptionPlan =
+        await this._subscriptionPlanRepository.findSubscriptionPlanById(planId);
+
+      if (!subscriptionPlan) {
+        return {
+          success: false,
+          message: "Subscription plan not found",
+        };
+      }
+
+      const subscriptionHistoryData = {
+        technicianId: technicianId,
+        subscriptionPlanId: planId,
+        amount: parseInt(amount),
+        paymentId: createdPayment._id.toString(),
+        status: "Active" as const,
+      };
+
+      const createdSubscriptionHistory =
+        await this._subscriptionPlanHistoryRepository.createHistory(
+          subscriptionHistoryData
+        );
+
+      const technicianUpdate =
+        await this._technicianRepository.updateSubscriptionPlan(
+          technicianId,
+          planId
+        );
+
+      console.log("updated technician:", technicianUpdate);
+
+      return {
+        success: true,
+        message: "subscription plan activated successfully",
+        data: {
+          currentSubscription: subscriptionPlan,
+          newHistoryEntry: createdSubscriptionHistory,
+        },
+      };
+    } catch (error) {
+      console.log("error occurred while verifying the stripe session", error);
+      return {
+        success: false,
+        message: "Failed to verify the stripe session",
+      };
     }
   }
 }

@@ -25,5 +25,9 @@ export interface ITechnicianController {
   getReviews(req: Request, res: Response): Promise<void>;
   getRating(req: Request, res: Response): Promise<void>;
   getMySubscription(req: Request, res: Response): Promise<void>;
+  getAllSubscriptionPlans(req: Request, res: Response): Promise<void>;
+  getSubscriptionHistory(req: Request, res: Response): Promise<void>;
+  purchaseSubscriptionPlan(req: Request, res: Response): Promise<void>;
+  verifyStripeSession(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

@@ -162,6 +162,30 @@ export class TechnicianRoutes {
     );
 
     this.router.get(
+      "/subscriptionplans",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
+      technicianController.getAllSubscriptionPlans.bind(technicianController)
+    );
+
+    this.router.get(
+      "/subscriptionhistory",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
+      technicianController.getSubscriptionHistory.bind(technicianController)
+    );
+
+    this.router.post(
+      "/purchaseplan",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
+      technicianController.purchaseSubscriptionPlan.bind(technicianController)
+    );
+
+    this.router.post(
+      "/verifypurchase/:sessionId",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
+      technicianController.verifyStripeSession.bind(technicianController)
+    );
+
+    this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.TECHNICIAN),
       technicianController.logout.bind(technicianController)

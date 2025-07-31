@@ -5,7 +5,7 @@ const paymentSchema: Schema<IPayment> = new Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "user",
     },
     bookingId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -57,6 +57,9 @@ const paymentSchema: Schema<IPayment> = new Schema(
     },
     refundAmount: {
       type: Number,
+    },
+    creditReleaseDate: {
+      type: Date,
     },
   },
   { timestamps: true }

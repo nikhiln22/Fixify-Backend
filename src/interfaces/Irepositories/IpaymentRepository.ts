@@ -8,4 +8,5 @@ export interface IPaymentRepository {
     paymentId: string,
     updateData: Partial<IPayment>
   ): Promise<IPayment | null>;
+  findPaymentsReadyForCredit(): Promise<IPayment[]>;
 }

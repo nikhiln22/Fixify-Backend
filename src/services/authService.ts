@@ -45,10 +45,9 @@ export class AuthService implements IAuthService {
 
       console.log("payload from authservice:", payload);
 
-      // Generate new access token with the original role from the refresh token
       const newAccessToken = this._jwtService.generateAccessToken(
         payload.Id,
-        payload.role // Use original role from refresh token
+        payload.role
       );
 
       console.log("newAccessToken generated successfully");

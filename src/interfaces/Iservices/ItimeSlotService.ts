@@ -16,7 +16,7 @@ export interface ITimeSlotService {
   getTimeSlots(
     technicianId: string,
     includePast: boolean,
-    additionalFilters?: { [key: string]: any }
+    additionalFilters?: { [key: string]: string | number | boolean | Date }
   ): Promise<{
     success: boolean;
     message: string;

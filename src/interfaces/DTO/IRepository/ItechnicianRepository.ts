@@ -9,6 +9,7 @@ export interface FindByEmailResponse {
 export interface CreateTempTechnicianResponse {
   success: boolean;
   tempTechnicianId: string;
+  email: string;
 }
 
 export interface FindTempTechnicianById {
@@ -75,4 +76,12 @@ export interface VerifyTechnicianResponse {
 export interface RejectTechnicianResponse {
   success: boolean;
   message: string;
+}
+
+export interface INearbyTechnicianResponse {
+  _id: string;
+  username: string;
+  image: string;
+  yearsOfExperience: number;
+  averageRating: number;
 }

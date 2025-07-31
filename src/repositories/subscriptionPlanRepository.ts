@@ -38,7 +38,9 @@ export class SubscriptionPlanRepository
 
   async findByPlanName(planName: string): Promise<ISubscriptionPlan | null> {
     try {
-      const result = await this.findOne({ planName });
+      const result = await this.findOne({
+        planName: { $regex: new RegExp(`^${planName}$`, "i") },
+      });
       return result;
     } catch (error) {
       console.log(

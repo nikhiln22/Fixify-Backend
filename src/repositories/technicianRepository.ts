@@ -10,10 +10,11 @@ import {
   FindByIdResponse,
   VerifyTechnicianResponse,
   RejectTechnicianResponse,
+  INearbyTechnicianResponse,
 } from "../interfaces/DTO/IRepository/ItechnicianRepository";
 import { BaseRepository } from "./baseRepository";
 import { injectable } from "tsyringe";
-import { FilterQuery } from "mongoose";
+import { FilterQuery, Types } from "mongoose";
 import { ISubscriptionPlan } from "../interfaces/Models/IsubscriptionPlan";
 
 @injectable()
@@ -361,91 +362,215 @@ export class TechnicianRepository
     }
   }
 
-  async nearbyTechnicians(
-    designationId: string,
-    userLongitude: number,
-    userLatitude: number,
-    radius: number = 10
-  ): Promise<ITechnician[]> {
-    try {
-      console.log("Searching for technicians near user location:", {
-        designationId,
-        userLongitude,
-        userLatitude,
-        radius,
-      });
+async nearbyTechnicians(
+  designationId: string,
+  userLongitude: number,
+  userLatitude: number,
+  radius: number = 10
+): Promise<INearbyTechnicianResponse[]> {
+  try {
+    console.log("Searching for technicians near user location:", {
+      designationId,
+      userLongitude,
+      userLatitude,
+      radius,
+    });
 
-      const techniciansWithDesignation = (await this.findAll({
-        Designation: designationId,
-        is_verified: true,
-        status: "Active",
-        latitude: { $exists: true, $ne: null },
-        longitude: { $exists: true, $ne: null },
-      })) as ITechnician[];
+    // ✅ Use aggregation to get technicians with ratings and subscription data
+    const nearbyTechniciansWithRatings = await this.model.aggregate([
+      // Match technicians with required criteria
+      {
+        $match: {
+          Designation: new Types.ObjectId(designationId),
+          is_verified: true,
+          status: "Active",
+          latitude: { $exists: true, $ne: null },
+          longitude: { $exists: true, $ne: null },
+        },
+      },
 
-      console.log(
-        `Found ${techniciansWithDesignation.length} technicians with designation and location data`
-      );
+      // Lookup subscription plan details
+      {
+        $lookup: {
+          from: "subscriptionplans", // ✅ Fixed collection name
+          localField: "subscriptionPlanId",
+          foreignField: "_id",
+          as: "subscriptionPlan",
+        },
+      },
 
-      if (techniciansWithDesignation.length === 0) {
-        return [];
+      // Lookup active subscription history
+      {
+        $lookup: {
+          from: "subscriptionplanhistories", // your subscription history collection
+          let: { technicianId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$technicianId", "$$technicianId"] },
+                    { $eq: ["$status", "Active"] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: "activeSubscription",
+        },
+      },
+
+      // Lookup ratings for each technician
+      {
+        $lookup: {
+          from: "ratings", // your ratings collection name
+          localField: "_id",
+          foreignField: "technicianId",
+          as: "ratings",
+        },
+      },
+
+      // Add calculated fields
+      {
+        $addFields: {
+          // Calculate average rating
+          averageRating: {
+            $cond: {
+              if: { $gt: [{ $size: "$ratings" }, 0] },
+              then: { $avg: "$ratings.rating" }, // assuming 'rating' is your rating field
+              else: 0,
+            },
+          },
+
+          // Count total reviews
+          totalReviews: { $size: "$ratings" },
+
+          // Check if profile is boosted
+          isProfileBoosted: {
+            $cond: {
+              if: { $gt: [{ $size: "$subscriptionPlan" }, 0] },
+              then: { $arrayElemAt: ["$subscriptionPlan.profileBoost", 0] },
+              else: false,
+            },
+          },
+
+          // Get subscription plan name for reference
+          subscriptionPlanName: {
+            $cond: {
+              if: { $gt: [{ $size: "$subscriptionPlan" }, 0] },
+              then: { $arrayElemAt: ["$subscriptionPlan.planName", 0] },
+              else: "BASIC",
+            },
+          },
+        },
+      },
+
+      // ✅ PROJECT ONLY THE REQUIRED FIELDS
+      {
+        $project: {
+          _id: 1,
+          username: 1,
+          image: 1,
+          yearsOfExperience: 1,
+          averageRating: 1,
+          latitude: 1,    // Keep for distance calculation
+          longitude: 1,   // Keep for distance calculation
+          isProfileBoosted: 1, // Keep for sorting
+          // All other fields (email, password, phone, address, etc.) are excluded
+        },
+      },
+    ]);
+
+    console.log(
+      `Found ${nearbyTechniciansWithRatings.length} technicians with designation and location data`
+    );
+
+    if (nearbyTechniciansWithRatings.length === 0) {
+      return [];
+    }
+
+    // ✅ Calculate distance and filter by radius
+    const nearbyTechniciansWithDistance = nearbyTechniciansWithRatings
+      .map((technician) => {
+        const distance = this.calculateDistance(
+          userLatitude,
+          userLongitude,
+          technician.latitude!,
+          technician.longitude!
+        );
+
+        return {
+          ...technician,
+          distance: Math.round(distance * 100) / 100,
+        };
+      })
+      .filter((technician) => technician.distance <= radius);
+
+    // ✅ Sort by profile boost first, then by rating, then by distance
+    const sortedTechnicians = nearbyTechniciansWithDistance.sort((a, b) => {
+      // First priority: Profile boost (boosted profiles first)
+      if (a.isProfileBoosted !== b.isProfileBoosted) {
+        return b.isProfileBoosted ? 1 : -1;
       }
 
-      const nearbyTechniciansWithDistance = techniciansWithDesignation
-        .map((technician) => {
-          const distance = this.calculateDistance(
-            userLatitude,
-            userLongitude,
-            technician.latitude!,
-            technician.longitude!
-          );
+      // Second priority: Average rating (higher rating first)
+      if (a.averageRating !== b.averageRating) {
+        return b.averageRating - a.averageRating;
+      }
 
-          return {
-            ...technician.toObject(),
-            distance: Math.round(distance * 100) / 100,
-          };
-        })
-        .filter((technician) => technician.distance <= radius)
-        .sort((a, b) => a.distance - b.distance);
+      // Third priority: Distance (closer first)
+      return a.distance - b.distance;
+    });
 
-      console.log(
-        `Found ${nearbyTechniciansWithDistance.length} technicians within ${radius}km of user's location`
-      );
+    // ✅ Final cleanup - remove fields used only for sorting/calculation
+    const cleanedTechnicians = sortedTechnicians.map(technician => ({
+      _id: technician._id,
+      username: technician.username,
+      image: technician.image,
+      yearsOfExperience: technician.yearsOfExperience,
+      averageRating: technician.averageRating,
+    }));
 
-      return nearbyTechniciansWithDistance as ITechnician[];
-    } catch (error) {
-      console.log("Error occurred while fetching nearby technicians:", error);
-      throw new Error("An error occurred while retrieving nearby technicians");
-    }
+    console.log(
+      `Found ${cleanedTechnicians.length} technicians within ${radius}km, sorted by profile boost, rating, and distance`,
+      cleanedTechnicians
+    );
+
+    return cleanedTechnicians as INearbyTechnicianResponse[];
+  } catch (error) {
+    console.log("Error occurred while fetching nearby technicians:", error);
+    throw new Error("An error occurred while retrieving nearby technicians");
   }
+}
 
-  private calculateDistance(
-    userLat: number,
-    userLon: number,
-    technicianLat: number,
-    technicianLon: number
-  ): number {
-    const R = 6371;
+// ✅ Keep your existing helper methods
+private calculateDistance(
+  userLat: number,
+  userLon: number,
+  technicianLat: number,
+  technicianLon: number
+): number {
+  const R = 6371;
 
-    const dLat = this.toRadians(technicianLat - userLat);
-    const dLon = this.toRadians(technicianLon - userLon);
+  const dLat = this.toRadians(technicianLat - userLat);
+  const dLon = this.toRadians(technicianLon - userLon);
 
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRadians(userLat)) *
-        Math.cos(this.toRadians(technicianLat)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(this.toRadians(userLat)) *
+      Math.cos(this.toRadians(technicianLat)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c;
 
-    return distance;
-  }
+  return distance;
+}
 
-  private toRadians(degrees: number): number {
-    return degrees * (Math.PI / 180);
-  }
+private toRadians(degrees: number): number {
+  return degrees * (Math.PI / 180);
+}
 
   async getTechniciansWithSubscriptions(options: {
     page?: number;
@@ -480,7 +605,7 @@ export class TechnicianRepository
         pagination: { page, limit },
         sort: { createdAt: -1 },
         populate: {
-          path: "SubscriptionPlanId",
+          path: "subscriptionPlanId",
           select: "planName monthlyPrice commissionRate",
         },
       })) as { data: ITechnician[]; total: number };
@@ -489,7 +614,7 @@ export class TechnicianRepository
 
       if (options.filterPlan) {
         filteredTechnicians = result.data.filter((technician) => {
-          const plan = technician.SubscriptionPlanId as {
+          const plan = technician.subscriptionPlanId as {
             planName: string;
             price: number;
             commissionRate: number;
@@ -534,19 +659,19 @@ export class TechnicianRepository
 
       const technicianData = await this.model
         .findById(technicianId)
-        .populate("SubscriptionPlanId")
+        .populate("subscriptionPlanId")
         .exec();
 
       if (!technicianData) {
         return { success: false };
       }
 
-      if (!technicianData.SubscriptionPlanId) {
+      if (!technicianData.subscriptionPlanId) {
         return { success: false };
       }
 
       const subscriptionPlan =
-        technicianData.SubscriptionPlanId as ISubscriptionPlan;
+        technicianData.subscriptionPlanId as ISubscriptionPlan;
 
       let expiresAt: string | undefined = undefined;
 
@@ -561,7 +686,7 @@ export class TechnicianRepository
 
       const subscriptionData = {
         planName: subscriptionPlan.planName,
-        status: technicianData.status === "Active" ? "Active" : "Expired",
+        status: technicianData.status,
         commissionRate: subscriptionPlan.commissionRate,
         walletCreditDelay: subscriptionPlan.WalletCreditDelay,
         profileBoost: subscriptionPlan.profileBoost,
@@ -576,6 +701,40 @@ export class TechnicianRepository
     } catch (error) {
       console.log("Error getting active subscription plan:", error);
       throw new Error("Failed to get active subscription plan");
+    }
+  }
+
+  async updateSubscriptionPlan(
+    technicianId: string,
+    planId: string
+  ): Promise<{ data: ITechnician } | null> {
+    try {
+      console.log(
+        "technicianId in the update subscription plan in the technician repository:",
+        technicianId
+      );
+      console.log(
+        "planId in the update subscription plan in the technician repository",
+        planId
+      );
+
+      const filter = { _id: technicianId };
+
+      const update = { subscriptionPlanId: planId, updatedAt: new Date() };
+
+      const updatedTechnician = await this.updateOne(filter, update);
+
+      if (!updatedTechnician) {
+        return null;
+      }
+
+      return { data: updatedTechnician };
+    } catch (error) {
+      console.log(
+        "error occured while updating the technician subscription plan:",
+        error
+      );
+      throw error;
     }
   }
 }

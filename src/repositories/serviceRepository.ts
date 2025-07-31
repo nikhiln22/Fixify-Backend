@@ -32,7 +32,13 @@ export class ServiceRepository
         category: new Types.ObjectId(serviceData.category),
         designation: new Types.ObjectId(serviceData.designation),
       });
-      return newService;
+
+      const populatedService = await this.model.populate(newService, {
+        path: "category",
+        select: "name",
+      });
+
+      return populatedService;
     } catch (error) {
       console.log("error occurred while adding the service", error);
       throw new Error("failed to add the new Service");
@@ -91,21 +97,13 @@ export class ServiceRepository
       const result = (await this.find(filter, {
         pagination: { page, limit },
         sort: { createdAt: -1 },
+        populate: { path: "category", select: "name" },
       })) as { data: IService[]; total: number };
 
-      const populatedData = await Promise.all(
-        result.data.map(async (service) => {
-          return await this.model.populate(service, {
-            path: "category",
-            select: "name",
-          });
-        })
-      );
-
-      console.log("populated data from the service repository:", populatedData);
+      console.log("populated data from the service repository:", result);
 
       return {
-        data: populatedData,
+        data: result.data,
         total: result.total,
         page,
         limit,

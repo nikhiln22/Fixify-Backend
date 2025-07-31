@@ -3,7 +3,7 @@ import { ISubscriptionPlanHistory } from "../interfaces/Models/IsubscriptionPlan
 import subscriptionPlanHistory from "../models/subscriptionPlanHistoryModel";
 import { BaseRepository } from "./baseRepository";
 import { ISubscriptionPlanHistoryRepository } from "../interfaces/Irepositories/IsubscriptionPlanHistoryRepository";
-import { FilterQuery } from "mongoose";
+import { FilterQuery, Types } from "mongoose";
 
 @injectable()
 export class SubscriptionPlanHistoryRepository
@@ -19,6 +19,7 @@ export class SubscriptionPlanHistoryRepository
     limit?: number;
     search?: string;
     filterStatus?: string;
+    technicianId?: string;
   }): Promise<{
     data: ISubscriptionPlanHistory[];
     total: number;
@@ -27,13 +28,16 @@ export class SubscriptionPlanHistoryRepository
     pages: number;
   }> {
     try {
-      console.log(
-        "entering to the subscription plan history fetching the subscription plan history"
-      );
+      console.log("Fetching subscription plan history with options:", options);
+
       const page = options.page || 1;
       const limit = options.limit || 5;
 
       const filter: FilterQuery<ISubscriptionPlanHistory> = {};
+
+      if (options.technicianId) {
+        filter.technicianId = options.technicianId;
+      }
 
       if (options.search) {
         filter.$or = [{ planName: { $regex: options.search, $options: "i" } }];
@@ -53,14 +57,17 @@ export class SubscriptionPlanHistoryRepository
         populate: [
           {
             path: "subscriptionPlanId",
-            select: "planName createdAt durationInMonths",
+            select: "planName createdAt durationInMonths commissionRate",
           },
-          { path: "technicianId", select: "username" },
+          {
+            path: "technicianId",
+            select: "username",
+          },
         ],
       })) as { data: ISubscriptionPlanHistory[]; total: number };
 
       console.log(
-        "data fetched from the subscription plans history repository:",
+        "Data fetched from subscription plans history repository:",
         result
       );
 
@@ -73,10 +80,80 @@ export class SubscriptionPlanHistoryRepository
       };
     } catch (error) {
       console.log(
-        "error occurred while fetching the subscription plans history:",
+        "Error occurred while fetching subscription plans history:",
         error
       );
-      throw new Error("Failed to fetch the subscription plans history");
+      throw new Error("Failed to fetch subscription plans history");
+    }
+  }
+
+  async createHistory(historyData: {
+    technicianId: string;
+    subscriptionPlanId: string;
+    paymentId?: string;
+    amount: number;
+    status: "Active" | "Expired";
+  }): Promise<ISubscriptionPlanHistory> {
+    try {
+      console.log("Creating subscription plan history:", historyData);
+
+      const mongoHistoryData: Partial<ISubscriptionPlanHistory> = {
+        technicianId: new Types.ObjectId(historyData.technicianId),
+        subscriptionPlanId: new Types.ObjectId(historyData.subscriptionPlanId),
+        amount: historyData.amount,
+        paymentId: new Types.ObjectId(historyData.paymentId),
+        status: historyData.status,
+      };
+
+      const newHistory = await this.create(mongoHistoryData);
+      return newHistory;
+    } catch (error) {
+      console.log("Error occurred while creating subscription history:", error);
+      throw error;
+    }
+  }
+
+  async updateSubscriptionHistory(
+    technicianId: string
+  ): Promise<ISubscriptionPlanHistory | null> {
+    try {
+      console.log(
+        "entering the repository history function that updates the subscription history"
+      );
+      console.log(
+        "technicianId in the subscription history repository:",
+        technicianId
+      );
+      const updatedSubscriptionHistory = await this.updateOne(
+        {
+          technicianId: new Types.ObjectId(technicianId),
+          status: "Active",
+        },
+        {
+          status: "Expired",
+        }
+      );
+
+      return updatedSubscriptionHistory;
+    } catch (error) {
+      console.log(
+        "error occured while updating the subscription history:",
+        error
+      );
+      throw error;
+    }
+  }
+
+  async findAllActiveSubscriptions(): Promise<ISubscriptionPlanHistory[]> {
+    try {
+      console.log("entered to the function that find all active subscriptions");
+      const result = (await this.find({
+        status: "Active",
+      })) as ISubscriptionPlanHistory[];
+      return result;
+    } catch (error) {
+      console.log("error occured while fetching all the active subscriptions");
+      throw error;
     }
   }
 }

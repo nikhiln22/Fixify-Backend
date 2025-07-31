@@ -1,3 +1,4 @@
+import { INearbyTechnicianResponse } from "../DTO/IRepository/ItechnicianRepository";
 import {
   ForgotPasswordRequest,
   ForgotPasswordResponse,
@@ -97,7 +98,7 @@ export interface ITechnicianService {
   ): Promise<{
     success: boolean;
     message: string;
-    data?: ITechnician[];
+    data?: INearbyTechnicianResponse[];
   }>;
 
   toggleTechnicianStatus(id: string): Promise<ToggleTechnicianStatusResponse>;

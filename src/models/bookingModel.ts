@@ -5,7 +5,7 @@ const bookingSchema: Schema<IBooking> = new Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "user",
       required: true,
     },
     technicianId: {

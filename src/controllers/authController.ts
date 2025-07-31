@@ -30,7 +30,6 @@ export class AuthController implements IAuthController {
         return;
       }
 
-      // Use single refresh_token instead of role-specific tokens
       const refreshToken = req.cookies?.refresh_token;
       console.log("refresh token from the refresh controller", refreshToken);
 

@@ -1356,7 +1356,7 @@ export class AdminController implements IAdminController {
       const filterStatus = (req.query.filterStatus as string) || undefined;
 
       const serviceResponse =
-        await this._subscriptionPlanService.getTechniciansWithSubscriptions({
+        await this._subscriptionPlanService.getSubscriptionHistory({
           page,
           limit,
           search,

@@ -61,11 +61,12 @@ export interface ISubscriptionPlanService {
     success: boolean;
     data?: ISubscriptionPlan;
   }>;
-  getTechniciansWithSubscriptions(options: {
+  getSubscriptionHistory(options: {
     page?: number;
     limit?: number;
     search?: string;
     filterStatus?: string;
+    technicianId?: string;
   }): Promise<{
     success: boolean;
     message: string;
@@ -79,6 +80,25 @@ export interface ISubscriptionPlanService {
         hasNextPage: boolean;
         hasPrevPage: boolean;
       };
+    };
+  }>;
+  purchaseSubscriptionPlan(
+    technicianId: string,
+    planId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: { checkoutUrl: string };
+  }>;
+  verifyStripeSession(
+    technicianId: string,
+    sessionId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      currentSubscription: ISubscriptionPlan;
+      newHistoryEntry: ISubscriptionPlanHistory;
     };
   }>;
 }

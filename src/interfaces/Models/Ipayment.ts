@@ -16,4 +16,5 @@ export interface IPayment extends Document {
   refundStatus: "Not Refunded" | "Refunded";
   refundAmount?: number;
   refundDate?: Date;
+  creditReleaseDate?: Date;
 }

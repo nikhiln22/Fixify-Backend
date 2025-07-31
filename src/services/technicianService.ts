@@ -44,6 +44,9 @@ import { IWalletTransaction } from "../interfaces/Models/IwalletTransaction";
 import { IWalletTransactionRepository } from "../interfaces/Irepositories/IwalletTransactionRepository";
 import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
 import { IRating } from "../interfaces/Models/Irating";
+import { ISubscriptionPlanHistoryRepository } from "../interfaces/Irepositories/IsubscriptionPlanHistoryRepository";
+import { ISubscriptionPlanRepository } from "../interfaces/Irepositories/IsubscriptionPlanRepository";
+import { INearbyTechnicianResponse } from "../interfaces/DTO/IRepository/ItechnicianRepository";
 
 @injectable()
 export class TechnicianService implements ITechnicianService {
@@ -61,7 +64,11 @@ export class TechnicianService implements ITechnicianService {
     @inject("IWalletRepository") private _walletRepository: IWalletRepository,
     @inject("IWalletTransactionRepository")
     private _walletTransactionRepository: IWalletTransactionRepository,
-    @inject("IRatingRepository") private _ratingRepository: IRatingRepository
+    @inject("IRatingRepository") private _ratingRepository: IRatingRepository,
+    @inject("ISubscriptionPlanHistoryRepository")
+    private _subscriptionPlanHistoryRepository: ISubscriptionPlanHistoryRepository,
+    @inject("ISubscriptionPlanRepository")
+    private _subsciptionPlanRepository: ISubscriptionPlanRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -123,7 +130,7 @@ export class TechnicianService implements ITechnicianService {
   ): Promise<TempTechnicianResponse> {
     try {
       console.log(
-        "entering to the techniciansignup function in the technicianauth service"
+        "entering to the techniciansignup function in the technician service"
       );
       console.log("data:", data);
       const { email, password } = data;
@@ -155,8 +162,8 @@ export class TechnicianService implements ITechnicianService {
       console.log("response in technicianService:", response);
       return {
         message: "Technician created successfully,OTP sent",
-        email,
-        tempTechnicianId: response.tempTechnicianId.toString(),
+        email: response.email,
+        tempTechnicianId: response.tempTechnicianId,
         success: true,
       };
     } catch (error) {
@@ -210,17 +217,39 @@ export class TechnicianService implements ITechnicianService {
           };
         }
 
+        const subscriptionPlan =
+          await this._subsciptionPlanRepository.findByPlanName("Basic");
+
+        if (!subscriptionPlan) {
+          return {
+            success: false,
+            message: "Basic subscription plan not found",
+          };
+        }
+
         const technicianData = {
           username: tempTechnician.username,
           email: tempTechnician.email,
           password: tempTechnician.password,
           phone: tempTechnician.phone,
+          subscriptionPlanId: subscriptionPlan?._id,
         };
 
         const newTechnician = await this._technicianRepository.createTechnician(
           technicianData
         );
         console.log("new created technician:", newTechnician);
+
+        const subscriptionHistoryData = {
+          technicianId: newTechnician?._id.toString(),
+          subscriptionPlanId: subscriptionPlan?._id.toString(),
+          amount: 0,
+          status: "Active" as const,
+        };
+
+        await this._subscriptionPlanHistoryRepository.createHistory(
+          subscriptionHistoryData
+        );
 
         const newWallet = await this._walletRepository.createWallet(
           newTechnician._id.toString(),
@@ -504,7 +533,7 @@ export class TechnicianService implements ITechnicianService {
       if (qualificationData.profilePhoto) {
         const profilePhotoUrl = await this._fileUploader.uploadFile(
           qualificationData.profilePhoto.path,
-          { folder: "fixify/technicians/profile" }
+          { folder: "technicians/profile" }
         );
         if (profilePhotoUrl) {
           qualificationDataToSave.profilePhoto = profilePhotoUrl;
@@ -519,7 +548,7 @@ export class TechnicianService implements ITechnicianService {
         for (const certificate of qualificationData.certificates) {
           const certificateUrl = await this._fileUploader.uploadFile(
             certificate.path,
-            { folder: "fixify/technicians/certificates" }
+            { folder: "technicians/certificates" }
           );
           if (certificateUrl) {
             certificateUrls.push(certificateUrl);
@@ -850,7 +879,7 @@ export class TechnicianService implements ITechnicianService {
   ): Promise<{
     success: boolean;
     message: string;
-    data?: ITechnician[];
+    data?: INearbyTechnicianResponse[];
   }> {
     try {
       console.log(
