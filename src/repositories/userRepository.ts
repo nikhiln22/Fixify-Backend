@@ -27,6 +27,7 @@ export class UserRepository
       }
       return newUser;
     } catch (error) {
+      console.log("error occured while creating the user:", error);
       throw new Error("Error occured while creating new user");
     }
   }
@@ -41,7 +42,7 @@ export class UserRepository
         return { success: false };
       }
     } catch (error) {
-      console.log("error occured while fetching the user");
+      console.log("error occured while fetching the user:", error);
       throw new Error("An error occurred while retrieving the user");
     }
   }
@@ -175,6 +176,19 @@ export class UserRepository
     } catch (error) {
       console.log("Error occurred while updating user profile:", error);
       throw new Error("An error occurred while updating the user profile");
+    }
+  }
+
+  async countActiveUsers(): Promise<number> {
+    try {
+      console.log(
+        "entered to the function that fetches the total number of the active users"
+      );
+      const countActiveUsers = await this.countDocument({ status: true });
+      return countActiveUsers;
+    } catch (error) {
+      console.log("error occured while fetching the active users:", error);
+      return 0;
     }
   }
 }

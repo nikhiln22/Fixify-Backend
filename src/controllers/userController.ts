@@ -14,6 +14,10 @@ import {
   createErrorResponse,
 } from "../utils/responseHelper";
 import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
+import { ICouponService } from "../interfaces/Iservices/IcouponService";
+import { IOfferService } from "../interfaces/Iservices/IofferService";
+import { INotificationService } from "../interfaces/Iservices/InotificationService";
+import { ISocketNotificationData } from "../interfaces/DTO/IServices/InotificationService";
 
 @injectable()
 export class UserController implements IUserController {
@@ -25,7 +29,11 @@ export class UserController implements IUserController {
     private _technicianService: ITechnicianService,
     @inject("ITimeSlotService") private _timeSlotService: ITimeSlotService,
     @inject("IBookingService") private _bookingService: IBookingService,
-    @inject("IChatService") private _chatService: IChatService
+    @inject("IChatService") private _chatService: IChatService,
+    @inject("ICouponService") private _couponService: ICouponService,
+    @inject("IOfferService") private _offerService: IOfferService,
+    @inject("INotificationService")
+    private _notificationService: INotificationService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {
@@ -140,52 +148,6 @@ export class UserController implements IUserController {
     }
   }
 
-  async login(req: Request, res: Response): Promise<void> {
-    try {
-      console.log("entering the user login function in usercontroller");
-      const data = req.body;
-
-      const serviceResponse = await this._userService.login(data);
-      console.log("response from the login controller", serviceResponse);
-
-      if (serviceResponse.success) {
-        res.cookie("refresh_token", serviceResponse.refresh_token, {
-          httpOnly: true,
-          secure: true,
-          sameSite: "strict",
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-
-        res.status(HTTP_STATUS.OK).json(
-          createSuccessResponse(
-            {
-              user: serviceResponse.data,
-              access_token: serviceResponse.access_token,
-            },
-            serviceResponse.message
-          )
-        );
-      } else {
-        const statusCode = serviceResponse.message?.includes("not found")
-          ? HTTP_STATUS.NOT_FOUND
-          : serviceResponse.message?.includes("invalid password")
-          ? HTTP_STATUS.UNAUTHORIZED
-          : serviceResponse.message?.includes("blocked")
-          ? HTTP_STATUS.FORBIDDEN
-          : HTTP_STATUS.BAD_REQUEST;
-
-        res
-          .status(statusCode)
-          .json(createErrorResponse(serviceResponse.message || "Login failed"));
-      }
-    } catch (error) {
-      console.log("error:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal server error"));
-    }
-  }
-
   async forgotPassword(req: Request, res: Response): Promise<void> {
     try {
       console.log("Entering forgotPassword function in userController");
@@ -252,6 +214,89 @@ export class UserController implements IUserController {
       }
     } catch (error) {
       console.log("Error in resetPassword controller:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async login(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("entering the user login function in usercontroller");
+      const data = req.body;
+
+      const serviceResponse = await this._userService.login(data);
+      console.log("response from the login controller", serviceResponse);
+
+      if (serviceResponse.success) {
+        res.cookie("refresh_token", serviceResponse.refresh_token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        res.status(HTTP_STATUS.OK).json(
+          createSuccessResponse(
+            {
+              user: serviceResponse.data,
+              access_token: serviceResponse.access_token,
+            },
+            serviceResponse.message
+          )
+        );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("invalid password")
+          ? HTTP_STATUS.UNAUTHORIZED
+          : serviceResponse.message?.includes("blocked")
+          ? HTTP_STATUS.FORBIDDEN
+          : HTTP_STATUS.BAD_REQUEST;
+
+        res
+          .status(statusCode)
+          .json(createErrorResponse(serviceResponse.message || "Login failed"));
+      }
+    } catch (error) {
+      console.log("error:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error"));
+    }
+  }
+
+  async getMostBookedServices(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "fetching the most booked services for the user in user controller"
+      );
+      const limit = parseInt(req.query.limit as string) || undefined;
+      const days = parseInt(req.query.days as string) || undefined;
+
+      const serviceResponse = await this._bookingService.getMostBookedServices(
+        limit,
+        days
+      );
+      console.log("response from getMostBookedServices:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch most booked services"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error occurred while fetching most booked services:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal Server Error"));
@@ -747,7 +792,38 @@ export class UserController implements IUserController {
         serviceResponse
       );
 
-      if (serviceResponse.success) {
+      if (serviceResponse.success && serviceResponse.data) {
+        const booking = serviceResponse.data;
+        const technicianId = booking.technicianId.toString();
+
+        try {
+          const notification =
+            await this._notificationService.createNotification({
+              recipientId: technicianId,
+              recipientType: "technician",
+              title: "New Booking Request",
+              message: `You have received a new service booking request`,
+              type: "booking_created",
+            });
+
+          const socketData: ISocketNotificationData = {
+            id: notification._id.toString(),
+            title: notification.title,
+            message: notification.message,
+            type: notification.type,
+            createdAt: notification.createdAt!,
+            recipientId: notification.recipientId.toString(),
+            recipientType: notification.recipientType,
+          };
+
+          req.io
+            ?.to(`technician_${technicianId}`)
+            .emit("new_notification", socketData);
+          console.log(`Notification sent to technician ${technicianId}`);
+        } catch (notificationError) {
+          console.log("Failed to send notification:", notificationError);
+        }
+
         res
           .status(HTTP_STATUS.CREATED)
           .json(
@@ -1379,8 +1455,335 @@ export class UserController implements IUserController {
     }
   }
 
-  async getCoupons(req: Request, res: Response): Promise<void> {
-    
+  async getOffers(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      console.log("fetching the offers for the user");
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      const serviceResponse = await this._offerService.getUserOffers(userId);
+      console.log("response in the fetching all offers:", serviceResponse);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch offers"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error occurred while fetching offers:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async applyBestOffer(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      console.log(
+        "userId in the applybest offer method in the user controller:",
+        userId
+      );
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      console.log("received Data:", req.body);
+
+      const { serviceId, totalAmount } = req.body;
+
+      if (!serviceId || !totalAmount) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse("Service ID and total amount are required")
+          );
+        return;
+      }
+
+      const serviceResponse = await this._bookingService.applyBestOffer(
+        userId,
+        serviceId,
+        totalAmount
+      );
+
+      console.log(
+        "response in applying the best offer in the user controller:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to apply best offer"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error occurred while applying best offer:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getEligibleCoupons(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log("fetching eligible coupons for the user");
+      const userId = req.user?.id;
+      const serviceId = req.query.serviceId as string;
+
+      console.log("serviceId:", serviceId);
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      if (!serviceId) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("Service ID is required"));
+        return;
+      }
+
+      console.log("userId:", userId);
+      console.log("serviceId:", serviceId);
+
+      const serviceResponse = await this._couponService.getEligibleCoupons(
+        userId,
+        serviceId
+      );
+
+      console.log("response in fetching eligible coupons:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch eligible coupons"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error occurred while fetching eligible coupons:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async applyCoupon(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const { couponId, serviceId } = req.body;
+      console.log(
+        "userId in the apply coupon function in the user controller:",
+        userId
+      );
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      if (!serviceId) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("Service ID is required"));
+        return;
+      }
+
+      if (!couponId) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("Coupon ID is required"));
+        return;
+      }
+      const serviceResponse = await this._couponService.applyCoupon(
+        userId,
+        couponId,
+        serviceId
+      );
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to apply coupon"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error occurred while fetching eligible coupons:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getNotifications(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log(
+        "enetring the user controller function that fetches the all notifications:"
+      );
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      const notifications =
+        await this._notificationService.getNotificationsByUser(userId, "user");
+
+      res
+        .status(HTTP_STATUS.OK)
+        .json(
+          createSuccessResponse(
+            notifications,
+            "Notifications fetched successfully"
+          )
+        );
+    } catch (error) {
+      console.log("error occured while fetching the notifications:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getUnreadNotificationCount(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      const unreadCount = await this._notificationService.getUnreadCount(
+        userId,
+        "user"
+      );
+
+      res
+        .status(HTTP_STATUS.OK)
+        .json(
+          createSuccessResponse(
+            { unreadCount },
+            "Unread count fetched successfully"
+          )
+        );
+    } catch (error) {
+      console.log("error occured while fetching unread notifications:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async markNotificationRead(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const { notificationId } = req.params;
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      const updatedNotification =
+        await this._notificationService.markNotificationAsRead(notificationId);
+
+      if (updatedNotification) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(
+              updatedNotification,
+              "Notification marked as read"
+            )
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json(createErrorResponse("Notification not found"));
+      }
+    } catch (error) {
+      console.log(
+        "error occured while marking all notifications as read:",
+        error
+      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
   }
 
   async logout(req: AuthenticatedRequest, res: Response): Promise<void> {

@@ -185,6 +185,54 @@ export class UserRoutes {
     );
 
     this.router.get(
+      "/mostbooked",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.getMostBookedServices.bind(userController)
+    );
+
+    this.router.get(
+      "/offers",
+      this.authMiddleware.authenticate(Roles.USER),
+      userController.getOffers.bind(userController)
+    );
+
+    this.router.post(
+      "/applybestoffer",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.applyBestOffer.bind(userController)
+    );
+
+    this.router.get(
+      "/coupons",
+      this.authMiddleware.authenticate(Roles.USER),
+      userController.getEligibleCoupons.bind(userController)
+    );
+
+    this.router.post(
+      "/applycoupon",
+      this.authMiddleware.authenticate(Roles.USER),
+      userController.applyCoupon.bind(userController)
+    );
+
+    this.router.get(
+      "/notifications",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.getNotifications.bind(userController)
+    );
+
+    this.router.get(
+      "/unreadnotifications",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.getUnreadNotificationCount.bind(userController)
+    );
+
+    this.router.patch(
+      "/readnotification/:notificationId",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.markNotificationRead.bind(userController)
+    );
+
+    this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.USER),
       userController.logout.bind(userController)

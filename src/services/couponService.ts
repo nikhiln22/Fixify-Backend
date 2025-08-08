@@ -3,11 +3,13 @@ import { inject, injectable } from "tsyringe";
 import { ICoupon } from "../interfaces/Models/Icoupon";
 import { CouponData } from "../interfaces/DTO/IServices/IcouponService";
 import { ICouponRepository } from "../interfaces/Irepositories/IcouponRepository";
+import { IServiceRepository } from "../interfaces/Irepositories/IserviceRepository";
 
 @injectable()
 export class CouponService implements ICouponService {
   constructor(
-    @inject("ICouponRepository") private _couponRepository: ICouponRepository
+    @inject("ICouponRepository") private _couponRepository: ICouponRepository,
+    @inject("IServiceRepository") private _serviceRepository: IServiceRepository
   ) {}
 
   async addCoupon(data: CouponData): Promise<{
@@ -184,6 +186,147 @@ export class CouponService implements ICouponService {
       return {
         success: false,
         message: "Failed to update coupon",
+      };
+    }
+  }
+
+  async getEligibleCoupons(
+    userId: string,
+    serviceId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: Partial<ICoupon>[];
+  }> {
+    try {
+      console.log("fetching eligible coupons for user");
+      console.log("userId:", userId);
+      console.log("serviceId:", serviceId);
+
+      const service = await this._serviceRepository.findServiceById(serviceId);
+
+      console.log("fetched service in coupon service:", service);
+
+      if (!service) {
+        return {
+          success: false,
+          message: "No Service Found",
+        };
+      }
+
+      const eligibleCoupons = await this._couponRepository.getEligibleCoupons(
+        userId,
+        service?.price
+      );
+
+      console.log("eligible coupons from repository:", eligibleCoupons);
+
+      const transformedCoupons = eligibleCoupons.map((coupon) => ({
+        couponId: coupon._id,
+        code: coupon.code,
+        title: coupon.title,
+        discountValue: coupon.discount_value,
+        discountType: coupon.discount_type,
+        maxDiscount: coupon.max_discount,
+      }));
+
+      return {
+        success: true,
+        message: "Eligible coupons fetched successfully",
+        data: transformedCoupons,
+      };
+    } catch (error) {
+      console.error("Error fetching eligible coupons:", error);
+      return {
+        success: false,
+        message: "Failed to fetch eligible coupons",
+      };
+    }
+  }
+
+  async applyCoupon(
+    userId: string,
+    couponId: string,
+    serviceId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      couponCode: string;
+      discountAmount: number;
+      finalAmount: number;
+      couponId: string;
+    };
+  }> {
+    try {
+      console.log(
+        "entered the function in the coupon service that applies the coupon"
+      );
+      console.log(
+        "userId:",
+        userId,
+        "couponId:",
+        couponId,
+        "serviceId:",
+        serviceId
+      );
+
+      const service = await this._serviceRepository.findServiceById(serviceId);
+
+      console.log("fetched service in the apply coupon method:", service);
+
+      if (!service) {
+        return {
+          success: false,
+          message: "Service not found",
+        };
+      }
+
+      const coupon = await this._couponRepository.findCouponById(couponId);
+
+      console.log("fetched coupon in the apply coupon method:", coupon);
+
+      if (!coupon) {
+        return {
+          success: false,
+          message: "Coupon not found",
+        };
+      }
+
+      let discountAmount = 0;
+      if (coupon.discount_type === "percentage") {
+        discountAmount = (service.price * coupon.discount_value) / 100;
+        if (coupon.max_discount && discountAmount > coupon.max_discount) {
+          discountAmount = coupon.max_discount;
+        }
+      } else if (coupon.discount_type === "flat_amount") {
+        discountAmount = coupon.discount_value;
+      }
+
+      const finalAmount = service.price - discountAmount;
+
+      console.log("Coupon applied successfully:", {
+        couponCode: coupon.code,
+        originalAmount: service.price,
+        discountAmount,
+        finalAmount,
+      });
+
+      return {
+        success: true,
+        message: "Coupon applied successfully",
+        data: {
+          couponId: coupon._id.toString(),
+          couponCode: coupon.code,
+          discountAmount: discountAmount,
+          finalAmount: finalAmount,
+        },
+      };
+    } catch (error) {
+      console.error("Error applying coupon:", error);
+      return {
+        success: false,
+        message: "Failed to apply coupon",
       };
     }
   }

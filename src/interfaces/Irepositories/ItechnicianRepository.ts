@@ -89,4 +89,5 @@ export interface ITechnicianRepository {
     technicianId: string,
     planId: string
   ): Promise<{ data: ITechnician } | null>;
+  countActiveTechnicians(): Promise<number>;
 }

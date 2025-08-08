@@ -4,7 +4,7 @@ import { IBooking } from "../interfaces/Models/Ibooking";
 import Booking from "../models/bookingModel";
 import { CreateBookingRequest } from "../interfaces/DTO/IServices/IuserService";
 import { IBookingRepository } from "../interfaces/Irepositories/IbookingRespository";
-import { FilterQuery, Types, UpdateQuery } from "mongoose";
+import mongoose, { FilterQuery, Types, UpdateQuery } from "mongoose";
 import { ITimeSlot } from "../interfaces/Models/ItimeSlot";
 
 @injectable()
@@ -252,5 +252,299 @@ export class BookingRepository
       { _id: bookingId },
       { bookingStatus: status, completed: status === "completed" }
     );
+  }
+
+  async getMostBookedServiceIds(
+    limit?: number,
+    days?: number
+  ): Promise<Array<{ serviceId: string; bookingCount: number }>> {
+    try {
+      console.log(
+        "entering to the booking repository that fetches the most booked service Id's"
+      );
+      console.log(
+        "limit in the get most booked ServiceIds in the booking repository:",
+        limit
+      );
+      console.log(
+        "days in the get most booked serviceIds in the booking repository:",
+        days
+      );
+
+      const defaultLimit = limit || 6;
+      const defaultDays = days || 30;
+
+      const dateFrom = new Date();
+      dateFrom.setDate(dateFrom.getDate() - defaultDays);
+
+      console.log("Date filter from:", dateFrom);
+
+      const result = (await this.model.aggregate([
+        {
+          $match: {
+            bookingStatus: { $in: ["Completed", "Booked"] },
+            createdAt: { $gte: dateFrom },
+          },
+        },
+        {
+          $group: {
+            _id: "$serviceId",
+            bookingCount: { $sum: 1 },
+          },
+        },
+        {
+          $sort: { bookingCount: -1 },
+        },
+        {
+          $limit: defaultLimit,
+        },
+        {
+          $project: {
+            serviceId: { $toString: "$_id" },
+            bookingCount: 1,
+            _id: 0,
+          },
+        },
+      ])) as Array<{ serviceId: string; bookingCount: number }>;
+
+      console.log("Most booked service IDs result:", result);
+
+      return result;
+    } catch (error) {
+      console.log("Error in getMostBookedServiceIds repository:", error);
+      throw error;
+    }
+  }
+
+  async countUserBookings(userId: string): Promise<number> {
+    try {
+      const filter: FilterQuery<IBooking> = {
+        userId: new Types.ObjectId(userId),
+        bookingStatus: { $ne: "Cancelled" },
+      };
+
+      const count = await this.countDocument(filter);
+      return count;
+    } catch (error) {
+      console.log("Error counting non-cancelled bookings:", error);
+      return 0;
+    }
+  }
+
+  async totalBookings(): Promise<number> {
+    try {
+      console.log(
+        "eneterd the function that fetches the total bookings in the technician repostory"
+      );
+      const totalBookings = await this.countDocument({});
+      console.log("total bookings:", totalBookings);
+      return totalBookings;
+    } catch (error) {
+      console.log("error occured while fetching the total bookings:", error);
+      return 0;
+    }
+  }
+
+  async getBookingStatusDistribution(): Promise<
+    Array<{ status: string; count: number }>
+  > {
+    try {
+      console.log("fetching booking status distribution from repository");
+
+      const result = await this.model.aggregate([
+        {
+          $group: {
+            _id: "$bookingStatus",
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            status: "$_id",
+            count: 1,
+            _id: 0,
+          },
+        },
+      ]);
+
+      console.log("booking status distribution result:", result);
+      return result;
+    } catch (error) {
+      console.log("error in getBookingStatusDistribution repository:", error);
+      return [];
+    }
+  }
+
+  async getServiceCategoryPerformance(
+    limit: number = 10,
+    days: number = 30
+  ): Promise<
+    Array<{ categoryName: string; bookingCount: number; categoryId: string }>
+  > {
+    try {
+      console.log("fetching service category performance from repository");
+
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      const result = await this.model.aggregate([
+        {
+          $match: {
+            bookingStatus: { $in: ["Completed", "Booked"] },
+            createdAt: { $gte: startDate },
+          },
+        },
+        {
+          $lookup: {
+            from: "services",
+            localField: "serviceId",
+            foreignField: "_id",
+            as: "serviceDetails",
+          },
+        },
+        {
+          $unwind: "$serviceDetails",
+        },
+        {
+          $lookup: {
+            from: "categories",
+            localField: "serviceDetails.category",
+            foreignField: "_id",
+            as: "categoryDetails",
+          },
+        },
+        {
+          $unwind: "$categoryDetails",
+        },
+        {
+          $group: {
+            _id: "$categoryDetails._id",
+            categoryName: { $first: "$categoryDetails.name" },
+            bookingCount: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            categoryId: { $toString: "$_id" },
+            categoryName: 1,
+            bookingCount: 1,
+            _id: 0,
+          },
+        },
+        {
+          $sort: { bookingCount: -1 },
+        },
+        {
+          $limit: limit,
+        },
+      ]);
+
+      console.log("service category performance result:", result);
+      return result;
+    } catch (error) {
+      console.log("error in getServiceCategoryPerformance repository:", error);
+      return [];
+    }
+  }
+
+  async getTechnicianTotalCompletedBookings(
+    technicianId: string
+  ): Promise<number> {
+    try {
+      console.log(
+        "entered the booking repository that fetches the total technician completed jobs"
+      );
+      const technicianCompletedBookings = await this.countDocument({
+        technicianId: technicianId,
+        bookingStatus: "Completed",
+      });
+      console.log(
+        "total completed technician bookings:",
+        technicianCompletedBookings
+      );
+      return technicianCompletedBookings;
+    } catch (error) {
+      console.log(
+        "error occured while fetching the technician total completed bookings:",
+        error
+      );
+      throw error;
+    }
+  }
+
+  async getTechnicianPendingJobs(technicianId: string): Promise<number> {
+    try {
+      console.log(
+        "enterd to the booking reposiotry that fetches the technician pending jobs:",
+        technicianId
+      );
+      const techncianPendingJobs = await this.countDocument({
+        technicianId: technicianId,
+        bookingStatus: "Booked",
+      });
+      return techncianPendingJobs;
+    } catch (error) {
+      console.log(
+        "error occured while fetching the technician pending jobs:",
+        error
+      );
+      throw error;
+    }
+  }
+  async getTechnicianBookingStatusDistribution(
+    technicianId: string,
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<
+    Array<{
+      status: string;
+      count: number;
+    }>
+  > {
+    try {
+      console.log(
+        `Fetching booking status distribution for technician:`,
+        technicianId
+      );
+
+      const matchConditions: FilterQuery<IBooking> = {
+        technicianId: new mongoose.Types.ObjectId(technicianId),
+      };
+
+      // Add date range if provided
+      if (startDate && endDate) {
+        matchConditions.createdAt = {
+          $gte: startDate,
+          $lte: endDate,
+        };
+      }
+
+      const statusDistribution = await this.model.aggregate([
+        {
+          $match: matchConditions,
+        },
+        {
+          $group: {
+            _id: "$bookingStatus",
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            status: "$_id",
+            count: 1,
+          },
+        },
+        {
+          $sort: { count: -1 },
+        },
+      ]);
+
+      return statusDistribution;
+    } catch (error) {
+      console.log("Error fetching booking status distribution:", error);
+      throw error;
+    }
   }
 }

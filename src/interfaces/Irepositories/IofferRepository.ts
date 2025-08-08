@@ -31,4 +31,7 @@ export interface IOfferRepository {
       valid_until?: Date;
     }
   ): Promise<IOffer | null>;
+  getUserOffers(isFirstTimeUser: boolean): Promise<IOffer[]>;
+  getOfferByType(offerType: string): Promise<IOffer | null>;
+  getOfferByServiceCategory(categoryId: string): Promise<IOffer | null>;
 }

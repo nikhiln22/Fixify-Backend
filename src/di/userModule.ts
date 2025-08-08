@@ -44,6 +44,18 @@ import { ChatService } from "../services/chatService";
 import { ChatRepository } from "../repositories/chatRepository";
 import { IUserController } from "../interfaces/Icontrollers/IuserController";
 import { UserController } from "../controllers/userController";
+import { IOfferService } from "../interfaces/Iservices/IofferService";
+import { OfferService } from "../services/offerService";
+import { ICouponService } from "../interfaces/Iservices/IcouponService";
+import { CouponService } from "../services/couponService";
+import { IOfferRepository } from "../interfaces/Irepositories/IofferRepository";
+import { OfferRepository } from "../repositories/offerRepository";
+import { ICouponRepository } from "../interfaces/Irepositories/IcouponRepository";
+import { CouponRepository } from "../repositories/couponRepository";
+import { INotificationService } from "../interfaces/Iservices/InotificationService";
+import { NotificationService } from "../services/notificationService";
+import { INotificationRepository } from "../interfaces/Irepositories/InotificationRepository";
+import { NotificationRepository } from "../repositories/notificationRepository";
 
 container.registerSingleton<IUserController>("IUserController",UserController);
 container.registerSingleton<IUserService>("IUserService",UserService);
@@ -66,4 +78,10 @@ container.registerSingleton<IWalletRepository>("IWalletRepository",WalletReposit
 container.registerSingleton<IWalletTransactionRepository>("IWalletTransactionRepository",WalletTransactionRepository)
 container.registerSingleton<IPaymentRepository>("IPaymentRepository",PaymentRepository);
 container.registerSingleton<IChatService>("IChatService",ChatService);
-container.registerSingleton<IChatRepository>("IChatRepository",ChatRepository)
+container.registerSingleton<IChatRepository>("IChatRepository",ChatRepository);
+container.registerSingleton<IOfferService>("IOfferService",OfferService);
+container.registerSingleton<ICouponService>("ICouponService",CouponService);
+container.registerSingleton<IOfferRepository>("IOfferRepository",OfferRepository);
+container.registerSingleton<ICouponRepository>("ICouponRepository",CouponRepository);
+container.registerSingleton<INotificationService>("INotificationService",NotificationService);
+container.registerSingleton<INotificationRepository>("INotificationRepository",NotificationRepository);

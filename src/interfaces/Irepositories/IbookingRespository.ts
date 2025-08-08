@@ -33,4 +33,36 @@ export interface IBookingRepository {
     userId?: string,
     technicianId?: string
   ): Promise<IBooking | null>;
+  getMostBookedServiceIds(
+    limit?: number,
+    days?: number
+  ): Promise<
+    Array<{
+      serviceId: string;
+      bookingCount: number;
+    }>
+  >;
+  countUserBookings(userId: string): Promise<number>;
+  totalBookings(): Promise<number>;
+  getBookingStatusDistribution(): Promise<
+    Array<{ status: string; count: number }>
+  >;
+  getServiceCategoryPerformance(
+    limit: number,
+    days: number
+  ): Promise<
+    Array<{ categoryName: string; bookingCount: number; categoryId: string }>
+  >;
+  getTechnicianTotalCompletedBookings(technicianId: string): Promise<number>;
+  getTechnicianPendingJobs(technicianId: string): Promise<number>;
+  getTechnicianBookingStatusDistribution(
+    technicianId: string,
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<
+    Array<{
+      status: string;
+      count: number;
+    }>
+  >;
 }

@@ -17,13 +17,29 @@ export class CronService implements ICronService {
     console.log("starting the cron jobs...");
 
     cron.schedule("0 0 * * *", async () => {
-      console.log("Running the subscription expiry check...");
+      const now = new Date();
+      const istTime = now.toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        dateStyle: "medium",
+        timeStyle: "medium",
+      });
+
+      console.log(`[${istTime}] Running the subscription expiry check...`);
       await this._subscriptionPlanExpiryService.handleExpiredSubscriptions();
+      console.log(`[${istTime}] Completed subscription expiry check.`);
     });
 
-    cron.schedule("0 1 * * *", async () => {
-      console.log("Running the wallet credit processing...");
+    cron.schedule("0 * * * *", async () => {
+      const now = new Date();
+      const istTime = now.toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        dateStyle: "medium",
+        timeStyle: "medium",
+      });
+
+      console.log(`[${istTime}] Running hourly wallet credit processing...`);
       await this._walletCreditService.processWalletCredits();
+      console.log(`[${istTime}] Completed wallet credit processing.`);
     });
 
     console.log("cron jobs started successfully...");

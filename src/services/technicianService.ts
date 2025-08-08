@@ -47,6 +47,8 @@ import { IRating } from "../interfaces/Models/Irating";
 import { ISubscriptionPlanHistoryRepository } from "../interfaces/Irepositories/IsubscriptionPlanHistoryRepository";
 import { ISubscriptionPlanRepository } from "../interfaces/Irepositories/IsubscriptionPlanRepository";
 import { INearbyTechnicianResponse } from "../interfaces/DTO/IRepository/ItechnicianRepository";
+import { IBookingRepository } from "../interfaces/Irepositories/IbookingRespository";
+import { IPaymentRepository } from "../interfaces/Irepositories/IpaymentRepository";
 
 @injectable()
 export class TechnicianService implements ITechnicianService {
@@ -68,7 +70,10 @@ export class TechnicianService implements ITechnicianService {
     @inject("ISubscriptionPlanHistoryRepository")
     private _subscriptionPlanHistoryRepository: ISubscriptionPlanHistoryRepository,
     @inject("ISubscriptionPlanRepository")
-    private _subsciptionPlanRepository: ISubscriptionPlanRepository
+    private _subsciptionPlanRepository: ISubscriptionPlanRepository,
+    @inject("IBookingRepository")
+    private _bookingRepository: IBookingRepository,
+    @inject("IPaymentRepository") private _paymentRepository: IPaymentRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -1186,6 +1191,303 @@ export class TechnicianService implements ITechnicianService {
       return {
         success: false,
         message: "Error occurred while fetching subscription plan",
+      };
+    }
+  }
+
+  async countActiveTechnicians(): Promise<number> {
+    try {
+      console.log(
+        "entered the function that fetches the total number of active technicians in technciian service"
+      );
+      const activeTechncians =
+        await this._technicianRepository.countActiveTechnicians();
+      console.log(
+        "active technicians from the technician repository:",
+        activeTechncians
+      );
+      return activeTechncians;
+    } catch (error) {
+      console.log(
+        "error occured while fetching the active technicians:",
+        error
+      );
+      return 0;
+    }
+  }
+
+  async getDashboardStats(technicianId: string): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      totalEarnings: number;
+      completedJobs: number;
+      averageRating: number;
+      pendingJobs: number;
+    };
+  }> {
+    try {
+      console.log(
+        "entering to the technician service that fetches the dashbaord stats for the technicians"
+      );
+      console.log("technicianId in the dashboard stats:", technicianId);
+      const totalEarnings =
+        await this._walletRepository.getTechncianTotalEarnings(technicianId);
+      console.log("totalearnings earned by the technician:", totalEarnings);
+      const completedJobs =
+        await this._bookingRepository.getTechnicianTotalCompletedBookings(
+          technicianId
+        );
+      console.log("total completed jobs by the technician:", completedJobs);
+      const averageRating =
+        await this._ratingRepository.getRatingsByTechnicianId(technicianId);
+      console.log("averageratings by the technician:", averageRating);
+      const pendingJobs =
+        await this._bookingRepository.getTechnicianPendingJobs(technicianId);
+      console.log("pending jobs for the technician:", pendingJobs);
+
+      return {
+        success: true,
+        message: "fetched the technician dashbaord stats successfully",
+        data: {
+          totalEarnings,
+          completedJobs,
+          averageRating: averageRating.averageRating,
+          pendingJobs,
+        },
+      };
+    } catch (error) {
+      console.log(
+        "error occured while fetching the technician dashbaord stats:",
+        error
+      );
+      return {
+        success: false,
+        message: "failed to fetch the technician dashboard stats",
+      };
+    }
+  }
+
+  async getTechnicianEarningsData(
+    technicianId: string,
+    period: "daily" | "weekly" | "monthly" | "yearly",
+    startDate?: string,
+    endDate?: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: Array<{
+      date: string;
+      earnings: number;
+      jobs: number;
+      avgPerJob: number;
+      period: string;
+    }>;
+    summary?: {
+      totalEarnings: number;
+      totalJobs: number;
+      avgEarningsPerPeriod: number;
+      period: string;
+    };
+  }> {
+    try {
+      const start = startDate ? new Date(startDate) : undefined;
+      const end = endDate ? new Date(endDate) : undefined;
+
+      const earningsData = await this._paymentRepository.getTechnicianEarnings(
+        technicianId,
+        period,
+        start,
+        end
+      );
+
+      const formattedData = earningsData.map((item) => ({
+        date: this.formatDateForPeriod(item.date, period),
+        earnings: item.totalEarnings,
+        jobs: item.jobsCompleted,
+        avgPerJob: item.avgEarningsPerJob,
+        period: period,
+      }));
+
+      const totalEarnings = earningsData.reduce(
+        (sum, item) => sum + item.totalEarnings,
+        0
+      );
+      const totalJobs = earningsData.reduce(
+        (sum, item) => sum + item.jobsCompleted,
+        0
+      );
+
+      return {
+        success: true,
+        message: `${period} earnings data fetched successfully`,
+        data: formattedData,
+        summary: {
+          totalEarnings: Math.round(totalEarnings * 100) / 100,
+          totalJobs,
+          avgEarningsPerPeriod:
+            formattedData.length > 0
+              ? Math.round((totalEarnings / formattedData.length) * 100) / 100
+              : 0,
+          period,
+        },
+      };
+    } catch (error) {
+      console.log("Error in getTechnicianEarningsData:", error);
+      return {
+        success: false,
+        message: "Failed to fetch technician earnings data",
+      };
+    }
+  }
+
+  private formatDateForPeriod(date: Date | string, period: string): string {
+    let d: Date;
+
+    if (typeof date === "string") {
+      d = new Date(date);
+    } else {
+      d = date;
+    }
+
+    switch (period) {
+      case "daily":
+        return d.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+      case "weekly":
+        return `Week ${this.getWeekNumber(d)}`;
+      case "monthly":
+        return d.toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
+        });
+      case "yearly":
+        return d.getFullYear().toString();
+      default:
+        return d.toLocaleDateString();
+    }
+  }
+
+  private getWeekNumber(date: Date): number {
+    const d = new Date(
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+    );
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  }
+
+  async getTechnicianServiceCategoriesData(
+    technicianId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: Array<{
+      categoryId: string;
+      categoryName: string;
+      revenue: number;
+      jobsCount: number;
+      percentage: number;
+    }>;
+    totalRevenue?: number;
+  }> {
+    try {
+      const start = startDate ? new Date(startDate) : undefined;
+      const end = endDate ? new Date(endDate) : undefined;
+
+      const categoriesData =
+        await this._paymentRepository.getTechnicianServiceCategoriesRevenue(
+          technicianId,
+          start,
+          end
+        );
+
+      const totalRevenue = categoriesData.reduce(
+        (sum, item) => sum + item.revenue,
+        0
+      );
+
+      const formattedData = categoriesData.map((item) => ({
+        categoryId: item.categoryId,
+        categoryName: item.categoryName,
+        revenue: item.revenue,
+        jobsCount: item.jobsCount,
+        percentage:
+          totalRevenue > 0
+            ? Math.round((item.revenue / totalRevenue) * 100)
+            : 0,
+      }));
+
+      return {
+        success: true,
+        message: "Service categories data fetched successfully",
+        data: formattedData,
+        totalRevenue: Math.round(totalRevenue * 100) / 100,
+      };
+    } catch (error) {
+      console.log("Error in getTechnicianServiceCategoriesData:", error);
+      return {
+        success: false,
+        message: "Failed to fetch service categories data",
+      };
+    }
+  }
+
+  async getTechnicianBookingStatusData(
+    technicianId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: Array<{
+      status: string;
+      count: number;
+      percentage: number;
+    }>;
+    totalBookings?: number;
+  }> {
+    try {
+      const start = startDate ? new Date(startDate) : undefined;
+      const end = endDate ? new Date(endDate) : undefined;
+
+      const statusData =
+        await this._bookingRepository.getTechnicianBookingStatusDistribution(
+          technicianId,
+          start,
+          end
+        );
+
+      const totalBookings = statusData.reduce(
+        (sum, item) => sum + item.count,
+        0
+      );
+
+      const formattedData = statusData.map((item) => ({
+        status: item.status,
+        count: item.count,
+        percentage:
+          totalBookings > 0
+            ? Math.round((item.count / totalBookings) * 100)
+            : 0,
+      }));
+
+      return {
+        success: true,
+        message: "Booking status data fetched successfully",
+        data: formattedData,
+        totalBookings,
+      };
+    } catch (error) {
+      console.log("Error in getTechnicianBookingStatusData:", error);
+      return {
+        success: false,
+        message: "Failed to fetch booking status data",
       };
     }
   }

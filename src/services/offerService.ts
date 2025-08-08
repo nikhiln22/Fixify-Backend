@@ -3,11 +3,13 @@ import { IOfferService } from "../interfaces/Iservices/IofferService";
 import { IOffer } from "../interfaces/Models/Ioffers";
 import { inject, injectable } from "tsyringe";
 import { IOfferRepository } from "../interfaces/Irepositories/IofferRepository";
+import { IBookingRepository } from "../interfaces/Irepositories/IbookingRespository";
 
 @injectable()
 export class OfferService implements IOfferService {
   constructor(
-    @inject("IOfferRepository") private _offerRepository: IOfferRepository
+    @inject("IOfferRepository") private _offerRepository: IOfferRepository,
+    @inject("IBookingRepository") private _bookingRepository: IBookingRepository
   ) {}
 
   async addOffer(data: OfferData): Promise<{
@@ -60,9 +62,10 @@ export class OfferService implements IOfferService {
     };
   }> {
     try {
-      console.log("Function fetching all the offers");
+      console.log("Function fetching all the offers for admin");
       const page = options.page || 1;
-      const limit = options.limit || 5;
+      const limit = options.limit || 6;
+
       const result = await this._offerRepository.getAllOffers({
         page,
         limit,
@@ -92,6 +95,67 @@ export class OfferService implements IOfferService {
       return {
         success: false,
         message: "Something went wrong while fetching offers",
+      };
+    }
+  }
+
+  async getUserOffers(userId: string): Promise<{
+    success: boolean;
+    message: string;
+    data?: Partial<IOffer>[];
+  }> {
+    try {
+      console.log(
+        "entered to the offers fetching for the user in offer service:",
+        userId
+      );
+
+      console.log("checking whether this is a new user:", userId);
+      const completedBookings = await this._bookingRepository.countUserBookings(
+        userId
+      );
+
+      const isFirstTimeUser = completedBookings === 0;
+
+      console.log(
+        "user bookings count:",
+        completedBookings,
+        "is First Time:",
+        isFirstTimeUser
+      );
+
+      const result = await this._offerRepository.getUserOffers(isFirstTimeUser);
+
+      const transformedOffers: Partial<IOffer>[] = result.map((offer) => ({
+        title: offer.title,
+        description: offer.description,
+        offer_type: offer.offer_type,
+        discount_type: offer.discount_type,
+        discount_value: offer.discount_value,
+        max_discount: offer.max_discount,
+        min_booking_amount: offer.min_booking_amount,
+        valid_until: offer.valid_until,
+        display_discount:
+          offer.discount_type === "percentage"
+            ? `${offer.discount_value}% OFF`
+            : `₹${offer.discount_value} OFF`,
+      }));
+
+      console.log(
+        "result from the offer repository for user offers:",
+        transformedOffers
+      );
+
+      return {
+        success: true,
+        message: "User offers fetched successfully",
+        data: transformedOffers,
+      };
+    } catch (error) {
+      console.error("Error fetching user offers:", error);
+      return {
+        success: false,
+        message: "Failed to fetch user offers",
       };
     }
   }

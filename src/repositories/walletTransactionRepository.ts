@@ -77,4 +77,21 @@ export class WalletTransactionRepository
       throw new Error("Failed to fetch wallet transactions");
     }
   }
+
+  async getTotalEarningsForTechnician(technicianId: string): Promise<number> {
+    try {
+      const creditTransactions = await this.findAll({
+        ownerId: new Types.ObjectId(technicianId),
+        ownerType: "technician",
+        type: "Credit",
+      });
+
+      return creditTransactions.reduce((total, transaction) => {
+        return total + (transaction.amount || 0);
+      }, 0);
+    } catch (error) {
+      console.log("error calculating total earnings:", error);
+      return 0;
+    }
+  }
 }

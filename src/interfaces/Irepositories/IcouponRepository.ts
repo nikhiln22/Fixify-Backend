@@ -30,4 +30,6 @@ export interface ICouponRepository {
       valid_until?: Date;
     }
   ): Promise<ICoupon | null>;
+  getEligibleCoupons(userId: string, price: number): Promise<ICoupon[]>;
+  addUserToCoupon(couponId: string, userId: string): Promise<ICoupon>;
 }

@@ -1,4 +1,7 @@
-import { CreatePaymentData } from "../DTO/IRepository/IpayementRepository";
+import {
+  CreatePaymentData,
+  FormattedEarningsResult,
+} from "../DTO/IRepository/IpayementRepository";
 import { IPayment } from "../Models/Ipayment";
 
 export interface IPaymentRepository {
@@ -9,4 +12,26 @@ export interface IPaymentRepository {
     updateData: Partial<IPayment>
   ): Promise<IPayment | null>;
   findPaymentsReadyForCredit(): Promise<IPayment[]>;
+  getTotalRevenue(): Promise<number>;
+  getRevenueByDays(
+    days: number
+  ): Promise<Array<{ date: string; revenue: number }>>;
+  getTechnicianEarnings(
+    technicianId: string,
+    period: "daily" | "weekly" | "monthly" | "yearly",
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<FormattedEarningsResult[]>;
+  getTechnicianServiceCategoriesRevenue(
+    technicianId: string,
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<
+    Array<{
+      categoryId: string;
+      categoryName: string;
+      revenue: number;
+      jobsCount: number;
+    }>
+  >;
 }

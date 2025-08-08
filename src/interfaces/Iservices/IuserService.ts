@@ -89,4 +89,5 @@ export interface IUserService {
       };
     };
   }>;
+  countActiveUsers(): Promise<number>;
 }

@@ -44,6 +44,11 @@ import { IWalletCreditService } from "../interfaces/Iservices/IwalletCreditServi
 import { WalletCreditService } from "../services/walletCreditService";
 import { ICronService } from "../interfaces/Icron/Icron";
 import { CronService } from "../utils/cron";
+import { INotificationService } from "../interfaces/Iservices/InotificationService";
+import { NotificationService } from "../services/notificationService";
+import { INotificationRepository } from "../interfaces/Irepositories/InotificationRepository";
+import { NotificationRepository } from "../repositories/notificationRepository";
+
 
 
 container.registerSingleton<ITechnicianController>("ITechnicianController",TechnicianController)
@@ -67,4 +72,6 @@ container.registerSingleton<IWalletTransactionRepository>("IWalletTransactionRep
 container.registerSingleton<IRatingRepository>("IRatingRepository",RatingRepository);
 container.registerSingleton<ISubscriptionExpiryService>("ISubscriptionExpiryService",SubscriptionExpiryService);
 container.registerSingleton<IWalletCreditService>("IWalletCreditService",WalletCreditService);
-container.registerSingleton<ICronService>("ICronService",CronService)
+container.registerSingleton<ICronService>("ICronService",CronService);
+container.registerSingleton<INotificationService>("INotificationService",NotificationService);
+container.registerSingleton<INotificationRepository>("INotificationRepository",NotificationRepository);

@@ -50,4 +50,9 @@ export interface IOfferService {
     message: string;
     data?: IOffer;
   }>;
+  getUserOffers(userId: string): Promise<{
+    success: boolean;
+    message: string;
+    data?: Partial<IOffer>[];
+  }>;
 }

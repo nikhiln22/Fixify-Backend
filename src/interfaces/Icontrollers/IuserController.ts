@@ -7,6 +7,7 @@ export interface IUserController {
   forgotPassword(req: Request, res: Response): Promise<void>;
   resetPassword(req: Request, res: Response): Promise<void>;
   login(req: Request, res: Response): Promise<void>;
+  getMostBookedServices(req: Request, res: Response): Promise<void>;
   getAllCategories(req: Request, res: Response): Promise<void>;
   getAllServices(req: Request, res: Response): Promise<void>;
   getProfile(req: Request, res: Response): Promise<void>;
@@ -30,6 +31,12 @@ export interface IUserController {
   cancelBooking(req: Request, res: Response): Promise<void>;
   rateService(req: Request, res: Response): Promise<void>;
   getRating(req: Request, res: Response): Promise<void>;
-  getCoupons(req: Request, res: Response): Promise<void>;
+  getOffers(req: Request, res: Response): Promise<void>;
+  applyBestOffer(req: Request, res: Response): Promise<void>;
+  getEligibleCoupons(req: Request, res: Response): Promise<void>;
+  applyCoupon(req: Request, res: Response): Promise<void>;
+  getNotifications(req: Request, res: Response): Promise<void>;
+  getUnreadNotificationCount(req: Request, res: Response): Promise<void>;
+  markNotificationRead(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

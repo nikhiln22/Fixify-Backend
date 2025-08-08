@@ -42,7 +42,7 @@ export interface VerifyOtpData {
 export interface LoginResponse {
   success: boolean;
   message: string;
-  data?: Pick<IUser, "username" | "email" | "phone" | "image">;
+  data?: Pick<IUser, "_id" | "username" | "email" | "phone" | "image">;
   access_token?: string;
   refresh_token?: string;
 }
@@ -101,7 +101,10 @@ export interface CreateBookingRequest {
   serviceId: string;
   addressId: string;
   timeSlotId: string;
+  originalAmount?: number;
   bookingAmount: number;
+  offerId?: string;
+  couponId?: string;
   paymentMethod: "Online" | "Wallet";
   bookingStatus?: "Pending" | "Booked" | "Cancelled" | "Completed";
 }

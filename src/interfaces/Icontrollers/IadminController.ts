@@ -26,5 +26,9 @@ export interface IAdminController {
   blockSubscriptionPlan(req: Request, res: Response): Promise<void>;
   updateSubscriptionPlan(req: Request, res: Response): Promise<void>;
   getSubscriptionhistory(req: Request, res: Response): Promise<void>;
+  getDashboardStats(req: Request, res: Response): Promise<void>;
+  getBookingStatusDistribution(req: Request, res: Response): Promise<void>;
+  getRevenueTrends(req: Request, res: Response): Promise<void>;
+  getServiceCategoryPerformance(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

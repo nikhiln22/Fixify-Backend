@@ -3,7 +3,10 @@ export interface CreatePaymentData {
   bookingId?: string;
   technicianId: string;
   subscriptionPlanId?: string;
+  originalAmount?: number;
   amountPaid: number;
+  offerId?: string;
+  couponId?: string;
   fixifyShare?: number;
   technicianShare?: number;
   paymentMethod: "Online" | "Wallet";
@@ -14,4 +17,40 @@ export interface CreatePaymentData {
   technicianPaidAt?: Date;
   refundDate?: Date;
   creditReleaseDate?: Date;
+}
+
+export interface EarningsGroupId {
+  year: number;
+  month?: number;
+  day?: number;
+  week?: number;
+}
+
+export interface EarningsAggregationResult {
+  _id: EarningsGroupId;
+  totalEarnings: number;
+  jobsCompleted: number;
+  avgEarningsPerJob: number;
+  totalBookingAmount: number;
+  totalFixifyShare: number;
+}
+
+export interface ProjectedEarningsResult {
+  date: Date | string;
+  period: string;
+  totalEarnings: number;
+  jobsCompleted: number;
+  avgEarningsPerJob: number;
+  totalBookingAmount: number;
+  totalFixifyShare: number;
+}
+
+export interface FormattedEarningsResult {
+  date: Date | string;
+  period: string;
+  totalEarnings: number;
+  jobsCompleted: number;
+  avgEarningsPerJob: number;
+  totalBookingAmount: number;
+  totalFixifyShare: number;
 }

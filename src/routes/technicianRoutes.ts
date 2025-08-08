@@ -186,6 +186,52 @@ export class TechnicianRoutes {
     );
 
     this.router.get(
+      "/notifications",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
+      technicianController.getNotifications.bind(technicianController)
+    );
+
+    this.router.get(
+      "/unreadnotifications",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      technicianController.getUnreadNotificationCount.bind(technicianController)
+    );
+
+    this.router.patch(
+      "/readnotification/:notificationId",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      technicianController.markNotificationRead.bind(technicianController)
+    );
+
+    this.router.get(
+      "/dashboardstats",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
+      technicianController.getDashboardStats.bind(technicianController)
+    );
+
+    this.router.get(
+      "/technicianearnings",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
+      technicianController.getTechnicianEarnings.bind(technicianController)
+    );
+
+    this.router.get(
+      "/servicecategoryrevenue",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
+      technicianController.getTechnicianServiceCategoriesRevenue.bind(
+        technicianController
+      )
+    );
+
+    this.router.get(
+      "/bookingstatusdistribution",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
+      technicianController.getTechnicianBookingStatusDistribution.bind(
+        technicianController
+      )
+    );
+
+    this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.TECHNICIAN),
       technicianController.logout.bind(technicianController)

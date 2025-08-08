@@ -245,6 +245,30 @@ export class AdminRoutes {
     );
 
     this.router.get(
+      "/dashboardstats",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.getDashboardStats.bind(adminController)
+    );
+
+    this.router.get(
+      "/bookingsstats",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.getBookingStatusDistribution.bind(adminController)
+    );
+
+    this.router.get(
+      "/revenuetrends",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.getRevenueTrends.bind(adminController)
+    );
+
+    this.router.get(
+      "/servicecategoryperformance",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.getServiceCategoryPerformance.bind(adminController)
+    );
+
+    this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.ADMIN),
       adminController.logout.bind(adminController)

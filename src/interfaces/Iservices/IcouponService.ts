@@ -49,4 +49,25 @@ export interface ICouponService {
     message: string;
     data?: ICoupon;
   }>;
+  getEligibleCoupons(
+    userId: string,
+    serviceId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: Partial<ICoupon>[];
+  }>;
+  applyCoupon(
+    userId: string,
+    couponId: string,
+    serviceId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      couponCode: string;
+      discountAmount: number;
+      finalAmount: number;
+    };
+  }>;
 }

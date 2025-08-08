@@ -13,6 +13,7 @@ import {
   createSuccessResponse,
 } from "../utils/responseHelper";
 import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
+import { INotificationService } from "../interfaces/Iservices/InotificationService";
 
 @injectable()
 export class TechnicianController implements ITechnicianController {
@@ -26,7 +27,9 @@ export class TechnicianController implements ITechnicianController {
     @inject("IBookingService") private _bookingService: IBookingService,
     @inject("IChatService") private _chatService: IChatService,
     @inject("ISubscriptionPlanService")
-    private _subscriptionPlanService: ISubscriptionPlanService
+    private _subscriptionPlanService: ISubscriptionPlanService,
+    @inject("INotificationService")
+    private _notificationService: INotificationService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {
@@ -1382,7 +1385,10 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async verifyStripeSession(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async verifyStripeSession(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       const sessionId = req.params.sessionId as string;
       const technicianId = req.user?.id;
@@ -1438,6 +1444,321 @@ export class TechnicianController implements ITechnicianController {
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getNotifications(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log(
+        "enetring the technician controller function that fetches the all notifications:"
+      );
+      const technicianId = req.user?.id;
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("technician not authenticated"));
+        return;
+      }
+
+      const notifications =
+        await this._notificationService.getNotificationsByUser(
+          technicianId,
+          "technician"
+        );
+
+      res
+        .status(HTTP_STATUS.OK)
+        .json(
+          createSuccessResponse(
+            notifications,
+            "Notifications fetched successfully"
+          )
+        );
+    } catch (error) {
+      console.log("error occured while fetching the notifications:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getUnreadNotificationCount(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      const technicianId = req.user?.id;
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("technician not authenticated"));
+        return;
+      }
+
+      const unreadCount = await this._notificationService.getUnreadCount(
+        technicianId,
+        "technician"
+      );
+
+      res
+        .status(HTTP_STATUS.OK)
+        .json(
+          createSuccessResponse(
+            { unreadCount },
+            "Unread count fetched successfully"
+          )
+        );
+    } catch (error) {
+      console.log("error occured while fetching unread notifications:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async markNotificationRead(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      const technicianId = req.user?.id;
+      const { notificationId } = req.params;
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("technician not authenticated"));
+        return;
+      }
+
+      const updatedNotification =
+        await this._notificationService.markNotificationAsRead(notificationId);
+
+      if (updatedNotification) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(
+              updatedNotification,
+              "Notification marked as read"
+            )
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json(createErrorResponse("Notification not found"));
+      }
+    } catch (error) {
+      console.log(
+        "error occured while marking all notifications as read:",
+        error
+      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getDashboardStats(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log(
+        "entered to the technician controller that fetches the technician dashboard stats"
+      );
+      const technicianId = req.user?.id;
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Technician not authenticated"));
+        return;
+      }
+
+      const serviceResponse = await this._technicianService.getDashboardStats(
+        technicianId
+      );
+      console.log("response from getDashboardStats service:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch dashboard stats"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error occurred while fetching dashboard stats:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getTechnicianEarnings(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log(
+        "fetching the technician earnings in the technician constroller"
+      );
+      const technicianId = req.user?.id;
+      const { period = "daily", startDate, endDate } = req.query;
+      console.log("technicianId in the getTechnicianEarnings function");
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Technician not authenticated"));
+        return;
+      }
+
+      const serviceResponse =
+        await this._technicianService.getTechnicianEarningsData(
+          technicianId,
+          period as "daily" | "weekly" | "monthly" | "yearly",
+          startDate as string,
+          endDate as string
+        );
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch technician earnings"
+            )
+          );
+      }
+    } catch (error) {
+      console.log(
+        "error occured while fetching the techniican earnings:",
+        error
+      );
+      throw error;
+    }
+  }
+
+  async getTechnicianServiceCategoriesRevenue(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log(
+        "fetching the technician service categories revenue in the technician controller"
+      );
+      const technicianId = req.user?.id;
+      const { startDate, endDate } = req.query;
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Technician not authenticated"));
+        return;
+      }
+
+      const serviceResponse =
+        await this._technicianService.getTechnicianServiceCategoriesData(
+          technicianId,
+          startDate as string,
+          endDate as string
+        );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message ||
+                "Failed to fetch service categories data"
+            )
+          );
+      }
+    } catch (error) {
+      console.log(
+        "error occurred while fetching the technician service categories:",
+        error
+      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error"));
+    }
+  }
+
+  async getTechnicianBookingStatusDistribution(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log(
+        "fetching the technician booking status distribution in the technician controller"
+      );
+      const technicianId = req.user?.id;
+      const { startDate, endDate } = req.query;
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Technician not authenticated"));
+        return;
+      }
+
+      const serviceResponse =
+        await this._technicianService.getTechnicianBookingStatusData(
+          technicianId,
+          startDate as string,
+          endDate as string
+        );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch booking status data"
+            )
+          );
+      }
+    } catch (error) {
+      console.log(
+        "error occurred while fetching the technician booking status:",
+        error
+      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error"));
     }
   }
 

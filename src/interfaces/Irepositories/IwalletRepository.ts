@@ -30,4 +30,5 @@ export interface IWalletRepository {
     wallet: IWallet | null;
     transaction: IWalletTransaction | null;
   }>;
+  getTechncianTotalEarnings(technicianId: string): Promise<number>;
 }

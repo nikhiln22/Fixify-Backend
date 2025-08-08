@@ -11,6 +11,7 @@ export class TimeSlotService implements ITimeSlotService {
     private _timeSlotRepository: ITimeSlotRepository
   ) {}
 
+  
   async addTimeSlots(
     technicianId: string,
     data: {
@@ -305,7 +306,6 @@ export class TimeSlotService implements ITimeSlotService {
     }
   }
 
-  
   async updateSlotBookingStatus(
     technicianId: string,
     slotId: string,

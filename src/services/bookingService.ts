@@ -25,6 +25,12 @@ import { ITimeSlot } from "../interfaces/Models/ItimeSlot";
 import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
 import { IRating } from "../interfaces/Models/Irating";
 import { ITechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
+import { IServiceRepository } from "../interfaces/Irepositories/IserviceRepository";
+import { IService } from "../interfaces/Models/Iservice";
+import { IOffer } from "../interfaces/Models/Ioffers";
+import { IOfferRepository } from "../interfaces/Irepositories/IofferRepository";
+import { ICouponRepository } from "../interfaces/Irepositories/IcouponRepository";
+import { INotificationService } from "../interfaces/Iservices/InotificationService";
 
 @injectable()
 export class BookingService implements IBookingService {
@@ -40,7 +46,13 @@ export class BookingService implements IBookingService {
     @inject("IEmailService") private _emailService: IEmailService,
     @inject("IRatingRepository") private _ratingRepository: IRatingRepository,
     @inject("ITechnicianRepository")
-    private _technicianRepository: ITechnicianRepository
+    private _technicianRepository: ITechnicianRepository,
+    @inject("IServiceRepository")
+    private _serviceRepository: IServiceRepository,
+    @inject("IOfferRepository") private _offerRepository: IOfferRepository,
+    @inject("ICouponRepository") private _couponRepository: ICouponRepository,
+    @inject("INotificationService")
+    private _notitificationService: INotificationService
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -215,19 +227,7 @@ export class BookingService implements IBookingService {
             };
           }
 
-          const bookingData = {
-            ...data,
-            bookingStatus: "Booked" as const,
-          };
-
-          const newBooking = await this._bookingRepository.bookService(
-            userId,
-            bookingData
-          );
-
-          console.log("Booking created successfully:", newBooking);
-
-          const newBookingId = newBooking._id.toString().slice(-8);
+          const newBookingId = new Date().getTime().toString().slice(-8);
 
           const walletUpdate =
             await this._walletRepository.updateWalletBalanceWithTransaction(
@@ -236,7 +236,7 @@ export class BookingService implements IBookingService {
               data.bookingAmount,
               "Debit",
               `Payment for service booking #${newBookingId}`,
-              newBooking._id.toString()
+              newBookingId
             );
 
           if (!walletUpdate.wallet || !walletUpdate.transaction) {
@@ -258,11 +258,8 @@ export class BookingService implements IBookingService {
           }
 
           const commissionRate = technicianPlan.subscriptionData.commissionRate;
-          const walletCreditDelay =
-            technicianPlan.subscriptionData.walletCreditDelay;
 
           console.log("technician's commission Rate:", commissionRate);
-          console.log("technician's wallet credit Delays:", walletCreditDelay);
 
           const fixifySharePercentage = commissionRate / 100;
           const fixifyShare = parseFloat(
@@ -272,21 +269,50 @@ export class BookingService implements IBookingService {
             (data.bookingAmount - fixifyShare).toFixed(2)
           );
 
-          const creditReleaseDate = new Date();
-          creditReleaseDate.setDate(
-            creditReleaseDate.getDate() + walletCreditDelay
+          if (data.couponId) {
+            const coupon = await this._couponRepository.findCouponById(
+              data.couponId
+            );
+
+            if (!coupon) {
+              return {
+                message: "coupon not found",
+                success: false,
+              };
+            }
+
+            const updatedCoupon = await this._couponRepository.addUserToCoupon(
+              data.couponId,
+              userId
+            );
+
+            console.log("updated coupon in the wallet booking:", updatedCoupon);
+          }
+
+          const bookingData = {
+            ...data,
+            bookingStatus: "Booked" as const,
+          };
+
+          const newBooking = await this._bookingRepository.bookService(
+            userId,
+            bookingData
           );
+
+          console.log("Booking created successfully:", newBooking);
 
           const newPayment = await this._paymentRepository.createPayment({
             userId: userId,
             bookingId: newBooking._id.toString(),
             technicianId: data.technicianId,
+            originalAmount: data.originalAmount,
             amountPaid: data.bookingAmount,
+            offerId: data.offerId,
+            couponId: data.couponId,
             fixifyShare: fixifyShare,
             technicianShare: technicianShare,
             paymentMethod: "Wallet",
             paymentStatus: "Paid",
-            creditReleaseDate: creditReleaseDate,
             technicianPaid: false,
             refundStatus: "Not Refunded",
           });
@@ -358,6 +384,9 @@ export class BookingService implements IBookingService {
             userId: userId,
             serviceId: data.serviceId,
             technicianId: data.technicianId,
+            originalAmount: data.originalAmount?.toString() || "",
+            offerId: data.offerId || "",
+            couponId: data.couponId || "",
           },
           success_url: `${config.CLIENT_URL}/user/bookingsuccess?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${config.CLIENT_URL}/user/payment-cancelled`,
@@ -419,6 +448,11 @@ export class BookingService implements IBookingService {
       }
 
       const bookingId = session.metadata?.bookingId;
+      const originalAmount = session.metadata?.originalAmount
+        ? parseFloat(session.metadata.originalAmount)
+        : undefined;
+      const offerId = session.metadata?.offerId || undefined;
+      const couponId = session.metadata?.couponId || undefined;
 
       console.log("bookingId in the booking service:", bookingId);
 
@@ -477,7 +511,7 @@ export class BookingService implements IBookingService {
 
       const technicianPlan =
         await this._technicianRepository.getActiveSubscriptionPlan(
-          booking.technicianId.toString()
+          booking.technicianId._id.toString()
         );
 
       console.log(
@@ -490,11 +524,8 @@ export class BookingService implements IBookingService {
       }
 
       const commissionRate = technicianPlan.subscriptionData.commissionRate;
-      const walletCreditDelay =
-        technicianPlan.subscriptionData.walletCreditDelay;
 
       console.log("technician's commission Rate:", commissionRate);
-      console.log("technician's wallet credit Delays:", walletCreditDelay);
 
       const fixifySharePercentage = commissionRate / 100;
       const fixifyShare = parseFloat(
@@ -504,21 +535,30 @@ export class BookingService implements IBookingService {
         (booking.bookingAmount - fixifyShare).toFixed(2)
       );
 
-      const creditReleaseDate = new Date();
-      creditReleaseDate.setDate(
-        creditReleaseDate.getDate() + walletCreditDelay
-      );
+      if (couponId) {
+        const coupon = await this._couponRepository.findCouponById(couponId);
+
+        if (coupon) {
+          await this._couponRepository.addUserToCoupon(couponId, userId);
+        } else {
+          throw Error(
+            `Coupon with ID ${couponId} not found during payment verification`
+          );
+        }
+      }
 
       const newPayment = await this._paymentRepository.createPayment({
         userId: userId,
         bookingId: booking._id.toString(),
-        technicianId: booking.technicianId.toString(),
+        technicianId: booking.technicianId._id.toString(),
+        originalAmount: originalAmount,
         amountPaid: booking.bookingAmount,
+        offerId: offerId,
+        couponId: couponId,
         fixifyShare: fixifyShare,
         technicianShare: technicianShare,
-        paymentMethod: "Wallet",
+        paymentMethod: "Online",
         paymentStatus: "Paid",
-        creditReleaseDate: creditReleaseDate,
         technicianPaid: false,
         refundStatus: "Not Refunded",
       });
@@ -864,6 +904,36 @@ export class BookingService implements IBookingService {
           success: false,
           message: "Failed to update booking status",
         };
+      }
+
+      try {
+        const technicianPlan =
+          await this._technicianRepository.getActiveSubscriptionPlan(
+            technicianId
+          );
+
+        if (technicianPlan && technicianPlan.subscriptionData) {
+          const walletCreditDelay =
+            technicianPlan.subscriptionData.walletCreditDelay;
+
+          // Calculate credit release date from the technican job completion time
+          const completionTime = new Date();
+          const newCreditReleaseDate = new Date(completionTime);
+          newCreditReleaseDate.setDate(
+            newCreditReleaseDate.getDate() + walletCreditDelay
+          );
+
+          await this._paymentRepository.updatePayment(
+            booking.paymentId._id.toString(),
+            { creditReleaseDate: newCreditReleaseDate }
+          );
+
+          console.log(
+            `Credit release date updated to ${newCreditReleaseDate} for booking ${bookingId}`
+          );
+        }
+      } catch (error) {
+        console.error("Error updating credit release date:", error);
       }
 
       const redisKey = this.getOtpRedisKey(
@@ -1394,6 +1464,355 @@ export class BookingService implements IBookingService {
       return {
         success: false,
         message: "Failed to fetch the rating",
+      };
+    }
+  }
+
+  async getMostBookedServices(
+    limit?: number,
+    days?: number
+  ): Promise<{ success: boolean; message: string; data?: IService[] }> {
+    try {
+      console.log(
+        "entered to the booking services that fetches the most booked services:"
+      );
+      console.log(
+        "limit in the getmostbooked services function in the booking service:",
+        limit
+      );
+      console.log(
+        "days in the getmostbooked services function in the booking service:",
+        days
+      );
+
+      const serviceStats =
+        await this._bookingRepository.getMostBookedServiceIds(limit, days);
+      console.log("service stats from booking repository:", serviceStats);
+
+      const serviceIds = serviceStats.map((stat) => stat.serviceId);
+      console.log("extracted serviceIds:", serviceIds);
+
+      const services = await this._serviceRepository.getServicesByIds(
+        serviceIds
+      );
+      console.log("services from service repository:", services);
+
+      return {
+        success: true,
+        message: "Most booked services fetched successfully",
+        data: services,
+      };
+    } catch (error) {
+      console.log("Error in getMostBookedServices service:", error);
+      return {
+        success: false,
+        message: "Failed to fetch most booked services",
+      };
+    }
+  }
+
+  async applyBestOffer(
+    userId: string,
+    serviceId: string,
+    totalAmount: number
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      offerId: string;
+      offerApplied: boolean;
+      offerName: string;
+      discountAmount: number;
+      finalAmount: number;
+      discountValue: number;
+      maxDiscount?: number;
+      discountType: string;
+      offerType: string;
+      minBookingAmount?: number;
+    };
+  }> {
+    try {
+      console.log(
+        "entering to the apply best offer function in the booking servce:"
+      );
+      console.log(
+        "userId in the apply best offer in the booking service:",
+        userId
+      );
+      console.log(
+        "serviceId in the apply best offer in the booking service:",
+        serviceId
+      );
+      console.log(
+        "totalAmount in the apply best offer in the booking service:",
+        totalAmount
+      );
+
+      const service = await this._serviceRepository.findServiceById(serviceId);
+
+      console.log("service in the best offer apply function:", service);
+
+      if (!service) {
+        return {
+          success: false,
+          message: "Service not found",
+        };
+      }
+
+      const userBookingsCount = await this._bookingRepository.countUserBookings(
+        userId
+      );
+
+      console.log(
+        "user bookings count in the apply best offer method:",
+        userBookingsCount
+      );
+
+      const isFirstTimeUser = userBookingsCount === 0;
+
+      console.log("isFirstTimeUser:", isFirstTimeUser);
+
+      let bestOffer: IOffer | null = null;
+      let discountAmount = 0;
+
+      if (isFirstTimeUser) {
+        const firstTimeOffer = await this._offerRepository.getOfferByType(
+          "first_time_user"
+        );
+        console.log("firstTimeOffer:", firstTimeOffer);
+
+        if (
+          firstTimeOffer &&
+          this.isOfferEligible(firstTimeOffer, totalAmount)
+        ) {
+          bestOffer = firstTimeOffer;
+          discountAmount = this.calculateDiscount(firstTimeOffer, totalAmount);
+          console.log("Applied First Time Offer:", bestOffer.title);
+        }
+      }
+
+      if (!bestOffer) {
+        const categoryOffer =
+          await this._offerRepository.getOfferByServiceCategory(
+            service.category.toString()
+          );
+        console.log("categoryOffer:", categoryOffer);
+
+        if (categoryOffer && this.isOfferEligible(categoryOffer, totalAmount)) {
+          bestOffer = categoryOffer;
+          discountAmount = this.calculateDiscount(categoryOffer, totalAmount);
+          console.log("Applied Service Category Offer:", bestOffer.title);
+        }
+      }
+
+      if (!bestOffer) {
+        const globalOffer = await this._offerRepository.getOfferByType(
+          "global"
+        );
+        console.log("globalOffer:", globalOffer);
+
+        if (globalOffer && this.isOfferEligible(globalOffer, totalAmount)) {
+          bestOffer = globalOffer;
+          discountAmount = this.calculateDiscount(globalOffer, totalAmount);
+          console.log("Applied Global Offer:", bestOffer.title);
+        }
+      }
+
+      const finalAmount = totalAmount - discountAmount;
+
+      if (!bestOffer) {
+        return {
+          message: "No offers for this service",
+          success: false,
+        };
+      }
+
+      console.log("Offer application result:", {
+        offerApplied: !!bestOffer,
+        offerName: bestOffer?.title,
+        discountAmount,
+        finalAmount,
+      });
+
+      return {
+        success: true,
+        message: bestOffer
+          ? `${bestOffer.title} applied successfully`
+          : "No applicable offers found",
+        data: {
+          offerId: bestOffer._id,
+          offerApplied: !!bestOffer,
+          offerName: bestOffer.title,
+          discountAmount,
+          finalAmount,
+          discountValue: bestOffer.discount_value,
+          maxDiscount: bestOffer.max_discount,
+          discountType: bestOffer.discount_type,
+          offerType: bestOffer.offer_type,
+          minBookingAmount: bestOffer.min_booking_amount,
+        },
+      };
+    } catch (error) {
+      console.log("Error in applyBestOffer:", error);
+      return {
+        success: false,
+        message: "Failed to apply best offer",
+      };
+    }
+  }
+
+  private isOfferEligible(offer: IOffer, totalAmount: number): boolean {
+    try {
+      if (!offer.status) {
+        return false;
+      }
+
+      const now = new Date();
+
+      if (offer.valid_until && new Date(offer.valid_until) < now) {
+        return false;
+      }
+
+      if (offer.min_booking_amount && totalAmount < offer.min_booking_amount) {
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error checking offer eligibility:", error);
+      return false;
+    }
+  }
+
+  private calculateDiscount(offer: IOffer, totalAmount: number): number {
+    try {
+      let discount = 0;
+
+      if (offer.discount_type === "percentage") {
+        discount = (totalAmount * offer.discount_value) / 100;
+
+        if (offer.max_discount && discount > offer.max_discount) {
+          discount = offer.max_discount;
+        }
+      } else if (offer.discount_type === "flat_amount") {
+        discount = offer.discount_value;
+      }
+
+      return Math.min(discount, totalAmount);
+    } catch (error) {
+      console.error("Error calculating discount:", error);
+      return 0;
+    }
+  }
+
+  async totalBookings(): Promise<number> {
+    try {
+      console.log(
+        "entered to the booking service that fetches the total bookings"
+      );
+      const totalBookings = await this._bookingRepository.totalBookings();
+      console.log("fetched total bookings:", totalBookings);
+      return totalBookings;
+    } catch (error) {
+      console.log("error occured while fetchning the total bookings:", error);
+      return 0;
+    }
+  }
+
+  async getTotalRevenue(): Promise<number> {
+    try {
+      console.log(
+        "entered into the total revenue function that fetches the total revenue in the booking service"
+      );
+      const totalRevenue = await this._paymentRepository.getTotalRevenue();
+      console.log("=== BOOKING SERVICE: PaymentRepository returned:", totalRevenue, "===");
+      return totalRevenue;
+    } catch (error) {
+      console.log("error occurred while fetching the total revenue:", error);
+      return 0;
+    }
+  }
+
+  async getBookingStatusDistribution(): Promise<{
+    success: boolean;
+    message: string;
+    data?: Array<{ status: string; count: number }>;
+  }> {
+    try {
+      console.log("entered to get booking status distribution");
+      const statusData =
+        await this._bookingRepository.getBookingStatusDistribution();
+      return {
+        success: true,
+        message: "Booking status distribution fetched successfully",
+        data: statusData,
+      };
+    } catch (error) {
+      console.log(
+        "error occurred while fetching booking status distribution:",
+        error
+      );
+      return {
+        success: false,
+        message: "Failed to fetch booking status distribution",
+      };
+    }
+  }
+
+  async getRevenueTrends(days: number = 30): Promise<{
+    success: boolean;
+    message: string;
+    data?: Array<{ date: string; revenue: number }>;
+  }> {
+    try {
+      console.log("entered to get revenue trends");
+      const revenueData = await this._paymentRepository.getRevenueByDays(days);
+      return {
+        success: true,
+        message: "Revenue trends fetched successfully",
+        data: revenueData,
+      };
+    } catch (error) {
+      console.log("error occurred while fetching revenue trends:", error);
+      return {
+        success: false,
+        message: "Failed to fetch revenue trends",
+      };
+    }
+  }
+
+  async getServiceCategoryPerformance(
+    limit: number = 10,
+    days: number = 30
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: Array<{
+      categoryName: string;
+      bookingCount: number;
+      categoryId: string;
+    }>;
+  }> {
+    try {
+      console.log("entered to get service category performance");
+      const categoryData =
+        await this._bookingRepository.getServiceCategoryPerformance(
+          limit,
+          days
+        );
+      return {
+        success: true,
+        message: "Service category performance fetched successfully",
+        data: categoryData,
+      };
+    } catch (error) {
+      console.log(
+        "error occurred while fetching service category performance:",
+        error
+      );
+      return {
+        success: false,
+        message: "Failed to fetch service category performance",
       };
     }
   }

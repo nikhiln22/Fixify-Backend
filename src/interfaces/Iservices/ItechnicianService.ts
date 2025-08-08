@@ -151,4 +151,67 @@ export interface ITechnicianService {
       amount: number;
     };
   }>;
+  countActiveTechnicians(): Promise<number>;
+  getDashboardStats(technicianId: string): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      totalEarnings: number;
+      completedJobs: number;
+      averageRating: number;
+      pendingJobs: number;
+    };
+  }>;
+  getTechnicianEarningsData(
+    technicianId: string,
+    period: "daily" | "weekly" | "monthly" | "yearly",
+    startDate?: string,
+    endDate?: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: Array<{
+      date: string;
+      earnings: number;
+      jobs: number;
+      avgPerJob: number;
+      period: string;
+    }>;
+    summary?: {
+      totalEarnings: number;
+      totalJobs: number;
+      avgEarningsPerPeriod: number;
+      period: string;
+    };
+  }>;
+  getTechnicianServiceCategoriesData(
+    technicianId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: Array<{
+      categoryId: string;
+      categoryName: string;
+      revenue: number;
+      jobsCount: number;
+      percentage: number;
+    }>;
+    totalRevenue?: number;
+  }>;
+  getTechnicianBookingStatusData(
+    technicianId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: Array<{
+      status: string;
+      count: number;
+      percentage: number;
+    }>;
+    totalBookings?: number;
+  }>;
 }

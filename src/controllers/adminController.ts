@@ -507,7 +507,7 @@ export class AdminController implements IAdminController {
         discount_value: req.body.discount_value,
         max_discount: req.body.max_discount,
         min_booking_amount: req.body.min_booking_amount,
-        service_id: req.body.service_id,
+        serviceId: req.body.service_id,
         valid_until: req.body.valid_until
           ? new Date(req.body.valid_until)
           : undefined,
@@ -1389,6 +1389,149 @@ export class AdminController implements IAdminController {
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getDashboardStats(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entered to the admin controller function that fetches dashboard stats"
+      );
+      const activeUsers = await this._userService.countActiveUsers();
+      console.log("total Active users:", activeUsers);
+      const activeTechnicians =
+        await this._technicianService.countActiveTechnicians();
+      console.log("activeTechnicians:", activeTechnicians);
+      const totalBookingsCount = await this._bookingService.totalBookings();
+      console.log("totalBookingsCount:", totalBookingsCount);
+
+      const totalRevenue = await this._bookingService.getTotalRevenue();
+
+      const dashboardStats = {
+        totalRevenue: totalRevenue,
+        totalBookings: totalBookingsCount,
+        activeTechnicians: activeTechnicians,
+        totalCustomers: activeUsers,
+      };
+
+      console.log("fetched dashboardstats:", dashboardStats);
+
+      res
+        .status(HTTP_STATUS.OK)
+        .json(
+          createSuccessResponse(
+            dashboardStats,
+            "Dashboard stats fetched successfully"
+          )
+        );
+    } catch (error) {
+      console.log("error occurred while fetching dashboard stats:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Error fetching dashboard stats"));
+    }
+  }
+
+  async getBookingStatusDistribution(
+    req: Request,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log("fetching booking status distribution in admin controller");
+
+      const serviceResponse =
+        await this._bookingService.getBookingStatusDistribution();
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message ||
+                "Failed to fetch booking status distribution"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error in getBookingStatusDistribution controller:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error"));
+    }
+  }
+
+  async getRevenueTrends(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("fetching the revenue trends for the admin controller:");
+
+      const days = parseInt(req.query.days as string) || 30;
+      console.log("days parameter:", days);
+
+      const serviceResponse = await this._bookingService.getRevenueTrends(days);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch revenue trends"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error in getRevenueTrends controller:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error"));
+    }
+  }
+
+  async getServiceCategoryPerformance(
+    req: Request,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log("fetching service category performance in admin controller");
+
+      const limit = parseInt(req.query.limit as string) || 10;
+      const days = parseInt(req.query.days as string) || 30;
+
+      const serviceResponse =
+        await this._bookingService.getServiceCategoryPerformance(limit, days);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message ||
+                "Failed to fetch service category performance"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error in getServiceCategoryPerformance controller:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error"));
     }
   }
 

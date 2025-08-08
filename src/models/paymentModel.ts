@@ -20,9 +20,20 @@ const paymentSchema: Schema<IPayment> = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "subscriptionPlan",
     },
+    originalAmount: {
+      type: Number,
+    },
     amountPaid: {
       type: Number,
       required: true,
+    },
+    offerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "offer",
+    },
+    couponId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "coupon",
     },
     fixifyShare: {
       type: Number,

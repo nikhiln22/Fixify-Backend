@@ -4,6 +4,7 @@ import {
 } from "../DTO/IServices/IuserService";
 import { IBooking } from "../Models/Ibooking";
 import { IRating } from "../Models/Irating";
+import { IService } from "../Models/Iservice";
 
 export interface IBookingService {
   bookService(
@@ -96,5 +97,59 @@ export interface IBookingService {
     success: boolean;
     message: string;
     data?: IRating | null;
+  }>;
+
+  getMostBookedServices(
+    limit?: number,
+    days?: number
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: IService[];
+  }>;
+
+  applyBestOffer(
+    userId: string,
+    serviceId: string,
+    totalAmount: number
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      offerId: string;
+      offerApplied: boolean;
+      offerName: string;
+      discountAmount: number;
+      finalAmount: number;
+      discountValue: number;
+      maxDiscount?: number;
+      discountType: string;
+      offerType: string;
+      minBookingAmount?: number;
+    };
+  }>;
+  totalBookings(): Promise<number>;
+  getTotalRevenue(): Promise<number>;
+  getBookingStatusDistribution(): Promise<{
+    success: boolean;
+    message: string;
+    data?: Array<{ status: string; count: number }>;
+  }>;
+  getRevenueTrends(days: number): Promise<{
+    success: boolean;
+    message: string;
+    data?: Array<{ date: string; revenue: number }>;
+  }>;
+  getServiceCategoryPerformance(
+    limit: number,
+    days: number
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: Array<{
+      categoryName: string;
+      bookingCount: number;
+      categoryId: string;
+    }>;
   }>;
 }

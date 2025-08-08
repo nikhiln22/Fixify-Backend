@@ -29,5 +29,12 @@ export interface ITechnicianController {
   getSubscriptionHistory(req: Request, res: Response): Promise<void>;
   purchaseSubscriptionPlan(req: Request, res: Response): Promise<void>;
   verifyStripeSession(req: Request, res: Response): Promise<void>;
+  getNotifications(req: Request, res: Response): Promise<void>;
+  getUnreadNotificationCount(req: Request, res: Response): Promise<void>;
+  markNotificationRead(req: Request, res: Response): Promise<void>;
+  getDashboardStats(req: Request, res: Response): Promise<void>;
+  getTechnicianEarnings(req: Request, res: Response): Promise<void>;
+  getTechnicianServiceCategoriesRevenue(req: Request, res: Response):Promise<void>;
+  getTechnicianBookingStatusDistribution(req: Request,res: Response): Promise<void>
   logout(req: Request, res: Response): Promise<void>;
 }

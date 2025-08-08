@@ -434,6 +434,7 @@ export class UserService implements IUserService {
         access_token,
         refresh_token,
         data: {
+          _id: user.userData._id,
           username: user.userData.username,
           email: user.userData.email,
           phone: user.userData.phone,
@@ -913,6 +914,23 @@ export class UserService implements IUserService {
         success: false,
         message: "Something went wrong while fetching user wallet transactions",
       };
+    }
+  }
+
+  async countActiveUsers(): Promise<number> {
+    try {
+      console.log(
+        "entered the function that finds the total number of the active users"
+      );
+      const activeUsers = await this._userRepository.countActiveUsers();
+      console.log("activeUsers:", activeUsers);
+      return activeUsers;
+    } catch (error) {
+      console.log(
+        "error occured while fteching the total active users:",
+        error
+      );
+      return 0;
     }
   }
 }

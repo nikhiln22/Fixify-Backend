@@ -131,4 +131,60 @@ export class CouponRepository
       throw new Error(`Failed to update coupon: ${error}`);
     }
   }
+
+  async getEligibleCoupons(userId: string, price: number): Promise<ICoupon[]> {
+    try {
+      console.log("fetching eligible coupons for user:", userId);
+      console.log(
+        "service price in the eligible coupons in the coupon repository:",
+        price
+      );
+
+      const filter: FilterQuery<ICoupon> = {
+        status: true,
+        valid_until: { $gte: new Date() },
+        min_booking_amount: { $lte: price },
+        used_by_users: { $ne: [userId] },
+      };
+
+      console.log("Filter for eligible coupons:", filter);
+
+      const eligibleCoupons = await this.findAll(filter, { createdAt: -1 });
+
+      console.log("Eligible coupons found:", eligibleCoupons.length);
+
+      return eligibleCoupons;
+    } catch (error) {
+      console.error("Error fetching eligible coupons:", error);
+      throw new Error("Failed to fetch eligible coupons");
+    }
+  }
+
+  async addUserToCoupon(couponId: string, userId: string): Promise<ICoupon> {
+    try {
+      console.log(
+        "couponId:",
+        couponId,
+        "userId:",
+        userId,
+        "in the addUserToCoupon function"
+      );
+
+      const updatedCoupon = await this.updateOne(
+        { _id: couponId },
+        { $addToSet: { used_by_users: userId } }
+      );
+
+      console.log("updating coupon:",updatedCoupon);
+
+      if (!updatedCoupon) {
+        throw new Error("Failed to update coupon");
+      }
+
+      return updatedCoupon;
+    } catch (error) {
+      console.error("Error adding user to coupon:", error);
+      throw error;
+    }
+  }
 }

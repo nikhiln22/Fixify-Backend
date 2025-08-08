@@ -40,4 +40,6 @@ export interface IServiceRepository {
       categoryId?: string;
     }
   ): Promise<IService | null>;
+
+  getServicesByIds(serviceIds: string[]): Promise<IService[]>;
 }

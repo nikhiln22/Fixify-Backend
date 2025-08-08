@@ -199,4 +199,24 @@ export class ServiceRepository
       throw new Error(`Failed to update service: ${error}`);
     }
   }
+
+  async getServicesByIds(serviceIds: string[]): Promise<IService[]> {
+    try {
+      console.log("Fetching services by IDs:", serviceIds);
+
+      const objectIds = serviceIds.map((id) => new Types.ObjectId(id));
+
+      const services = await this.findAll({
+        _id: { $in: objectIds },
+        status: true,
+      });
+
+      console.log("Services fetched by IDs:", services);
+
+      return services;
+    } catch (error) {
+      console.log("Error in getServicesByIds repository:", error);
+      throw error;
+    }
+  }
 }

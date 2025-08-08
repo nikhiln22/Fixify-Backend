@@ -4,7 +4,7 @@ import offer from "../models/offerModel";
 import { IOfferRepository } from "../interfaces/Irepositories/IofferRepository";
 import { injectable } from "tsyringe";
 import { OfferData } from "../interfaces/DTO/IServices/IofferService";
-import { FilterQuery } from "mongoose";
+import { FilterQuery, Types } from "mongoose";
 
 @injectable()
 export class OfferRepository
@@ -39,18 +39,15 @@ export class OfferRepository
     pages: number;
   }> {
     try {
-      console.log("entering the function which fetches all the offers");
+      console.log(
+        "entering the function which fetches all the offers for admin"
+      );
+      console.log("Options received:", options);
+
       const page = options.page || 1;
-      const limit = options.limit || 5;
+      const limit = options.limit || 6;
 
       const filter: FilterQuery<IOffer> = {};
-
-      if (options.search) {
-        filter.$or = [
-          { title: { $regex: options.search, $options: "i" } },
-          { description: { $regex: options.search, $options: "i" } },
-        ];
-      }
 
       if (options.filterStatus) {
         if (options.filterStatus === "active") {
@@ -60,12 +57,29 @@ export class OfferRepository
         }
       }
 
+      if (options.search) {
+        filter.$or = [
+          { title: { $regex: options.search, $options: "i" } },
+          { description: { $regex: options.search, $options: "i" } },
+        ];
+      }
+
+      console.log(
+        "Final filter query for admin:",
+        JSON.stringify(filter, null, 2)
+      );
+
       const result = (await this.find(filter, {
         pagination: { page, limit },
         sort: { createdAt: -1 },
       })) as { data: IOffer[]; total: number };
 
-      console.log("data fetched from the offer repository:", result);
+      console.log("data fetched from the offer repository for admin:", {
+        count: result.data.length,
+        total: result.total,
+        page,
+        limit,
+      });
 
       return {
         data: result.data,
@@ -75,8 +89,90 @@ export class OfferRepository
         pages: Math.ceil(result.total / limit),
       };
     } catch (error) {
-      console.log("error occurred while fetching the offers:", error);
-      throw new Error("Failed to fetch the offers");
+      console.log("error occurred while fetching the admin offers:", error);
+      throw new Error("Failed to fetch the admin offers");
+    }
+  }
+
+  async getOfferByType(offerType: string): Promise<IOffer | null> {
+    try {
+      console.log("fetching offer by type:", offerType);
+
+      const filter: FilterQuery<IOffer> = {
+        offer_type: offerType,
+        status: true,
+        valid_until: { $gte: new Date() },
+      };
+
+      const offer = await this.findOne(filter);
+      console.log("fetched offer by type:", offer);
+      return offer;
+    } catch (error) {
+      console.error("Error fetching offer by type:", error);
+      return null;
+    }
+  }
+
+  async getOfferByServiceCategory(categoryId: string): Promise<IOffer | null> {
+    try {
+      console.log("fetching offer by service category:", categoryId);
+
+      const filter: FilterQuery<IOffer> = {
+        offer_type: "service_category",
+        serviceId: new Types.ObjectId(categoryId),
+        status: true,
+        valid_until: { $gte: new Date() },
+      };
+
+      const offer = await this.findOne(filter);
+      console.log("fetched offer by service category:", offer);
+      return offer;
+    } catch (error) {
+      console.error("Error fetching offer by service category:", error);
+      return null;
+    }
+  }
+
+  async getUserOffers(isFirstTimeUser: boolean): Promise<IOffer[]> {
+    try {
+      console.log("entering the function which fetches offers for user");
+      console.log("Is first time user:", isFirstTimeUser);
+
+      const filter: FilterQuery<IOffer> = {
+        status: true,
+        valid_until: { $gte: new Date() },
+      };
+
+      if (isFirstTimeUser) {
+        console.log("Showing offers for first-time user");
+        filter.$or = [
+          { offer_type: "global" },
+          { offer_type: "service_category" },
+          { offer_type: "first_time_user" },
+        ];
+      } else {
+        console.log("Showing offers for existing user");
+        filter.$or = [
+          { offer_type: "global" },
+          { offer_type: "service_category" },
+        ];
+      }
+
+      console.log(
+        "Final filter query for user:",
+        JSON.stringify(filter, null, 2)
+      );
+
+      const result = await this.findAll(filter, { createdAt: -1 });
+
+      console.log("data fetched from the offer repository for user:", {
+        count: result.length,
+      });
+
+      return result;
+    } catch (error) {
+      console.log("error occurred while fetching the user offers:", error);
+      throw new Error("Failed to fetch the user offers");
     }
   }
 

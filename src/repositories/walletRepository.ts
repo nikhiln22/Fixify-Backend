@@ -212,4 +212,31 @@ export class WalletRepository
       await session.endSession();
     }
   }
+
+  async getTechncianTotalEarnings(technicianId: string): Promise<number> {
+    try {
+      console.log("calculating total earnings for technician:", technicianId);
+
+      const technicianWallet = await this.getWalletByOwnerId(
+        technicianId,
+        "technician"
+      );
+
+      if (!technicianWallet) {
+        console.log("No wallet found for technician:", technicianId);
+        return 0;
+      }
+
+      const creditTransactions =
+        await this._walletTransactionRepository.getTotalEarningsForTechnician(
+          technicianId
+        );
+
+      console.log("total earnings calculated:", creditTransactions);
+      return creditTransactions;
+    } catch (error) {
+      console.log("error occurred while calculating total earnings:", error);
+      return 0;
+    }
+  }
 }

@@ -35,4 +35,6 @@ export interface IUserRepository {
       profilePhoto?: string;
     }
   ): Promise<IUser | undefined>;
+
+  countActiveUsers(): Promise<number>;
 }

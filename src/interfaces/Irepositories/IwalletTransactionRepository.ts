@@ -20,4 +20,5 @@ export interface IWalletTransactionRepository {
     limit: number;
     pages: number;
   }>;
+  getTotalEarningsForTechnician(technicianId: string): Promise<number>;
 }

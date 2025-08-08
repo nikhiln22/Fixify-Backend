@@ -175,15 +175,27 @@ export class TimeSlotRepository
           );
           slotDate.setHours(0, 0, 0, 0);
 
+          // Skip past dates (before today)
           if (slotDate < today) return false;
 
+          // For today's slots - show ALL slots if no additionalFilters (technician view)
+          // Only filter by time if additionalFilters exist (user view)
           if (slot.date === todayDateString) {
             if (!slot.startTime) return false;
-            const [startHour, startMinute] = slot.startTime
-              .split(":")
-              .map(Number);
-            const slotTimeInMinutes = startHour * 60 + startMinute;
-            return slotTimeInMinutes > currentTime;
+
+            // If additionalFilters exist, it's a user request - filter past times
+            if (
+              additionalFilters &&
+              Object.keys(additionalFilters).length > 0
+            ) {
+              const slotTimeInMinutes = this.timeStringToMinutes(
+                slot.startTime
+              );
+              return slotTimeInMinutes > currentTime;
+            }
+
+            // No additionalFilters means technician request - show all today's slots
+            return true;
           }
 
           return true;
