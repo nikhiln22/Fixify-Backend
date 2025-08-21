@@ -14,6 +14,7 @@ import {
 } from "../utils/responseHelper";
 import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
 import { INotificationService } from "../interfaces/Iservices/InotificationService";
+import config from "../config/env";
 
 @injectable()
 export class TechnicianController implements ITechnicianController {
@@ -50,7 +51,6 @@ export class TechnicianController implements ITechnicianController {
           createSuccessResponse(
             {
               email: serviceResponse.email,
-              tempTechnicianId: serviceResponse.tempTechnicianId,
             },
             serviceResponse.message
           )
@@ -89,12 +89,7 @@ export class TechnicianController implements ITechnicianController {
       if (serviceResponse.success) {
         res
           .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(
-              serviceResponse.userData || null,
-              serviceResponse.message
-            )
-          );
+          .json(createSuccessResponse(null, serviceResponse.message));
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
           ? HTTP_STATUS.NOT_FOUND
@@ -138,7 +133,6 @@ export class TechnicianController implements ITechnicianController {
           createSuccessResponse(
             {
               email: serviceResponse.email,
-              tempTechnicianId: serviceResponse.tempTechnicianId,
             },
             serviceResponse.message
           )
@@ -179,17 +173,19 @@ export class TechnicianController implements ITechnicianController {
       if (serviceResponse.success) {
         res.cookie("refresh_token", serviceResponse.refresh_token, {
           httpOnly: true,
-          secure: true,
-          sameSite: "strict",
-          maxAge: 7 * 24 * 60 * 60 * 1000,
+          secure: config.NODE_ENV === "production",
+          sameSite:
+            config.NODE_ENV === "production"
+              ? ("strict" as const)
+              : ("lax" as const),
+          maxAge: config.REFRESH_TOKEN_COOKIE_MAX_AGE,
         });
 
         res.status(HTTP_STATUS.OK).json(
           createSuccessResponse(
             {
-              technician: serviceResponse.technician,
+              technician: serviceResponse.data,
               access_token: serviceResponse.access_token,
-              role: serviceResponse.role,
             },
             serviceResponse.message
           )
@@ -342,6 +338,18 @@ export class TechnicianController implements ITechnicianController {
         );
 
       if (serviceResponse.success) {
+        console.log(
+          "EMITTING NOTIFICATION TO ADMIN:",
+          serviceResponse.adminId
+        );
+        console.log("Room name:", `admin_${serviceResponse.adminId}`);
+        req.io
+          ?.to(`admin_${serviceResponse.adminId}`)
+          .emit("new_notification", {
+            title: "New Application",
+            message: "Technician application ready for review",
+          });
+          console.log("✅ Notification emitted successfully");
         res
           .status(HTTP_STATUS.OK)
           .json(

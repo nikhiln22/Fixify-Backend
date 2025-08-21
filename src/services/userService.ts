@@ -3,30 +3,27 @@ import {
   OtpPurpose,
   OTP_EXPIRY_SECONDS,
   OTP_PREFIX,
-  TEMP_USER_EXPIRY_SECONDS,
 } from "../config/otpConfig";
 import {
   ForgotPasswordRequest,
   ForgotPasswordResponse,
   LoginData,
   LoginResponse,
-  RegisterResponse,
   ResendOtpResponse,
   ResetPasswordData,
   ResetPasswordResponse,
   SignupUserData,
-  TempUserResponse,
   VerifyOtpData,
+  VerifyOtpResponse,
   ToggleUserStatusResponse,
   UserProfileResponse,
   EditProfileResponse,
   UserProfileUpdateData,
   AddMoneyResponse,
+  SignUpUserResponse,
 } from "../interfaces/DTO/IServices/IuserService";
-import { ITempUserRepository } from "../interfaces/Irepositories/ItempUserRepository";
 import { IUserRepository } from "../interfaces/Irepositories/IuserRepository";
 import { IUserService } from "../interfaces/Iservices/IuserService";
-import { ITempUser } from "../interfaces/Models/ItempUser";
 import { IEmailService } from "../interfaces/Iemail/Iemail";
 import { IJwtService } from "../interfaces/Ijwt/Ijwt";
 import { IOTPService } from "../interfaces/Iotp/IOTP";
@@ -47,8 +44,6 @@ import { IWalletTransaction } from "../interfaces/Models/IwalletTransaction";
 export class UserService implements IUserService {
   constructor(
     @inject("IUserRepository") private _userRepository: IUserRepository,
-    @inject("ITempUserRepository")
-    private _tempUserRepository: ITempUserRepository,
     @inject("IEmailService") private _emailService: IEmailService,
     @inject("IOTPService") private _otpService: IOTPService,
     @inject("IPasswordHasher") private _passwordService: IPasswordHasher,
@@ -114,42 +109,62 @@ export class UserService implements IUserService {
     };
   }
 
-  async userSignUp(data: SignupUserData): Promise<TempUserResponse> {
+  async userSignUp(data: SignupUserData): Promise<SignUpUserResponse> {
     try {
       console.log(
         "entering to the usersignup function in the userauth service"
       );
       console.log("data:", data);
       const { email, password } = data;
-      const result = await this._userRepository.findByEmail(email);
-      if (result.success) {
-        return {
-          message: "user already exists",
-          success: false,
-        };
-      }
-      const hashedPassword = await this._passwordService.hash(password);
+      const existingUser = await this._userRepository.findByEmail(email);
 
+      if (existingUser) {
+        if (existingUser.is_verified) {
+          return {
+            message: "User already exists, please login",
+            success: false,
+          };
+        } else {
+          console.log("user exists but not verified, resending otp");
+
+          const otp = await this.generateAndSendOtp(
+            email,
+            OtpPurpose.REGISTRATION
+          );
+
+          console.log("generated the otp for the unverified users:", otp);
+
+          const newExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+          await this._userRepository.updateUserExpiry(email, newExpiresAt);
+
+          return {
+            message: "Otp sent to complete registration",
+            success: true,
+            email,
+          };
+        }
+      }
+
+      const hashedPassword = await this._passwordService.hash(password);
       const otp = await this.generateAndSendOtp(email, OtpPurpose.REGISTRATION);
 
-      console.log("Generated Otp for the user Registration:", otp);
+      console.log("Generated otp for new user registration:", otp);
 
-      const expiresAt = new Date(Date.now() + TEMP_USER_EXPIRY_SECONDS * 1000);
-      const tempUserData = {
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+      const userData = {
         ...data,
         password: hashedPassword,
         expiresAt,
-      } as ITempUser;
+      };
 
-      const response = await this._tempUserRepository.createTempUser(
-        tempUserData
-      );
+      const newUser = await this._userRepository.createUser(userData);
 
-      console.log("response in userService:", response);
+      console.log("new user created:", newUser);
+
       return {
         message: "User created successfully,OTP sent",
         email,
-        tempUserId: response.tempUserId.toString(),
         success: true,
       };
     } catch (error) {
@@ -158,30 +173,31 @@ export class UserService implements IUserService {
     }
   }
 
-  async verifyOtp(data: VerifyOtpData): Promise<RegisterResponse> {
+  async verifyOtp(data: VerifyOtpData): Promise<VerifyOtpResponse> {
     try {
       console.log("entering to the verifyotp function in userService");
 
-      const { otp, tempUserId, email, purpose } = data;
+      const { otp, email, purpose } = data;
 
-      let userEmail = email;
+      if (OtpPurpose.REGISTRATION === purpose) {
+        const user = await this._userRepository.findByEmail(email);
 
-      if (OtpPurpose.REGISTRATION === purpose && tempUserId) {
-        const tempUserResponse =
-          await this._tempUserRepository.findTempUserById(tempUserId);
-        console.log("tempUserResponse:", tempUserResponse);
-
-        if (!tempUserResponse.success || !tempUserResponse.tempUserData) {
+        if (!user) {
           return {
             success: false,
-            message: "Temporary user not found or expired",
+            message: "user not found or the registration expired",
           };
         }
-        const tempUser = tempUserResponse.tempUserData;
-        userEmail = tempUser.email;
+
+        if (user.is_verified) {
+          return {
+            success: false,
+            message: "User already verified, please login",
+          };
+        }
 
         const verificationResult = await this.verifyOtpGeneric(
-          userEmail,
+          email,
           otp,
           OtpPurpose.REGISTRATION
         );
@@ -193,55 +209,42 @@ export class UserService implements IUserService {
           };
         }
 
-        const userData = {
-          username: tempUser.username,
-          email: tempUser.email,
-          password: tempUser.password,
-          phone: tempUser.phone,
-        };
-
-        const newUser = await this._userRepository.createUser(userData);
-        console.log("new created user:", newUser);
+        await this._userRepository.updateUserVerification(email);
 
         const newWallet = await this._walletRepository.createWallet(
-          newUser._id.toString(),
+          user._id.toString(),
           "user"
         );
         console.log("newly created wallet:", newWallet);
 
-        const newUserObj = newUser.toObject
-          ? newUser.toObject()
-          : { ...newUser };
-        console.log("newUserObj:", newUserObj);
-
-        const safeUser = { ...newUserObj };
-        delete safeUser.password;
-        console.log("safeUser:", safeUser);
-
-        const redisKey = this.getOtpRedisKey(
-          userEmail,
-          OtpPurpose.REGISTRATION
-        );
+        const redisKey = this.getOtpRedisKey(email, OtpPurpose.REGISTRATION);
         await this._redisService.delete(redisKey);
 
         return {
-          message: "OTP verified successfully, user registered",
+          message: "Email verified successfully! Please login to continue",
           success: true,
-          userData: safeUser,
         };
-      } else if (OtpPurpose.PASSWORD_RESET === purpose && userEmail) {
+      } else if (OtpPurpose.PASSWORD_RESET === purpose) {
         console.log("password resetting in the userAuthService");
-        const user = await this._userRepository.findByEmail(userEmail);
+        const user = await this._userRepository.findByEmail(email);
         console.log("user from the password resetting:", user);
-        if (!user.success || !user.userData) {
+
+        if (!user) {
           return {
             success: false,
             message: "User not found with this email",
           };
         }
 
+        if (!user.is_verified) {
+          return {
+            success: false,
+            message: "Please verify your email first",
+          };
+        }
+
         const verificationResult = await this.verifyOtpGeneric(
-          userEmail,
+          email,
           otp,
           OtpPurpose.PASSWORD_RESET
         );
@@ -265,42 +268,44 @@ export class UserService implements IUserService {
   async resendOtp(data: string): Promise<ResendOtpResponse> {
     try {
       console.log("entering resendotp function in the userservice");
-      const tempUser = await this._tempUserRepository.findTempUserByEmail(data);
-      console.log("tempuser in resendotp user service:", tempUser);
 
       const user = await this._userRepository.findByEmail(data);
-      console.log("user in the resendOtp in the user service");
+      console.log("user in the resendOtp in the user service:", user);
 
-      let purpose: OtpPurpose;
-
-      if (tempUser.success && tempUser.tempUserData) {
-        purpose = OtpPurpose.REGISTRATION;
-      } else if (user.success && user.userData) {
-        purpose = OtpPurpose.PASSWORD_RESET;
-      } else {
+      if (!user) {
         return {
           success: false,
           message: "User not found",
         };
       }
 
-      const newOtp = await this.generateAndSendOtp(data, purpose);
+      let purpose: OtpPurpose;
+      let message: string;
 
+      if (!user.is_verified) {
+        purpose = OtpPurpose.REGISTRATION;
+        message = "OTP sent successfully for registration";
+
+        const newExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+        await this._userRepository.updateUserExpiry(data, newExpiresAt);
+      } else {
+        purpose = OtpPurpose.PASSWORD_RESET;
+        message = "OTP sent successfully for password reset";
+      }
+
+      const newOtp = await this.generateAndSendOtp(data, purpose);
       console.log("generated new Otp:", newOtp);
 
       return {
         success: true,
-        message: `OTP sent successfully for ${
-          purpose === OtpPurpose.REGISTRATION
-            ? "registration"
-            : "password reset"
-        }`,
+        message,
+        email: data,
       };
     } catch (error) {
-      console.log("error occured while resending the otp", error);
+      console.log("error occurred while resending the otp", error);
       return {
         success: false,
-        message: "Error occured while resending the otp",
+        message: "Error occurred while resending the otp",
       };
     }
   }
@@ -313,10 +318,25 @@ export class UserService implements IUserService {
       const { email } = data;
 
       const user = await this._userRepository.findByEmail(email);
-      if (!user.success || !user.userData) {
+
+      if (!user) {
         return {
           success: false,
           message: "User not found with this email",
+        };
+      }
+
+      if (!user.is_verified) {
+        return {
+          success: false,
+          message: "Please verify your email before resetting password",
+        };
+      }
+
+      if (user.status !== "Active") {
+        return {
+          success: false,
+          message: "Your account is blocked. Please contact support.",
         };
       }
 
@@ -346,29 +366,34 @@ export class UserService implements IUserService {
       const { email, password } = data;
 
       const user = await this._userRepository.findByEmail(email);
-      console.log("userData in resetPasssword:", user);
-      if (!user.success || !user.userData) {
+      console.log("userData in resetPassword:", user);
+
+      if (!user) {
         return {
           success: false,
           message: "User not found with this email",
         };
       }
 
-      const hashedPassword = await this._passwordService.hash(password);
-
-      const updateResult = await this._userRepository.updatePassword(
-        email,
-        hashedPassword
-      );
-
-      if (!updateResult.success) {
+      if (!user.is_verified) {
         return {
           success: false,
-          message: "Failed to update password",
+          message: "Please verify your email first",
         };
       }
 
-      const redisKey = `forgotPassword:${email}`;
+      if (user.status !== "Active") {
+        return {
+          success: false,
+          message: "Your account is blocked. Please contact support.",
+        };
+      }
+
+      const hashedPassword = await this._passwordService.hash(password);
+
+      await this._userRepository.updatePassword(email, hashedPassword);
+
+      const redisKey = this.getOtpRedisKey(email, OtpPurpose.PASSWORD_RESET);
       await this._redisService.delete(redisKey);
 
       return {
@@ -388,36 +413,46 @@ export class UserService implements IUserService {
     try {
       console.log("entering to the login credentials verifying in service");
       const { email, password } = data;
+
       const user = await this._userRepository.findByEmail(email);
       console.log("user", user);
-      if (!user.success || !user.userData) {
+
+      if (!user) {
         return {
           success: false,
-          message: "user not found",
+          message: "User not found",
         };
       }
 
-      const isPasswordValid = await this._passwordService.verify(
-        user.userData.password,
-        password
-      );
-
-      if (!isPasswordValid) {
+      if (!user.is_verified) {
         return {
           success: false,
-          message: "invalid password",
+          message: "Please verify your email before logging in",
         };
       }
 
-      if (!user.userData.status) {
+      if (user.status !== "Active") {
         return {
           success: false,
           message: "Your account has been blocked. Please contact support.",
         };
       }
 
-      const userId = String(user.userData._id);
+      const isPasswordValid = await this._passwordService.verify(
+        user.password,
+        password
+      );
+
+      if (!isPasswordValid) {
+        return {
+          success: false,
+          message: "Invalid password",
+        };
+      }
+
+      const userId = String(user._id);
       console.log("userId from login:", userId);
+
       const access_token = this._jwtService.generateAccessToken(
         userId,
         Roles.USER
@@ -430,22 +465,23 @@ export class UserService implements IUserService {
 
       return {
         success: true,
-        message: "Login Successfull",
+        message: "Login successful",
         access_token,
         refresh_token,
         data: {
-          _id: user.userData._id,
-          username: user.userData.username,
-          email: user.userData.email,
-          phone: user.userData.phone,
-          image: user.userData.image,
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          phone: user.phone,
+          image: user.image,
+          status: user.status,
         },
       };
     } catch (error) {
       console.log("error", error);
       return {
         success: false,
-        message: "error occured during the login",
+        message: "Error occurred during login",
       };
     }
   }
@@ -472,8 +508,8 @@ export class UserService implements IUserService {
   }> {
     try {
       console.log("Function fetching all the users");
-      const page = options.page || 1;
-      const limit = options.limit || 5;
+      const page = options.page;
+      const limit = options.limit;
       const result = await this._userRepository.getAllUsers({
         page,
         limit,
@@ -492,9 +528,9 @@ export class UserService implements IUserService {
             total: result.total,
             page: result.page,
             pages: result.pages,
-            limit: limit,
+            limit: result.limit,
             hasNextPage: result.page < result.pages,
-            hasPrevPage: page > 1,
+            hasPrevPage: result.page > 1,
           },
         },
       };
@@ -519,7 +555,7 @@ export class UserService implements IUserService {
         };
       }
 
-      const newStatus = !user.status;
+      const newStatus = user.status === "Active" ? "Blocked" : "Active";
       const response = await this._userRepository.blockUser(id, newStatus);
       console.log(
         "Response after toggling user status from the user repository:",
@@ -528,8 +564,11 @@ export class UserService implements IUserService {
 
       return {
         success: true,
-        message: `User successfully ${newStatus ? "unblocked" : "blocked"}`,
-        user: { ...user.toObject(), status: newStatus },
+        message: `User ${newStatus} successfully`,
+        data: {
+          userId: response._id,
+          status: response.status,
+        },
       };
     } catch (error) {
       console.error("Error toggling user status:", error);

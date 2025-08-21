@@ -1,54 +1,40 @@
 import { ITechnician } from "../../../interfaces/Models/Itechnician";
 import { ITimeSlot } from "../../Models/ItimeSlot";
 
-export interface RegisterResponse {
-  success: boolean;
-  userData?: ITechnician;
-  message: string;
-}
-
 export interface SignupTechnicianData {
   username: string;
   email: string;
   password: string;
   phone: number;
-  createdAt?: Date;
-  updatedAt?: Date;
 }
 
-export interface TempTechnicianResponse {
-  tempTechnicianId?: string;
-  email?: string;
-  success: boolean;
-  message?: string;
-}
-
-export interface ResendOtpResponse {
+export interface signupResponse {
   success: boolean;
   message: string;
-  tempTechnicianId?: string;
   email?: string;
-}
-
-export interface VerifyOtpData {
-  tempTechnicianId?: string;
-  otp: string;
-  email?: string;
-  purpose?: string;
-}
-
-export interface LoginResponse {
-  success: boolean;
-  message: string;
-  role?: string;
-  access_token?: string;
-  refresh_token?: string;
-  technician?: ITechnician;
 }
 
 export interface LoginData {
   email: string;
   password: string;
+}
+
+export interface LoginResponse {
+  success: boolean;
+  message: string;
+  access_token?: string;
+  refresh_token?: string;
+  data?: Pick<
+    ITechnician,
+    | "_id"
+    | "username"
+    | "email"
+    | "phone"
+    | "image"
+    | "is_verified"
+    | "status"
+    | "email_verified"
+  >;
 }
 
 export interface ForgotPasswordRequest {
@@ -71,6 +57,39 @@ export interface ResetPasswordResponse {
   message: string;
 }
 
+export interface VerifyOtpData {
+  otp: string;
+  email: string;
+  purpose?: string;
+}
+
+export interface ResendOtpResponse {
+  success: boolean;
+  message: string;
+  email?: string;
+}
+
+export interface ApproveTechnicianResponse {
+  success: boolean;
+  message: string;
+  technician?: ITechnician;
+}
+
+export interface RejectTechnicianResponse {
+  success: boolean;
+  message: string;
+  reason?: string;
+}
+
+export interface PendingTechniciansResponse {
+  success: boolean;
+  message: string;
+  technicians?: ITechnician[];
+  total?: number;
+  page?: number;
+  limit?: number;
+}
+
 export interface TechnicianQualification {
   experience: string;
   designation: string;
@@ -78,6 +97,8 @@ export interface TechnicianQualification {
   address: string;
   latitude: number;
   longitude: number;
+  status: string;
+  is_verified: boolean;
   profilePhoto?: Express.Multer.File;
   certificates?: Express.Multer.File[];
 }
@@ -93,7 +114,10 @@ export interface TechnicianQualificationUpdateResponse {
     | "image"
     | "certificates"
     | "address"
+    | "email_verified"
+    | "is_verified"
   >;
+  adminId?:string;
 }
 
 export interface TechnicianProfileResponse {
@@ -104,6 +128,8 @@ export interface TechnicianProfileResponse {
     email?: string;
     phone?: number;
     is_verified?: boolean;
+    email_verified?: boolean;
+    status?: string;
     yearsOfExperience?: number;
     Designation?: string;
     address?: string;
@@ -113,20 +139,13 @@ export interface TechnicianProfileResponse {
   };
 }
 
-export interface VerifyTechnicianServiceResponse {
-  success: boolean;
-  message: string;
-}
-
-export interface RejectTechnicianServiceResponse {
-  success: boolean;
-  message: string;
-}
-
 export interface ToggleTechnicianStatusResponse {
   message: string;
   success: boolean;
-  technician?: ITechnician;
+  data?: {
+    technicianId: string;
+    status?: string;
+  };
 }
 
 export interface AddTimeSlotsResult {
@@ -142,6 +161,8 @@ export interface TechnicianQualificationSaveData {
   address: string;
   latitude: number;
   longitude: number;
+  status: string;
+  is_verified: boolean;
   profilePhoto?: string;
   certificates?: string[];
 }

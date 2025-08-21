@@ -31,6 +31,8 @@ import { IOffer } from "../interfaces/Models/Ioffers";
 import { IOfferRepository } from "../interfaces/Irepositories/IofferRepository";
 import { ICouponRepository } from "../interfaces/Irepositories/IcouponRepository";
 import { INotificationService } from "../interfaces/Iservices/InotificationService";
+import { ISubscriptionPlanHistoryRepository } from "../interfaces/Irepositories/IsubscriptionPlanHistoryRepository";
+import { ISubscriptionPlanRepository } from "../interfaces/Irepositories/IsubscriptionPlanRepository";
 
 @injectable()
 export class BookingService implements IBookingService {
@@ -52,7 +54,11 @@ export class BookingService implements IBookingService {
     @inject("IOfferRepository") private _offerRepository: IOfferRepository,
     @inject("ICouponRepository") private _couponRepository: ICouponRepository,
     @inject("INotificationService")
-    private _notitificationService: INotificationService
+    private _notitificationService: INotificationService,
+    @inject("ISubscriptionPlanHistoryRepository")
+    private _subscriptionPlanHistoryRepository: ISubscriptionPlanHistoryRepository,
+    @inject("ISubscriptionPlanRepository")
+    private _subscriptionPlanRepository: ISubscriptionPlanRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -243,21 +249,30 @@ export class BookingService implements IBookingService {
             throw new Error("Failed to process wallet payment");
           }
 
-          const technicianPlan =
-            await this._technicianRepository.getActiveSubscriptionPlan(
+          const technicianSubscription =
+            await this._subscriptionPlanHistoryRepository.findActiveSubscriptionByTechnicianId(
               data.technicianId
             );
 
           console.log(
-            "fetched technician subscription plan in booking service:",
-            technicianPlan
+            "fetched technician subscription in booking service:",
+            technicianSubscription
           );
 
-          if (!technicianPlan || !technicianPlan.subscriptionData) {
-            throw new Error("No active subscription plan found for technician");
+          if (!technicianSubscription) {
+            throw new Error("No active subscription found for technician");
           }
 
-          const commissionRate = technicianPlan.subscriptionData.commissionRate;
+          const subscriptionPlan =
+            await this._subscriptionPlanRepository.findSubscriptionPlanById(
+              technicianSubscription.subscriptionPlanId.toString()
+            );
+
+          if (!subscriptionPlan) {
+            throw new Error("Subscription plan not found");
+          }
+
+          const commissionRate = subscriptionPlan.commissionRate;
 
           console.log("technician's commission Rate:", commissionRate);
 
@@ -509,21 +524,30 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const technicianPlan =
-        await this._technicianRepository.getActiveSubscriptionPlan(
+      const technicianSubscription =
+        await this._subscriptionPlanHistoryRepository.findActiveSubscriptionByTechnicianId(
           booking.technicianId._id.toString()
         );
 
       console.log(
         "fetched technician subscription plan in booking service:",
-        technicianPlan
+        technicianSubscription
       );
 
-      if (!technicianPlan || !technicianPlan.subscriptionData) {
+      if (!technicianSubscription) {
         throw new Error("No active subscription plan found for technician");
       }
 
-      const commissionRate = technicianPlan.subscriptionData.commissionRate;
+      const subscriptionPlan =
+        await this._subscriptionPlanRepository.findSubscriptionPlanById(
+          technicianSubscription.subscriptionPlanId.toString()
+        );
+
+      if (!subscriptionPlan) {
+        throw new Error("Subscription plan not found");
+      }
+
+      const commissionRate = subscriptionPlan.commissionRate;
 
       console.log("technician's commission Rate:", commissionRate);
 
@@ -907,16 +931,32 @@ export class BookingService implements IBookingService {
       }
 
       try {
-        const technicianPlan =
-          await this._technicianRepository.getActiveSubscriptionPlan(
-            technicianId
+        const technicianSubscription =
+          await this._subscriptionPlanHistoryRepository.findActiveSubscriptionByTechnicianId(
+            booking.technicianId._id.toString()
           );
 
-        if (technicianPlan && technicianPlan.subscriptionData) {
-          const walletCreditDelay =
-            technicianPlan.subscriptionData.walletCreditDelay;
+        console.log(
+          "fetched technician subscription plan in booking service:",
+          technicianSubscription
+        );
 
-          // Calculate credit release date from the technican job completion time
+        if (!technicianSubscription) {
+          throw new Error("No active subscription plan found for technician");
+        }
+
+        const subscriptionPlan =
+          await this._subscriptionPlanRepository.findSubscriptionPlanById(
+            technicianSubscription.subscriptionPlanId.toString()
+          );
+
+        if (!subscriptionPlan) {
+          throw new Error("Subscription plan not found");
+        }
+
+        if (subscriptionPlan) {
+          const walletCreditDelay = subscriptionPlan.WalletCreditDelay;
+
           const completionTime = new Date();
           const newCreditReleaseDate = new Date(completionTime);
           newCreditReleaseDate.setDate(
@@ -1725,7 +1765,11 @@ export class BookingService implements IBookingService {
         "entered into the total revenue function that fetches the total revenue in the booking service"
       );
       const totalRevenue = await this._paymentRepository.getTotalRevenue();
-      console.log("=== BOOKING SERVICE: PaymentRepository returned:", totalRevenue, "===");
+      console.log(
+        "=== BOOKING SERVICE: PaymentRepository returned:",
+        totalRevenue,
+        "==="
+      );
       return totalRevenue;
     } catch (error) {
       console.log("error occurred while fetching the total revenue:", error);

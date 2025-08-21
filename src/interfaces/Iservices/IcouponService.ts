@@ -30,7 +30,10 @@ export interface ICouponService {
   blockCoupon(id: string): Promise<{
     message: string;
     success: boolean;
-    coupon?: ICoupon;
+    data?: {
+      _id: string;
+      status: string;
+    };
   }>;
   updateCoupon(
     couponId: string,

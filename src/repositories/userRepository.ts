@@ -1,11 +1,7 @@
 import { IUserRepository } from "../interfaces/Irepositories/IuserRepository";
 import { IUser } from "../interfaces/Models/Iuser";
 import user from "../models/userModel";
-import {
-  FindByEmailResponse,
-  CreateUser,
-  UpdatePasswordResponse,
-} from "../interfaces/DTO/IRepository/IuserRepository";
+import { CreateUser } from "../interfaces/DTO/IRepository/IuserRepository";
 import { BaseRepository } from "./baseRepository";
 import { injectable } from "tsyringe";
 import { FilterQuery } from "mongoose";
@@ -32,38 +28,61 @@ export class UserRepository
     }
   }
 
-  async findByEmail(email: string): Promise<FindByEmailResponse> {
+  async updateUserExpiry(email: string, newExpiresAt: Date): Promise<void> {
+    try {
+      console.log(
+        "entering to the user repository that updates the expiry time"
+      );
+      console.log("email in the userexpiryupdate function:", email);
+      console.log(
+        "newExpiresAt in the user expiry update function:",
+        newExpiresAt
+      );
+
+      await this.updateOne({ email: email }, { expiresAt: newExpiresAt });
+    } catch (error) {
+      console.log("error occured while updating the user expiry time:", error);
+      throw error;
+    }
+  }
+
+  async updateUserVerification(email: string): Promise<void> {
+    try {
+      console.log(
+        "entered to the repository function that updates the user data:"
+      );
+      console.log("email in the update user verification:", email);
+
+      await this.updateOne(
+        { email: email },
+        { is_verified: true, status: "Active", $unset: { expiresAt: "" } }
+      );
+    } catch (error) {
+      console.log("error occurred while updating user verification:", error);
+      throw new Error("An error occurred while updating user verification");
+    }
+  }
+
+  async findByEmail(email: string): Promise<IUser | null> {
     try {
       const userData = await this.findOne({ email });
       console.log("userData from user repository:", userData);
-      if (userData) {
-        return { success: true, userData };
-      } else {
-        return { success: false };
-      }
+      return userData;
     } catch (error) {
       console.log("error occured while fetching the user:", error);
       throw new Error("An error occurred while retrieving the user");
     }
   }
 
-  async updatePassword(
-    email: string,
-    hashedPassword: string
-  ): Promise<UpdatePasswordResponse> {
+  async updatePassword(email: string, hashedPassword: string): Promise<void> {
     try {
       const result = await this.updateOne(
         { email },
         { password: hashedPassword }
       );
 
-      if (result) {
-        return { success: true };
-      } else {
-        return {
-          success: false,
-          message: "Failed to update password or user not found",
-        };
+      if (!result) {
+        throw new Error("Failed to update password or user not found");
       }
     } catch (error) {
       console.log("Error occurred while updating password:", error);
@@ -85,8 +104,8 @@ export class UserRepository
   }> {
     try {
       console.log("entering the function which fetches all the users");
-      const page = options.page || 1;
-      const limit = options.limit || 6;
+      const page = options.page;
+      const limit = options.limit;
 
       const filter: FilterQuery<IUser> = {};
 
@@ -99,38 +118,70 @@ export class UserRepository
 
       if (options.status) {
         if (options.status === "active") {
-          filter.status = true;
+          filter.status = "Active";
         } else if (options.status === "blocked") {
-          filter.status = false;
+          filter.status = "Blocked";
         }
       }
 
-      const result = (await this.find(filter, {
-        pagination: { page, limit },
-        sort: { createdAt: -1 },
-      })) as { data: IUser[]; total: number };
+      if (page !== undefined && limit !== undefined) {
+        const result = (await this.find(filter, {
+          pagination: { page, limit },
+          sort: { createdAt: -1 },
+        })) as { data: IUser[]; total: number };
 
-      console.log("data fetched from the user repository:", result);
+        console.log("data fetched from the user repository:", result);
 
-      return {
-        data: result.data,
-        total: result.total,
-        page,
-        limit,
-        pages: Math.ceil(result.total / limit),
-      };
+        return {
+          data: result.data,
+          total: result.total,
+          page,
+          limit,
+          pages: Math.ceil(result.total / limit),
+        };
+      } else {
+        const allUsers = (await this.find(filter, {
+          sort: { createdAt: -1 },
+        })) as IUser[];
+
+        console.log("all categories without pagination:", allUsers);
+        return {
+          data: allUsers,
+          total: allUsers.length,
+          page: 1,
+          limit: allUsers.length,
+          pages: 1,
+        };
+      }
     } catch (error) {
       console.log("error occurred while fetching the users:", error);
       throw new Error("Failed to fetch the users");
     }
   }
 
-  async blockUser(id: string, status: boolean): Promise<void> {
+  async blockUser(id: string, newStatus: "Active" | "Blocked"): Promise<IUser> {
     try {
-      const response = await this.updateOne({ _id: id }, { status: status });
-      console.log("blocking the user in the user repository:", response);
+      console.log(`Attempting to update user ${id} status to ${newStatus}`);
+
+      const updatedUser = await this.updateOne(
+        { _id: id },
+        { status: newStatus }
+      );
+
+      if (!updatedUser) {
+        console.log(`User with ID ${id} not found`);
+        throw new Error("User not found");
+      }
+
+      console.log("Successfully updated user status:", {
+        userId: updatedUser._id,
+        newStatus: updatedUser.status,
+      });
+
+      return updatedUser;
     } catch (error) {
-      throw new Error("Failed to block designation: " + error);
+      console.error("Error in blockUser:", error);
+      throw new Error("Failed to update user status: " + error);
     }
   }
 

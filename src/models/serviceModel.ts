@@ -27,8 +27,9 @@ const serviceSchema: Schema<IService> = new Schema(
       required: true,
     },
     status: {
-      type: Boolean,
-      default: true,
+      type: String,
+      enum: ["Active", "Blocked"],
+      default: "Active",
     },
   },
   { timestamps: true }

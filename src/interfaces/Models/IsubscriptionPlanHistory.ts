@@ -1,4 +1,5 @@
 import { Document, Types } from "mongoose";
+import { ISubscriptionPlan } from "./IsubscriptionPlan";
 
 export interface ISubscriptionPlanHistory extends Document {
   _id: string;
@@ -7,6 +8,13 @@ export interface ISubscriptionPlanHistory extends Document {
   amount: number;
   status: "Active" | "Expired";
   paymentId?: Types.ObjectId;
+  expiryDate?: Date;
+  nextUpgrade?: {
+    planId: Types.ObjectId | ISubscriptionPlan;
+    amount: number;
+    paymentId?: Types.ObjectId;
+  };
+  hasNextUpgrade: boolean;
   createdAt: Date;
-  expiredAt: Date;
+  updatedAt: Date;
 }

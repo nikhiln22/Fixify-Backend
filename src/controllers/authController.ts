@@ -12,23 +12,11 @@ import {
 export class AuthController implements IAuthController {
   constructor(@inject("IAuthService") private _authService: IAuthService) {}
 
-  async refreshAccessToken(req: Request, res: Response): Promise<void> {
+  async newAccessToken(req: Request, res: Response): Promise<void> {
     try {
       console.log(
         "entering to the access token generating with the existing refresh token"
       );
-
-      const { role } = req.body;
-      console.log("role:", role);
-
-      if (!role) {
-        const errorResponse = createErrorResponse(
-          "Role is required in the body",
-          "Validation failed"
-        );
-        res.status(HTTP_STATUS.BAD_REQUEST).json(errorResponse);
-        return;
-      }
 
       const refreshToken = req.cookies?.refresh_token;
       console.log("refresh token from the refresh controller", refreshToken);
@@ -42,10 +30,7 @@ export class AuthController implements IAuthController {
         return;
       }
 
-      const result = await this._authService.refreshAccessToken(
-        refreshToken,
-        role
-      );
+      const result = await this._authService.newAccessToken(refreshToken);
 
       if (result.success) {
         const successResponse = createSuccessResponse(

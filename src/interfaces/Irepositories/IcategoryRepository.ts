@@ -19,7 +19,7 @@ export interface ICategoryRepository {
   findCategoryById(id: string): Promise<ICategory | null>;
   updateCategoryStatus(
     categoryId: string,
-    newStatus: boolean
+    newStatus: string
   ): Promise<ICategory | null>;
 
   updateCategory(

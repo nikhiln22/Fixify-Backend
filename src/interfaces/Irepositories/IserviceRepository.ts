@@ -28,7 +28,7 @@ export interface IServiceRepository {
   findServiceById(id: string): Promise<IService | null>;
   updateServiceStatus(
     serviceId: string,
-    newStatus: boolean
+    newStatus: string
   ): Promise<IService | null>;
   updateService(
     id: string,

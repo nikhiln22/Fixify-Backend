@@ -10,7 +10,7 @@ export interface IOffer extends Document {
   max_discount?: number;
   min_booking_amount?: number;
   serviceId?: Types.ObjectId;
-  status: boolean;
+  status: string;
   valid_until?: Date;
   createdAt: Date;
   updatedAt: Date;

@@ -30,7 +30,7 @@ export class AdminService implements IAdminService {
 
       console.log("admin from the adminAuthService:", admin);
 
-      if (!admin.success || !admin.adminData) {
+      if (!admin) {
         return {
           success: false,
           message: "admin not found",
@@ -38,7 +38,7 @@ export class AdminService implements IAdminService {
       }
 
       const isPasswordValid = await this._passwordService.verify(
-        admin.adminData.password,
+        admin.password,
         password
       );
       if (!isPasswordValid) {
@@ -48,15 +48,7 @@ export class AdminService implements IAdminService {
         };
       }
 
-      const adminId = String(admin.adminData._id);
-
-      const safeAdminData = admin.adminData.toJSON
-        ? admin.adminData.toJSON()
-        : JSON.parse(JSON.stringify(admin.adminData));
-
-      console.log("safeAdminData:", safeAdminData);
-
-      delete safeAdminData.password;
+      const adminId = String(admin._id);
 
       const access_token = await this._jwtService.generateAccessToken(
         adminId,
@@ -75,8 +67,11 @@ export class AdminService implements IAdminService {
         message: "Login Successful",
         access_token,
         refresh_token,
-        role: Roles.ADMIN,
-        data: safeAdminData,
+        data: {
+          _id: admin._id,
+          email: admin.email,
+          status: admin.status,
+        },
       };
     } catch (error) {
       console.log("error occured while admin is logging in:", error);

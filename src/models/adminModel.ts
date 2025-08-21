@@ -11,14 +11,12 @@ const adminSchema: Schema<IAdmin> = new Schema(
       type: String,
       required: true,
     },
-    image: {
+    status: {
       type: String,
-      default: "",
     },
   },
   {
     timestamps: true,
-    collection: "admin",
   }
 );
 

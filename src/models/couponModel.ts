@@ -35,8 +35,9 @@ const couponSchema: Schema<ICoupon> = new Schema(
       type: Date,
     },
     status: {
-      type: Boolean,
-      default: true,
+      type: String,
+      enum: ["Active", "Blocked"],
+      default: "Active",
     },
   },
   { timestamps: true }

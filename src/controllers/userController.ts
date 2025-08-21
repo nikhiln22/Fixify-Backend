@@ -18,6 +18,7 @@ import { ICouponService } from "../interfaces/Iservices/IcouponService";
 import { IOfferService } from "../interfaces/Iservices/IofferService";
 import { INotificationService } from "../interfaces/Iservices/InotificationService";
 import { ISocketNotificationData } from "../interfaces/DTO/IServices/InotificationService";
+import config from "../config/env";
 
 @injectable()
 export class UserController implements IUserController {
@@ -43,12 +44,12 @@ export class UserController implements IUserController {
       console.log("data:", data);
       const serviceResponse = await this._userService.userSignUp(data);
       console.log("response in register:", serviceResponse);
+
       if (serviceResponse.success) {
         res.status(HTTP_STATUS.CREATED).json(
           createSuccessResponse(
             {
               email: serviceResponse.email,
-              tempUserId: serviceResponse.tempUserId,
             },
             serviceResponse.message
           )
@@ -63,7 +64,6 @@ export class UserController implements IUserController {
           );
       }
     } catch (error) {
-      console.log("error occured", error);
       console.log("error occurred", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
@@ -78,15 +78,11 @@ export class UserController implements IUserController {
       console.log("userData in verifyOtp controller:", data);
       const serviceResponse = await this._userService.verifyOtp(data);
       console.log("response in verifyOtp controller:", serviceResponse);
+
       if (serviceResponse.success) {
         res
           .status(200)
-          .json(
-            createSuccessResponse(
-              serviceResponse.userData || null,
-              serviceResponse.message
-            )
-          );
+          .json(createSuccessResponse(null, serviceResponse.message));
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
           ? HTTP_STATUS.NOT_FOUND
@@ -94,6 +90,8 @@ export class UserController implements IUserController {
           ? HTTP_STATUS.NOT_FOUND
           : serviceResponse.message?.includes("Invalid OTP")
           ? HTTP_STATUS.UNAUTHORIZED
+          : serviceResponse.message?.includes("already verified")
+          ? HTTP_STATUS.CONFLICT
           : HTTP_STATUS.BAD_REQUEST;
 
         res
@@ -105,7 +103,7 @@ export class UserController implements IUserController {
           );
       }
     } catch (error) {
-      console.log("error occured:", error);
+      console.log("error occurred:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal Server Error"));
@@ -114,16 +112,16 @@ export class UserController implements IUserController {
 
   async resendOtp(req: Request, res: Response): Promise<void> {
     try {
-      console.log("entering into the resend otp functionality in the ");
+      console.log("entering into the resend otp functionality");
       const { email } = req.body;
       const serviceResponse = await this._userService.resendOtp(email);
       console.log("response from the resendotp controller:", serviceResponse);
+
       if (serviceResponse.success) {
         res.status(HTTP_STATUS.OK).json(
           createSuccessResponse(
             {
               email: serviceResponse.email,
-              tempUserId: serviceResponse.tempUserId,
             },
             serviceResponse.message
           )
@@ -168,6 +166,10 @@ export class UserController implements IUserController {
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
           ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("verify your email")
+          ? HTTP_STATUS.FORBIDDEN
+          : serviceResponse.message?.includes("blocked")
+          ? HTTP_STATUS.FORBIDDEN
           : HTTP_STATUS.BAD_REQUEST;
         res
           .status(statusCode)
@@ -199,10 +201,14 @@ export class UserController implements IUserController {
       if (serviceResponse.success) {
         res
           .status(HTTP_STATUS.OK)
-          .json(createSuccessResponse(serviceResponse.message));
+          .json(createSuccessResponse(null, serviceResponse.message));
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
           ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("verify your email")
+          ? HTTP_STATUS.FORBIDDEN
+          : serviceResponse.message?.includes("blocked")
+          ? HTTP_STATUS.FORBIDDEN
           : HTTP_STATUS.BAD_REQUEST;
         res
           .status(statusCode)
@@ -231,9 +237,12 @@ export class UserController implements IUserController {
       if (serviceResponse.success) {
         res.cookie("refresh_token", serviceResponse.refresh_token, {
           httpOnly: true,
-          secure: true,
-          sameSite: "strict",
-          maxAge: 7 * 24 * 60 * 60 * 1000,
+          secure: config.NODE_ENV === "production",
+          sameSite:
+            config.NODE_ENV === "production"
+              ? ("strict" as const)
+              : ("lax" as const),
+          maxAge: config.REFRESH_TOKEN_COOKIE_MAX_AGE,
         });
 
         res.status(HTTP_STATUS.OK).json(
@@ -248,8 +257,10 @@ export class UserController implements IUserController {
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
           ? HTTP_STATUS.NOT_FOUND
-          : serviceResponse.message?.includes("invalid password")
+          : serviceResponse.message?.includes("Invalid password")
           ? HTTP_STATUS.UNAUTHORIZED
+          : serviceResponse.message?.includes("verify your email")
+          ? HTTP_STATUS.FORBIDDEN
           : serviceResponse.message?.includes("blocked")
           ? HTTP_STATUS.FORBIDDEN
           : HTTP_STATUS.BAD_REQUEST;
@@ -953,6 +964,15 @@ export class UserController implements IUserController {
     }
   }
 
+  // async getTechnicianAverageRating(req: Request, res: Response): Promise<void> {
+  //   try {
+  //     const technicianId = req.query.technicianId;
+  //     console.log(first)
+  //   } catch (error) {
+
+  //   }
+  // }
+
   async getBookingDetails(
     req: AuthenticatedRequest,
     res: Response
@@ -1459,6 +1479,7 @@ export class UserController implements IUserController {
     try {
       console.log("fetching the offers for the user");
       const userId = req.user?.id;
+      console.log("userId in the user controller:",userId);
 
       if (!userId) {
         res

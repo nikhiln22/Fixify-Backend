@@ -22,9 +22,29 @@ const subscriptionPlanHistorySchema: Schema<ISubscriptionPlanHistory> =
         type: mongoose.Schema.Types.ObjectId,
         ref: "payment",
       },
+      expiryDate: {
+        type: Date,
+      },
       status: {
         type: String,
         enum: ["Active", "Expired"],
+      },
+      nextUpgrade: {
+        planId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "subscriptionPlan",
+        },
+        amount: {
+          type: Number,
+        },
+        paymentId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "payment",
+        },
+      },
+      hasNextUpgrade: {
+        type: Boolean,
+        default: false,
       },
     },
     { timestamps: true }

@@ -32,8 +32,9 @@ const SubscriptrionPlanSchema: Schema<ISubscriptionPlan> = new Schema(
       type: String,
     },
     status: {
-      type: Boolean,
-      default: true,
+      type: String,
+      enum: ["Active", "Blocked"],
+      default: "Active",
     },
   },
   { timestamps: true }

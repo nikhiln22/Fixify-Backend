@@ -66,86 +66,86 @@ export class TechnicianRoutes {
     );
 
     this.router.get(
-      "/profile",
+      "/technicianprofile",
       this.authMiddleware.authenticate(Roles.TECHNICIAN),
       technicianController.getProfile.bind(technicianController)
     );
 
     this.router.get(
       "/timeslot",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
       technicianController.getTimeSlots.bind(technicianController)
     );
 
     this.router.post(
       "/addtimeslot",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
       technicianController.addTimeSlots.bind(technicianController)
     );
 
     this.router.patch(
       "/blockslot/:slotId",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
       technicianController.blockTimeSlot.bind(technicianController)
     );
 
     this.router.get(
       "/bookings",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
       technicianController.getAllBookings.bind(technicianController)
     );
 
     this.router.get(
       "/bookingdetails/:bookingId",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
       technicianController.getBookingDetails.bind(technicianController)
     );
 
     this.router.get(
       "/chatmessages/:bookingId",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
       technicianController.getChatHistory.bind(technicianController)
     );
 
     this.router.post(
       "/sendchatmessages/:bookingId",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
       technicianController.sendChat.bind(technicianController)
     );
 
     this.router.post(
       "/generatecompletionotp/:bookingId",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
       technicianController.generateCompletionOtp.bind(technicianController)
     );
 
     this.router.post(
       "/verifycompletionotp/:bookingId",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
       technicianController.verifyCompletionOtp.bind(technicianController)
     );
 
     this.router.get(
       "/walletbalance",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
       technicianController.getWalletBalance.bind(technicianController)
     );
 
     this.router.get(
       "/wallettransactions",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
       technicianController.getWalletTransactions.bind(technicianController)
     );
 
     this.router.put(
       "/cancelbooking/:bookingId",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
       technicianController.cancelBooking.bind(technicianController)
     );
 
     this.router.get(
       "/reviews",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
       technicianController.getReviews.bind(technicianController)
     );
 

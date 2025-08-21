@@ -5,3 +5,12 @@ export interface DesignationResponse {
   message: string;
   data?: IJobDesignation | null;
 }
+
+export interface ToggleDesignationResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    designationId: string;
+    status: string;
+  };
+}

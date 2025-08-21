@@ -1,6 +1,6 @@
-import { loginResponse } from "../DTO/IServices/IadminService";
-import { loginData } from "../DTO/IServices/IadminService";
+import { LoginResponse } from "../DTO/IServices/IadminService";
+import { LoginData } from "../DTO/IServices/IadminService";
 
-export interface IAdminService{
-    adminLogin(data:loginData):Promise<loginResponse>
+export interface IAdminService {
+  adminLogin(data: LoginData): Promise<LoginResponse>;
 }

@@ -34,9 +34,7 @@ export interface IServiceService {
       };
     };
   }>;
-  toggleServiceStatus(
-    categoryId: string
-  ): Promise<ToggleServiceStatusResponse>;
+  toggleServiceStatus(categoryId: string): Promise<ToggleServiceStatusResponse>;
   updateService(
     serviceId: string,
     updateData: {
@@ -68,7 +66,6 @@ export interface IServiceService {
       };
     };
   }>;
-
   toggleCategoryStatus(
     categoryId: string
   ): Promise<ToggleCategoryStatusResponse>;
@@ -76,5 +73,5 @@ export interface IServiceService {
     categoryId: string,
     updateData: { name?: string; image?: string }
   ): Promise<UpdatedCategoryResponse>;
-  getServiceDetails(serviceId:string):Promise<GetServiceDetailsResponse>
+  getServiceDetails(serviceId: string): Promise<GetServiceDetailsResponse>;
 }

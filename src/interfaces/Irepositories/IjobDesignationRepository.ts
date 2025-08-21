@@ -17,7 +17,7 @@ export interface IJobDesignationRepository {
   findByName(name: string): Promise<IJobDesignation | null>;
   blockDesignation(
     id: string,
-    status: boolean
+    newStatus: "Active" | "Blocked"
   ): Promise<IJobDesignation | null>;
   findById(id: string): Promise<IJobDesignation | null>;
 }

@@ -43,7 +43,10 @@ export interface ISubscriptionPlanService {
   blockSubscriptionPlan(id: string): Promise<{
     message: string;
     success: boolean;
-    coupon?: ISubscriptionPlan;
+    data?: {
+      _id: string;
+      status: string;
+    };
   }>;
   updateSubscriptionPlan(
     id: string,
@@ -97,7 +100,25 @@ export interface ISubscriptionPlanService {
     success: boolean;
     message: string;
     data?: {
-      currentSubscription: ISubscriptionPlan;
+      currentSubscription: {
+        planName: string;
+        status: string;
+        commissionRate: number;
+        walletCreditDelay: number;
+        profileBoost: boolean;
+        durationInMonths: number;
+        expiresAt?: string;
+        amount: number;
+      };
+      upcomingSubscription?: {
+        planName: string;
+        commissionRate: number;
+        walletCreditDelay: number;
+        profileBoost: boolean;
+        durationInMonths: number;
+        amount: number;
+        activatesOn?: string;
+      } | null;
       newHistoryEntry: ISubscriptionPlanHistory;
     };
   }>;

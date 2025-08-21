@@ -63,8 +63,8 @@ export class CouponService implements ICouponService {
   }> {
     try {
       console.log("Function fetching all the coupons");
-      const page = options.page || 1;
-      const limit = options.limit || 5;
+      const page = options.page;
+      const limit = options.limit;
       const result = await this._couponRepository.getAllCoupons({
         page,
         limit,
@@ -83,9 +83,9 @@ export class CouponService implements ICouponService {
             total: result.total,
             page: result.page,
             pages: result.pages,
-            limit: limit,
+            limit: result.limit,
             hasNextPage: result.page < result.pages,
-            hasPrevPage: page > 1,
+            hasPrevPage: result.page > 1,
           },
         },
       };
@@ -98,9 +98,11 @@ export class CouponService implements ICouponService {
     }
   }
 
-  async blockCoupon(
-    id: string
-  ): Promise<{ message: string; success: boolean; coupon?: ICoupon }> {
+  async blockCoupon(id: string): Promise<{
+    message: string;
+    success: boolean;
+    data?: { _id: string; status: string };
+  }> {
     try {
       console.log("entering the service layer that blocks the coupon:", id);
       const coupon = await this._couponRepository.findCouponById(id);
@@ -113,17 +115,30 @@ export class CouponService implements ICouponService {
         };
       }
 
-      const newStatus = !coupon.status;
+      // Toggle the status
+      const newStatus = coupon.status === "Active" ? "Blocked" : "Active";
       const response = await this._couponRepository.blockCoupon(id, newStatus);
       console.log(
         "Response after toggling coupon status from the coupon repository:",
         response
       );
 
+      if (!response) {
+        return {
+          success: false,
+          message: "Failed to update the coupon",
+        };
+      }
+
       return {
         success: true,
-        message: `Coupon successfully ${newStatus ? "unblocked" : "blocked"}`,
-        coupon: { ...coupon.toObject(), status: newStatus },
+        message: `Coupon successfully ${
+          newStatus === "Blocked" ? "blocked" : "unblocked"
+        }`,
+        data: {
+          _id: response._id,
+          status: response.status,
+        },
       };
     } catch (error) {
       console.error("Error toggling coupon status:", error);

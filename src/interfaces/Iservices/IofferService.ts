@@ -29,8 +29,11 @@ export interface IOfferService {
   }>;
   blockOffer(id: string): Promise<{
     message: string;
-    success?: boolean;
-    offer?: IOffer;
+    success: boolean;
+    data?: {
+      _id: string;
+      status: string;
+    };
   }>;
   updateOffer(
     offerId: string,

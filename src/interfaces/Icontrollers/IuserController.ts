@@ -21,6 +21,7 @@ export interface IUserController {
   bookService(req: Request, res: Response): Promise<void>;
   verifyStripeSession(req: Request, res: Response): Promise<void>;
   getAllBookings(req: Request, res: Response): Promise<void>;
+  // getTechnicianAverageRating(req: Request, res: Response): Promise<void>;
   getBookingDetails(req: Request, res: Response): Promise<void>;
   addMoney(req: Request, res: Response): Promise<void>;
   verifyWalletStripeSession(req: Request, res: Response): Promise<void>;

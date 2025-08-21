@@ -1,5 +1,4 @@
 import { Document, Types } from "mongoose";
-import { ISubscriptionPlan } from "./IsubscriptionPlan";
 
 export interface ITechnician extends Document {
   _id: string;
@@ -7,8 +6,8 @@ export interface ITechnician extends Document {
   email: string;
   password: string;
   phone: number;
-  status: string;
-  is_verified: boolean;
+  status?: string;
+  is_verified?: boolean;
   yearsOfExperience?: number;
   Designation?: Types.ObjectId;
   About?: string;
@@ -17,7 +16,8 @@ export interface ITechnician extends Document {
   longitude?: number;
   latitude?: number;
   address?: string;
-  subscriptionPlanId?: string | ISubscriptionPlan;
-  createdAt: Date;
-  updatedAt: Date;
+  email_verified?: boolean;
+  expiresAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

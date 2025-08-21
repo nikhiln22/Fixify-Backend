@@ -63,8 +63,8 @@ export class OfferService implements IOfferService {
   }> {
     try {
       console.log("Function fetching all the offers for admin");
-      const page = options.page || 1;
-      const limit = options.limit || 6;
+      const page = options.page;
+      const limit = options.limit;
 
       const result = await this._offerRepository.getAllOffers({
         page,
@@ -84,9 +84,9 @@ export class OfferService implements IOfferService {
             total: result.total,
             page: result.page,
             pages: result.pages,
-            limit: limit,
+            limit: result.limit,
             hasNextPage: result.page < result.pages,
-            hasPrevPage: page > 1,
+            hasPrevPage: result.page > 1,
           },
         },
       };
@@ -160,7 +160,11 @@ export class OfferService implements IOfferService {
     }
   }
 
-  async blockOffer(id: string): Promise<{ message: string; offer?: IOffer }> {
+  async blockOffer(id: string): Promise<{
+    success: boolean;
+    message: string;
+    data?: { _id: string; status: string };
+  }> {
     try {
       console.log("entering the service layer that blocks the offer:", id);
       const offer = await this._offerRepository.findOfferById(id);
@@ -168,24 +172,39 @@ export class OfferService implements IOfferService {
 
       if (!offer) {
         return {
+          success: false,
           message: "offer not found",
         };
       }
 
-      const newStatus = !offer.status;
+      const newStatus = offer.status === "Active" ? "Blocked" : "Active";
       const response = await this._offerRepository.blockOffer(id, newStatus);
       console.log(
         "Response after toggling offer status from the offer repository:",
         response
       );
 
+      if (!response) {
+        return {
+          success: false,
+          message: "failed to update the coupon",
+        };
+      }
+
       return {
-        message: `Offer successfully ${newStatus ? "unblocked" : "blocked"}`,
-        offer: { ...offer.toObject(), status: newStatus },
+        success: true,
+        message: `Offer ${
+          newStatus === "Active" ? "unblocked" : "blocked"
+        } successfully`,
+        data: {
+          _id: response._id,
+          status: response.status,
+        },
       };
     } catch (error) {
       console.error("Error toggling offer status:", error);
       return {
+        success: false,
         message: "Failed to toggle offer status",
       };
     }
@@ -201,7 +220,7 @@ export class OfferService implements IOfferService {
       discount_value?: number;
       max_discount?: number;
       min_booking_amount?: number;
-      service_id?: string;
+      serviceId?: string;
       valid_until?: Date;
     }
   ): Promise<{

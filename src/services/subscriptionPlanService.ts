@@ -98,8 +98,8 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
   }> {
     try {
       console.log("Function fetching all the Subscription Plans");
-      const page = options.page || 1;
-      const limit = options.limit || 5;
+      const page = options.page;
+      const limit = options.limit;
       const result =
         await this._subscriptionPlanRepository.getAllSubscriptionPlans({
           page,
@@ -126,9 +126,9 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
             total: result.total,
             page: result.page,
             pages: result.pages,
-            limit: limit,
+            limit: result.limit,
             hasNextPage: result.page < result.pages,
-            hasPrevPage: page > 1,
+            hasPrevPage: result.page > 1,
           },
           overview: {
             activeTechnicians,
@@ -149,7 +149,10 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
   async blockSubscriptionPlan(id: string): Promise<{
     message: string;
     success: boolean;
-    coupon?: ISubscriptionPlan;
+    data?: {
+      _id: string;
+      status: string;
+    };
   }> {
     try {
       console.log("entering the service layer that blocks the coupon:", id);
@@ -164,7 +167,8 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
         };
       }
 
-      const newStatus = !subscriptionPlan.status;
+      const newStatus =
+        subscriptionPlan.status === "Active" ? "Blocked" : "Active";
       const response =
         await this._subscriptionPlanRepository.blockSubscriptionPlan(
           id,
@@ -175,12 +179,22 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
         response
       );
 
+      if (!response) {
+        return {
+          success: false,
+          message: "failed to update the subscription plan status",
+        };
+      }
+
       return {
         success: true,
-        message: `subscription plan successfully ${
-          newStatus ? "unblocked" : "blocked"
-        }`,
-        coupon: { ...subscriptionPlan.toObject(), status: newStatus },
+        message: `subscription plan ${subscriptionPlan.planName} ${
+          newStatus === "Active" ? "unblocked" : "blocked"
+        } successfully`,
+        data: {
+          _id: response._id,
+          status: response.status,
+        },
       };
     } catch (error) {
       console.error("Error toggling subscription plan status:", error);
@@ -383,6 +397,7 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
         ],
         metadata: {
           planId: planId,
+          technicianId: technicianId,
           planName: subscriptionPlan.planName,
           durationInMonths: subscriptionPlan.durationInMonths.toString(),
           price: subscriptionPlan.price,
@@ -420,7 +435,25 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
     success: boolean;
     message: string;
     data?: {
-      currentSubscription: ISubscriptionPlan;
+      currentSubscription: {
+        planName: string;
+        status: string;
+        commissionRate: number;
+        walletCreditDelay: number;
+        profileBoost: boolean;
+        durationInMonths: number;
+        expiresAt?: string;
+        amount: number;
+      };
+      upcomingSubscription?: {
+        planName: string;
+        commissionRate: number;
+        walletCreditDelay: number;
+        profileBoost: boolean;
+        durationInMonths: number;
+        amount: number;
+        activatesOn?: string;
+      } | null;
       newHistoryEntry: ISubscriptionPlanHistory;
     };
   }> {
@@ -453,6 +486,28 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
         };
       }
 
+      const subscriptionPlan =
+        await this._subscriptionPlanRepository.findSubscriptionPlanById(planId);
+
+      if (!subscriptionPlan) {
+        return {
+          success: false,
+          message: "Subscription plan not found",
+        };
+      }
+
+      const currentActiveSubscription =
+        await this._subscriptionPlanHistoryRepository.findActiveSubscriptionByTechnicianId(
+          technicianId
+        );
+
+      if (!currentActiveSubscription) {
+        return {
+          success: false,
+          message: "No active subscription found. Please contact support.",
+        };
+      }
+
       const paymentData: CreatePaymentData = {
         technicianId: technicianId,
         subscriptionPlanId: planId,
@@ -472,49 +527,116 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
         };
       }
 
-      await this._subscriptionPlanHistoryRepository.updateSubscriptionHistory(
-        technicianId
-      );
+      // ✅ Case 1: Immediate Activation (no current expiry date)
+      if (!currentActiveSubscription.expiryDate) {
+        await this._subscriptionPlanHistoryRepository.updateSubscriptionHistory(
+          technicianId,
+          { status: "Expired" }
+        );
 
-      const subscriptionPlan =
-        await this._subscriptionPlanRepository.findSubscriptionPlanById(planId);
+        const expiryDate = new Date();
+        expiryDate.setMonth(
+          expiryDate.getMonth() + subscriptionPlan.durationInMonths
+        );
 
-      if (!subscriptionPlan) {
+        const subscriptionHistoryData = {
+          technicianId: technicianId,
+          subscriptionPlanId: planId,
+          amount: parseInt(amount),
+          paymentId: createdPayment._id.toString(),
+          status: "Active" as const,
+          expiryDate: expiryDate,
+          hasNextUpgrade: false,
+        };
+
+        const createdSubscriptionHistory =
+          await this._subscriptionPlanHistoryRepository.createHistory(
+            subscriptionHistoryData
+          );
+
         return {
-          success: false,
-          message: "Subscription plan not found",
+          success: true,
+          message: `${subscriptionPlan.planName} plan activated successfully!`,
+          data: {
+            currentSubscription: {
+              planName: subscriptionPlan.planName,
+              status: "Active",
+              commissionRate: subscriptionPlan.commissionRate,
+              walletCreditDelay: subscriptionPlan.WalletCreditDelay,
+              profileBoost: subscriptionPlan.profileBoost,
+              durationInMonths: subscriptionPlan.durationInMonths,
+              expiresAt: expiryDate.toISOString(),
+              amount: parseInt(amount),
+            },
+            upcomingSubscription: null,
+            newHistoryEntry: createdSubscriptionHistory,
+          },
         };
       }
+      // ✅ Case 2: Queued Purchase (current plan still active)
+      else {
+        // Get the current active subscription plan details
+        const currentActiveSubscriptionPlan =
+          await this._subscriptionPlanRepository.findSubscriptionPlanById(
+            currentActiveSubscription.subscriptionPlanId.toString()
+          );
 
-      const subscriptionHistoryData = {
-        technicianId: technicianId,
-        subscriptionPlanId: planId,
-        amount: parseInt(amount),
-        paymentId: createdPayment._id.toString(),
-        status: "Active" as const,
-      };
+        if (!currentActiveSubscriptionPlan) {
+          return {
+            success: false,
+            message: "Current subscription plan not found",
+          };
+        }
 
-      const createdSubscriptionHistory =
-        await this._subscriptionPlanHistoryRepository.createHistory(
-          subscriptionHistoryData
-        );
+        // Update current subscription with nextUpgrade info
+        const updatedSubscription =
+          await this._subscriptionPlanHistoryRepository.updateSubscriptionHistory(
+            technicianId,
+            {
+              hasNextUpgrade: true,
+              nextUpgrade: {
+                planId: planId,
+                amount: parseInt(amount),
+                paymentId: createdPayment._id.toString(),
+              },
+            }
+          );
 
-      const technicianUpdate =
-        await this._technicianRepository.updateSubscriptionPlan(
-          technicianId,
-          planId
-        );
+        let status = "Active";
+        if (currentActiveSubscription.expiryDate) {
+          const isStillActive =
+            new Date() <= new Date(currentActiveSubscription.expiryDate);
+          status = isStillActive ? "Active" : "Expired";
+        }
 
-      console.log("updated technician:", technicianUpdate);
-
-      return {
-        success: true,
-        message: "subscription plan activated successfully",
-        data: {
-          currentSubscription: subscriptionPlan,
-          newHistoryEntry: createdSubscriptionHistory,
-        },
-      };
+        return {
+          success: true,
+          message: `Upgrade queued successfully! Your ${subscriptionPlan.planName} plan will activate when your current subscription expires.`,
+          data: {
+            currentSubscription: {
+              planName: currentActiveSubscriptionPlan.planName,
+              status: status,
+              commissionRate: currentActiveSubscriptionPlan.commissionRate,
+              walletCreditDelay:
+                currentActiveSubscriptionPlan.WalletCreditDelay,
+              profileBoost: currentActiveSubscriptionPlan.profileBoost,
+              durationInMonths: currentActiveSubscriptionPlan.durationInMonths,
+              expiresAt: currentActiveSubscription.expiryDate?.toISOString(),
+              amount: currentActiveSubscription.amount,
+            },
+            upcomingSubscription: {
+              planName: subscriptionPlan.planName,
+              commissionRate: subscriptionPlan.commissionRate,
+              walletCreditDelay: subscriptionPlan.WalletCreditDelay,
+              profileBoost: subscriptionPlan.profileBoost,
+              durationInMonths: subscriptionPlan.durationInMonths,
+              amount: parseInt(amount),
+              activatesOn: currentActiveSubscription.expiryDate?.toISOString(),
+            },
+            newHistoryEntry: updatedSubscription || currentActiveSubscription,
+          },
+        };
+      }
     } catch (error) {
       console.log("error occurred while verifying the stripe session", error);
       return {

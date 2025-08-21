@@ -63,8 +63,18 @@ export class BaseRepository<T extends Document> {
     return await query.exec();
   }
 
-  async findOne(filter: FilterQuery<T>): Promise<T | null> {
-    return await this.model.findOne(filter).exec();
+  async findOne(
+    filter: FilterQuery<T>,
+    options?: {
+      populate?: PopulateOption | PopulateOption[];
+    }
+  ): Promise<T | null> {
+    let query = this.model.findOne(filter);
+    if (options?.populate) {
+      query = query.populate(options.populate);
+    }
+
+    return await query.exec();
   }
 
   async findById(id: string): Promise<T | null> {

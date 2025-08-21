@@ -1,4 +1,7 @@
-import { DesignationResponse } from "../DTO/IServices/IjobService";
+import {
+  DesignationResponse,
+  ToggleDesignationResponse,
+} from "../DTO/IServices/IjobService";
 import { IJobDesignation } from "../Models/IjobDesignation";
 
 export interface IJobsService {
@@ -7,7 +10,7 @@ export interface IJobsService {
     page?: number;
     limit?: number;
     search?: string;
-    status?:string;
+    status?: string;
   }): Promise<{
     success: boolean;
     message: string;
@@ -23,6 +26,5 @@ export interface IJobsService {
       };
     };
   }>;
-  toggleDesignationStatus(id: string): Promise<DesignationResponse>;
-  findDesignationByName(name: string): Promise<DesignationResponse>;
+  toggleDesignationStatus(id: string): Promise<ToggleDesignationResponse>;
 }

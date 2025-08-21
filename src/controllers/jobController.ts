@@ -85,10 +85,18 @@ export class JobController implements IJobController {
   async getAllDesignations(req: Request, res: Response): Promise<void> {
     try {
       console.log("function fetching all the job designations");
-      const page = parseInt(req.query.page as string) || undefined;
-      const limit = parseInt(req.query.limit as string) || undefined;
-      const search = (req.query.search as string) || undefined;
-      const status = (req.query.status as string) || undefined;
+      const page = req.query.page
+        ? parseInt(req.query.page as string)
+        : undefined;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
+      const search = req.query.search
+        ? (req.query.search as string)
+        : undefined;
+      const status = req.query.status
+        ? (req.query.status as string)
+        : undefined;
 
       const serviceResponse = await this._jobService.getAllDesignations({
         page,
@@ -122,40 +130,6 @@ export class JobController implements IJobController {
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Error fetching designations"));
-    }
-  }
-
-  async findDesignationByName(req: Request, res: Response): Promise<void> {
-    try {
-      const { name } = req.params;
-
-      const serviceResponse = await this._jobService.findDesignationByName(
-        name
-      );
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        const statusCode = serviceResponse.message?.includes("not found")
-          ? HTTP_STATUS.NOT_FOUND
-          : HTTP_STATUS.BAD_REQUEST;
-        res
-          .status(statusCode)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to find designation"
-            )
-          );
-      }
-    } catch (error) {
-      console.error("Error finding designation by name:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Error finding designation by name"));
     }
   }
 }

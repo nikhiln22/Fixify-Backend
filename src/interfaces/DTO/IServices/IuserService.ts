@@ -1,25 +1,14 @@
 import { IBooking } from "../../Models/Ibooking";
 import { IUser } from "../../Models/Iuser";
 
-export interface RegisterResponse {
-  success: boolean;
-  userData?: IUser;
-  message: string;
-}
-
 export interface SignupUserData {
   username: string;
   email: string;
   password: string;
   phone: number;
-  status: string;
-  image?: string;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
-export interface TempUserResponse {
-  tempUserId?: string;
+export interface SignUpUserResponse {
   email?: string;
   success: boolean;
   message?: string;
@@ -28,21 +17,27 @@ export interface TempUserResponse {
 export interface ResendOtpResponse {
   success: boolean;
   message: string;
-  tempUserId?: string;
   email?: string;
 }
 
 export interface VerifyOtpData {
-  tempUserId?: string;
   otp: string;
-  email?: string;
+  email: string;
   purpose?: string;
+}
+
+export interface VerifyOtpResponse {
+  success: boolean;
+  message: string;
 }
 
 export interface LoginResponse {
   success: boolean;
   message: string;
-  data?: Pick<IUser, "_id" | "username" | "email" | "phone" | "image">;
+  data?: Pick<
+    IUser,
+    "_id" | "username" | "email" | "phone" | "image" | "status"
+  >;
   access_token?: string;
   refresh_token?: string;
 }
@@ -75,7 +70,10 @@ export interface ResetPasswordResponse {
 export interface ToggleUserStatusResponse {
   success: boolean;
   message: string;
-  user?: IUser;
+  data?: {
+    userId: string;
+    status: string;
+  };
 }
 
 export interface UserProfileResponse {

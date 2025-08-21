@@ -81,34 +81,31 @@ export class AuthMiddleware {
 
   private async checkUserStatus(userId: string, role: Roles): Promise<boolean> {
     try {
-      switch (role) {
-        case Roles.USER:
-          console.log(`checking user status for ID: ${userId}`);
-          const user = await this.userRepository.findById(userId);
-          if (!user) {
-            console.log("User not found");
-            return false;
-          }
-
-          return user.status === true;
-
-        case Roles.TECHNICIAN:
-          console.log(`checking technician status for ID: ${userId}`);
-          const technicianResult =
-            await this.technicianRepository.getTechnicianById(userId);
-          if (!technicianResult.success || !technicianResult.technicianData) {
-            console.log("Technician not found");
-            return false;
-          }
-
-          return (
-            technicianResult.technicianData.is_verified === true &&
-            technicianResult.technicianData.status === "Active"
-          );
-
-        default:
-          console.log("Invalid role provided");
+      if (role === Roles.USER) {
+        console.log(`checking user status for ID: ${userId}`);
+        const user = await this.userRepository.findById(userId);
+        if (!user) {
+          console.log("User not found");
           return false;
+        }
+
+        return user.status === "Active";
+      } else if (role === Roles.TECHNICIAN) {
+        console.log(`checking technician status for ID: ${userId}`);
+        const technicianResult =
+          await this.technicianRepository.getTechnicianById(userId);
+        if (!technicianResult) {
+          console.log("Technician not found");
+          return false;
+        }
+
+        return (
+          technicianResult.is_verified === true &&
+          technicianResult.status === "Active"
+        );
+      } else {
+        console.log("Invalid role provided");
+        return false;
       }
     } catch (error) {
       console.log("Error occurred while checking the user status:", error);

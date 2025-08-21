@@ -1,7 +1,10 @@
 import { injectable, inject } from "tsyringe";
 import { IJobsService } from "../interfaces/Iservices/IjobsService";
 import { IJobDesignationRepository } from "../interfaces/Irepositories/IjobDesignationRepository";
-import { DesignationResponse } from "../interfaces/DTO/IServices/IjobService";
+import {
+  DesignationResponse,
+  ToggleDesignationResponse,
+} from "../interfaces/DTO/IServices/IjobService";
 import { IJobDesignation } from "../interfaces/Models/IjobDesignation";
 
 @injectable()
@@ -41,7 +44,9 @@ export class JobService implements IJobsService {
     }
   }
 
-  async toggleDesignationStatus(id: string): Promise<DesignationResponse> {
+  async toggleDesignationStatus(
+    id: string
+  ): Promise<ToggleDesignationResponse> {
     try {
       const designation = await this._designationRepository.findById(id);
       console.log(
@@ -55,21 +60,25 @@ export class JobService implements IJobsService {
         };
       }
 
-      const newStatus = !designation.status;
+      const newStatus = designation.status === "Active" ? "Blocked" : "Active";
 
       const updatedDesignation =
         await this._designationRepository.blockDesignation(id, newStatus);
-      console.log(
-        "response after blocking the job designation from the designation repository:",
-        updatedDesignation
-      );
+
+      if (!updatedDesignation) {
+        return {
+          success: false,
+          message: "Failed to update designation",
+        };
+      }
 
       return {
         success: true,
-        message: `Designation successfully ${
-          newStatus ? "unblocked" : "blocked"
-        }`,
-        data: updatedDesignation,
+        message: `Designation ${newStatus.toLowerCase()} successfully`,
+        data: {
+          designationId: updatedDesignation._id,
+          status: updatedDesignation.status,
+        },
       };
     } catch (error) {
       console.error("Error blocking designation:", error);
@@ -102,8 +111,8 @@ export class JobService implements IJobsService {
   }> {
     try {
       console.log("Function fetching all designations");
-      const page = options.page || 1;
-      const limit = options.limit || 5;
+      const page = options.page;
+      const limit = options.limit;
 
       const result = await this._designationRepository.getAllDesignations({
         page,
@@ -123,9 +132,9 @@ export class JobService implements IJobsService {
             total: result.total,
             page: result.page,
             pages: result.pages,
-            limit: limit,
+            limit: result.limit,
             hasNextPage: result.page < result.pages,
-            hasPrevPage: page > 1,
+            hasPrevPage: result.page > 1,
           },
         },
       };
@@ -134,30 +143,6 @@ export class JobService implements IJobsService {
       return {
         success: false,
         message: "Something went wrong while fetching designations",
-      };
-    }
-  }
-
-  async findDesignationByName(name: string): Promise<DesignationResponse> {
-    try {
-      const designation = await this._designationRepository.findByName(name);
-      if (!designation) {
-        return {
-          success: false,
-          message: "Designation not found",
-        };
-      }
-
-      return {
-        success: true,
-        message: "Designation found",
-        data: designation,
-      };
-    } catch (error) {
-      console.error("Error finding designation:", error);
-      return {
-        success: false,
-        message: "Failed to find designation",
       };
     }
   }

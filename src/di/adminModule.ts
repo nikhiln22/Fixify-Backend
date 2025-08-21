@@ -48,6 +48,10 @@ import { IJobController } from "../interfaces/Icontrollers/IjobController";
 import { JobController } from "../controllers/jobController";
 import { ISubscriptionPlanHistoryRepository } from "../interfaces/Irepositories/IsubscriptionPlanHistoryRepository";
 import { SubscriptionPlanHistoryRepository } from "../repositories/subscriptionPlanHistoryRepository";
+import { INotificationService } from "../interfaces/Iservices/InotificationService";
+import { NotificationService } from "../services/notificationService";
+import { INotificationRepository } from "../interfaces/Irepositories/InotificationRepository";
+import { NotificationRepository } from "../repositories/notificationRepository";
 
 
 container.registerSingleton<IJobController>("IJobController",JobController)
@@ -73,4 +77,7 @@ container.registerSingleton<ICouponService>("ICouponService",CouponService);
 container.registerSingleton<ICouponRepository>("ICouponRepository",CouponRepository);
 container.registerSingleton<ISubscriptionPlanService>("ISubscriptionPlanService",SubscriptionPlanService);
 container.registerSingleton<ISubscriptionPlanRepository>("ISubscriptionPlanRepository",SubscriptionPlanRepository);
-container.registerSingleton<ISubscriptionPlanHistoryRepository>("ISubscriptionPlanHistoryRepository",SubscriptionPlanHistoryRepository)
+container.registerSingleton<ISubscriptionPlanHistoryRepository>("ISubscriptionPlanHistoryRepository",SubscriptionPlanHistoryRepository);
+container.registerSingleton<INotificationService>("INotificationService",NotificationService);
+container.registerSingleton<INotificationRepository>("INotificationRepository",NotificationRepository);
+

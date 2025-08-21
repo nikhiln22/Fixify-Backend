@@ -44,16 +44,16 @@ export class OfferRepository
       );
       console.log("Options received:", options);
 
-      const page = options.page || 1;
-      const limit = options.limit || 6;
+      const page = options.page;
+      const limit = options.limit;
 
       const filter: FilterQuery<IOffer> = {};
 
       if (options.filterStatus) {
         if (options.filterStatus === "active") {
-          filter.status = true;
-        } else if (options.filterStatus === "inactive") {
-          filter.status = false;
+          filter.status = "Active";
+        } else if (options.filterStatus === "blocked") {
+          filter.status = "Blocked";
         }
       }
 
@@ -64,30 +64,33 @@ export class OfferRepository
         ];
       }
 
-      console.log(
-        "Final filter query for admin:",
-        JSON.stringify(filter, null, 2)
-      );
+      if (page !== undefined && limit !== undefined) {
+        const result = (await this.find(filter, {
+          pagination: { page, limit },
+          sort: { createdAt: -1 },
+        })) as { data: IOffer[]; total: number };
 
-      const result = (await this.find(filter, {
-        pagination: { page, limit },
-        sort: { createdAt: -1 },
-      })) as { data: IOffer[]; total: number };
+        return {
+          data: result.data,
+          total: result.total,
+          page,
+          limit,
+          pages: Math.ceil(result.total / limit),
+        };
+      } else {
+        const allOffers = (await this.find(filter, {
+          sort: { createdAt: -1 },
+        })) as IOffer[];
 
-      console.log("data fetched from the offer repository for admin:", {
-        count: result.data.length,
-        total: result.total,
-        page,
-        limit,
-      });
-
-      return {
-        data: result.data,
-        total: result.total,
-        page,
-        limit,
-        pages: Math.ceil(result.total / limit),
-      };
+        console.log("all offers without pagination:", allOffers);
+        return {
+          data: allOffers,
+          total: allOffers.length,
+          page: 1,
+          limit: allOffers.length,
+          pages: 1,
+        };
+      }
     } catch (error) {
       console.log("error occurred while fetching the admin offers:", error);
       throw new Error("Failed to fetch the admin offers");
@@ -139,7 +142,7 @@ export class OfferRepository
       console.log("Is first time user:", isFirstTimeUser);
 
       const filter: FilterQuery<IOffer> = {
-        status: true,
+        status: "Active",
         valid_until: { $gte: new Date() },
       };
 
@@ -158,15 +161,11 @@ export class OfferRepository
         ];
       }
 
-      console.log(
-        "Final filter query for user:",
-        JSON.stringify(filter, null, 2)
-      );
-
       const result = await this.findAll(filter, { createdAt: -1 });
 
       console.log("data fetched from the offer repository for user:", {
         count: result.length,
+        offers: result,
       });
 
       return result;
@@ -176,10 +175,11 @@ export class OfferRepository
     }
   }
 
-  async blockOffer(id: string, status: boolean): Promise<void> {
+  async blockOffer(id: string, status: string): Promise<IOffer | null> {
     try {
       const response = await this.updateOne({ _id: id }, { status: status });
       console.log("blocking the offer in the offer repository:", response);
+      return response;
     } catch (error) {
       throw new Error("Failed to block offer: " + error);
     }
@@ -206,7 +206,7 @@ export class OfferRepository
       discount_value?: number;
       max_discount?: number;
       min_booking_amount?: number;
-      service_id?: string;
+      serviceId?: string;
       valid_until?: Date;
     }
   ): Promise<IOffer | null> {

@@ -67,8 +67,8 @@ export class SubscriptionPlanRepository
       console.log(
         "entering the function which fetches all the subscription plans"
       );
-      const page = options.page || 1;
-      const limit = options.limit || 5;
+      const page = options.page;
+      const limit = options.limit;
 
       const filter: FilterQuery<ISubscriptionPlan> = {};
 
@@ -81,29 +81,47 @@ export class SubscriptionPlanRepository
 
       if (options.filterStatus) {
         if (options.filterStatus === "active") {
-          filter.status = true;
+          filter.status = "Active";
         } else if (options.filterStatus === "inactive") {
-          filter.status = false;
+          filter.status = "Blocked";
         }
       }
 
-      const result = (await this.find(filter, {
-        pagination: { page, limit },
-        sort: { createdAt: -1 },
-      })) as { data: ISubscriptionPlan[]; total: number };
+      if (page !== undefined && limit !== undefined) {
+        const result = (await this.find(filter, {
+          pagination: { page, limit },
+          sort: { createdAt: -1 },
+        })) as { data: ISubscriptionPlan[]; total: number };
 
-      console.log(
-        "data fetched from the subscription plans repository:",
-        result
-      );
+        console.log(
+          "data fetched from the subscription plans repository:",
+          result
+        );
 
-      return {
-        data: result.data,
-        total: result.total,
-        page,
-        limit,
-        pages: Math.ceil(result.total / limit),
-      };
+        return {
+          data: result.data,
+          total: result.total,
+          page,
+          limit,
+          pages: Math.ceil(result.total / limit),
+        };
+      } else {
+        const allSubscriptionPlans = (await this.find(filter, {
+          sort: { createdAt: -1 },
+        })) as ISubscriptionPlan[];
+
+        console.log(
+          "all subscription plans without pagination:",
+          allSubscriptionPlans
+        );
+        return {
+          data: allSubscriptionPlans,
+          total: allSubscriptionPlans.length,
+          page: 1,
+          limit: allSubscriptionPlans.length,
+          pages: 1,
+        };
+      }
     } catch (error) {
       console.log(
         "error occurred while fetching the subscription plans:",
@@ -129,13 +147,17 @@ export class SubscriptionPlanRepository
     }
   }
 
-  async blockSubscriptionPlan(id: string, status: boolean): Promise<void> {
+  async blockSubscriptionPlan(
+    id: string,
+    status: string
+  ): Promise<ISubscriptionPlan | null> {
     try {
       const response = await this.updateOne({ _id: id }, { status: status });
       console.log(
         "blocking the Subscription plan in the subscription plan repository:",
         response
       );
+      return response;
     } catch (error) {
       throw new Error("Failed to block subscription plan: " + error);
     }

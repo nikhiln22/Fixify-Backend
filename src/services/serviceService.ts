@@ -19,7 +19,8 @@ import { ICategoryRepository } from "../interfaces/Irepositories/IcategoryReposi
 @injectable()
 export class ServiceServices implements IServiceService {
   constructor(
-    @inject("IServiceRepository") private _serviceRepository: IServiceRepository,
+    @inject("IServiceRepository")
+    private _serviceRepository: IServiceRepository,
     @inject("ICategoryRepository")
     private _categoryRepository: ICategoryRepository,
     @inject("IFileUploader") private fileUploader: IFileUploader
@@ -109,8 +110,8 @@ export class ServiceServices implements IServiceService {
     try {
       console.log("Function fetching all the services");
 
-      const page = options.page || 1;
-      const limit = options.limit || 5;
+      const page = options.page;
+      const limit = options.limit;
 
       const result = await this._serviceRepository.getAllServices({
         page,
@@ -160,7 +161,7 @@ export class ServiceServices implements IServiceService {
         };
       }
 
-      const newStatus = !service.status;
+      const newStatus = service.status === "Active" ? "Blocked" : "Active";
 
       const updatedService = await this._serviceRepository.updateServiceStatus(
         serviceId,
@@ -181,10 +182,13 @@ export class ServiceServices implements IServiceService {
 
       return {
         success: true,
-        message: `Service successfully ${
-          newStatus ? "activated" : "deactivated"
+        message: `${updatedService.name} successfully ${
+          newStatus === "Active" ? "unblocked" : "Blocked"
         }`,
-        data: updatedService,
+        data: {
+          _id: updatedService._id,
+          status: updatedService.status,
+        },
       };
     } catch (error) {
       console.error("Error toggling service status:", error);
@@ -295,9 +299,8 @@ export class ServiceServices implements IServiceService {
     imageFile: string
   ): Promise<AddCategoryResponse> {
     try {
-      const existingCategory = await this._categoryRepository.findCategoryByName(
-        name
-      );
+      const existingCategory =
+        await this._categoryRepository.findCategoryByName(name);
       if (existingCategory) {
         return {
           success: false,
@@ -412,7 +415,7 @@ export class ServiceServices implements IServiceService {
         };
       }
 
-      const newStatus = !category.status;
+      const newStatus = category.status === "Active" ? "Blocked" : "Active";
 
       const updatedCategory =
         await this._categoryRepository.updateCategoryStatus(
@@ -434,8 +437,8 @@ export class ServiceServices implements IServiceService {
 
       return {
         success: true,
-        message: `Category successfully ${
-          newStatus ? "activated" : "deactivated"
+        message: `${category.name} successfully ${
+          newStatus === "Active" ? "UnBlocked" : "Blocked"
         }`,
         data: updatedCategory,
       };
@@ -541,10 +544,12 @@ export class ServiceServices implements IServiceService {
         };
       }
 
-      const relatdServicesResult = await this._serviceRepository.getAllServices({
-        categoryId: service?.category.toString(),
-        status: "active",
-      });
+      const relatdServicesResult = await this._serviceRepository.getAllServices(
+        {
+          categoryId: service?.category.toString(),
+          status: "active",
+        }
+      );
 
       console.log("fetched related services:", relatdServicesResult);
 

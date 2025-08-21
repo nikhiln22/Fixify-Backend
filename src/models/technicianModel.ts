@@ -21,11 +21,17 @@ const technicianSchema: Schema<ITechnician> = new Schema(
     },
     status: {
       type: String,
-      enum: ["Active", "Blocked"],
+      enum: ["Pending", "Active", "Blocked"],
+    },
+    email_verified: {
+      type: Boolean,
+      default: false,
     },
     is_verified: {
       type: Boolean,
-      default: false,
+    },
+    expiresAt: {
+      type: Date,
     },
     yearsOfExperience: {
       type: Number,
@@ -54,13 +60,11 @@ const technicianSchema: Schema<ITechnician> = new Schema(
         type: String,
       },
     ],
-    subscriptionPlanId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "subscriptionPlan",
-    },
   },
   { timestamps: true }
 );
+
+technicianSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 900 });
 
 technicianSchema.index({ longitude: 1, latitude: 1 });
 

@@ -120,7 +120,7 @@ export class BookingRepository
         sort: { createdAt: -1 },
         populate: [
           { path: "serviceId", select: "name" },
-          { path: "paymentId", select: "paymentStatus" },
+          { path: "paymentId", select: "paymentStatus technicianShare" },
           { path: "timeSlotId", select: "startTime endTime date" },
           { path: "technicianId", select: "username image" },
           { path: "userId", select: "username" },

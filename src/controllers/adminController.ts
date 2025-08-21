@@ -14,6 +14,8 @@ import {
   createSuccessResponse,
 } from "../utils/responseHelper";
 import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
+import config from "../config/env";
+import { INotificationService } from "../interfaces/Iservices/InotificationService";
 
 @injectable()
 export class AdminController implements IAdminController {
@@ -28,7 +30,9 @@ export class AdminController implements IAdminController {
     @inject("IOfferService") private _offerService: IOfferService,
     @inject("ICouponService") private _couponService: ICouponService,
     @inject("ISubscriptionPlanService")
-    private _subscriptionPlanService: ISubscriptionPlanService
+    private _subscriptionPlanService: ISubscriptionPlanService,
+    @inject("INotificationService")
+    private _notificationService: INotificationService
   ) {}
 
   async login(req: Request, res: Response): Promise<void> {
@@ -43,9 +47,12 @@ export class AdminController implements IAdminController {
       if (serviceResponse.success) {
         res.cookie("refresh_token", serviceResponse.refresh_token, {
           httpOnly: true,
-          secure: true,
-          sameSite: "strict",
-          maxAge: 7 * 24 * 60 * 60 * 1000,
+          secure: config.NODE_ENV === "production",
+          sameSite:
+            config.NODE_ENV === "production"
+              ? ("strict" as const)
+              : ("lax" as const),
+          maxAge: config.REFRESH_TOKEN_COOKIE_MAX_AGE,
         });
 
         res.status(HTTP_STATUS.OK).json(
@@ -53,7 +60,6 @@ export class AdminController implements IAdminController {
             {
               admin: serviceResponse.data,
               access_token: serviceResponse.access_token,
-              role: serviceResponse.role,
             },
             serviceResponse.message
           )
@@ -80,10 +86,18 @@ export class AdminController implements IAdminController {
   async getAllUsers(req: Request, res: Response): Promise<void> {
     try {
       console.log("function fetching all the users");
-      const page = parseInt(req.query.page as string) || undefined;
-      const limit = parseInt(req.query.limit as string) || undefined;
-      const search = (req.query.search as string) || undefined;
-      const status = (req.query.status as string) || undefined;
+      const page = req.query.page
+        ? parseInt(req.query.page as string)
+        : undefined;
+      const limit = req.query.page
+        ? parseInt(req.query.limit as string)
+        : undefined;
+      const search = req.query.search
+        ? (req.query.search as string)
+        : undefined;
+      const status = req.query.status
+        ? (req.query.status as string)
+        : undefined;
 
       const serviceResponse = await this._userService.getAllUsers({
         page,
@@ -130,7 +144,7 @@ export class AdminController implements IAdminController {
         res
           .status(HTTP_STATUS.OK)
           .json(
-            createSuccessResponse(serviceResponse.user, serviceResponse.message)
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
           );
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
@@ -155,8 +169,12 @@ export class AdminController implements IAdminController {
   async getAllApplicants(req: Request, res: Response): Promise<void> {
     try {
       console.log("function fetching all the applicants");
-      const page = parseInt(req.query.page as string) || undefined;
-      const limit = parseInt(req.query.limit as string) || undefined;
+      const page = req.query.page
+        ? parseInt(req.query.page as string)
+        : undefined;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
 
       const serviceResponse = await this._technicianService.getAllApplicants({
         page,
@@ -316,11 +334,21 @@ export class AdminController implements IAdminController {
   async getAllTechnicians(req: Request, res: Response): Promise<void> {
     try {
       console.log("fetching all the technicians from the admin controller");
-      const page = parseInt(req.query.page as string) || undefined;
-      const limit = parseInt(req.query.limit as string) || undefined;
-      const search = (req.query.search as string) || undefined;
-      const status = (req.query.status as string) || undefined;
-      const designation = (req.query.designation as string) || undefined;
+      const page = req.query.page
+        ? parseInt(req.query.page as string)
+        : undefined;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
+      const search = req.query.search
+        ? (req.query.search as string)
+        : undefined;
+      const status = req.query.status
+        ? (req.query.status as string)
+        : undefined;
+      const designation = req.query.designation
+        ? (req.query.designation as string)
+        : undefined;
 
       const serviceResponse = await this._technicianService.getAllTechnicians({
         page,
@@ -372,10 +400,7 @@ export class AdminController implements IAdminController {
         res
           .status(HTTP_STATUS.OK)
           .json(
-            createSuccessResponse(
-              serviceResponse.technician,
-              serviceResponse.message
-            )
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
           );
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
@@ -507,7 +532,7 @@ export class AdminController implements IAdminController {
         discount_value: req.body.discount_value,
         max_discount: req.body.max_discount,
         min_booking_amount: req.body.min_booking_amount,
-        serviceId: req.body.service_id,
+        serviceId: req.body.serviceId,
         valid_until: req.body.valid_until
           ? new Date(req.body.valid_until)
           : undefined,
@@ -543,11 +568,18 @@ export class AdminController implements IAdminController {
   async getAllOffers(req: Request, res: Response): Promise<void> {
     try {
       console.log("fetching the offers for the admin");
-      const page = parseInt(req.query.page as string) || undefined;
-      const limit = parseInt(req.query.limit as string) || undefined;
-      const search = (req.query.search as string) || undefined;
-      const filterStatus = (req.query.filterStatus as string) || undefined;
-      console.log("filterStatus in adminController:", filterStatus);
+      const page = req.query.page
+        ? parseInt(req.query.page as string)
+        : undefined;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
+      const search = req.query.search
+        ? (req.query.search as string)
+        : undefined;
+      const filterStatus = req.query.filterStatus
+        ? (req.query.filterStatus as string)
+        : undefined;
 
       const serviceResponse = await this._offerService.getAllOffers({
         page,
@@ -595,10 +627,7 @@ export class AdminController implements IAdminController {
         res
           .status(HTTP_STATUS.OK)
           .json(
-            createSuccessResponse(
-              serviceResponse.offer,
-              serviceResponse.message
-            )
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
           );
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
@@ -643,7 +672,7 @@ export class AdminController implements IAdminController {
         discount_value,
         max_discount,
         min_booking_amount,
-        service_id,
+        serviceId,
         valid_until,
       } = req.body;
 
@@ -657,7 +686,7 @@ export class AdminController implements IAdminController {
         discount_value?: number;
         max_discount?: number;
         min_booking_amount?: number;
-        service_id?: string;
+        serviceId?: string;
         valid_until?: Date;
       } = {};
 
@@ -670,7 +699,7 @@ export class AdminController implements IAdminController {
       if (max_discount !== undefined) updateData.max_discount = max_discount;
       if (min_booking_amount !== undefined)
         updateData.min_booking_amount = min_booking_amount;
-      if (service_id !== undefined) updateData.service_id = service_id;
+      if (serviceId !== undefined) updateData.serviceId = serviceId;
       if (valid_until !== undefined) updateData.valid_until = valid_until;
 
       if (Object.keys(updateData).length === 0) {
@@ -769,10 +798,18 @@ export class AdminController implements IAdminController {
   async getAllCoupons(req: Request, res: Response): Promise<void> {
     try {
       console.log("fetching the coupons for the admin");
-      const page = parseInt(req.query.page as string) || undefined;
-      const limit = parseInt(req.query.limit as string) || undefined;
-      const search = (req.query.search as string) || undefined;
-      const filterStatus = (req.query.filterStatus as string) || undefined;
+      const page = req.query.page
+        ? parseInt(req.query.page as string)
+        : undefined;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
+      const search = req.query.search
+        ? (req.query.search as string)
+        : undefined;
+      const filterStatus = req.query.filterStatus
+        ? (req.query.filterStatus as string)
+        : undefined;
 
       const serviceResponse = await this._couponService.getAllCoupons({
         page,
@@ -820,10 +857,7 @@ export class AdminController implements IAdminController {
         res
           .status(HTTP_STATUS.OK)
           .json(
-            createSuccessResponse(
-              serviceResponse.coupon,
-              serviceResponse.message
-            )
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
           );
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
@@ -1105,10 +1139,18 @@ export class AdminController implements IAdminController {
   async getAllSubscriptionPlans(req: Request, res: Response): Promise<void> {
     try {
       console.log("fetching the subscription plans for the admin");
-      const page = parseInt(req.query.page as string) || undefined;
-      const limit = parseInt(req.query.limit as string) || undefined;
-      const search = (req.query.search as string) || undefined;
-      const filterStatus = (req.query.filterStatus as string) || undefined;
+      const page = req.query.page
+        ? parseInt(req.query.page as string)
+        : undefined;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
+      const search = req.query.search
+        ? (req.query.search as string)
+        : undefined;
+      const filterStatus = req.query.filterStatus
+        ? (req.query.filterStatus as string)
+        : undefined;
 
       const serviceResponse =
         await this._subscriptionPlanService.getAllSubscriptionPlans({
@@ -1322,10 +1364,7 @@ export class AdminController implements IAdminController {
         res
           .status(HTTP_STATUS.OK)
           .json(
-            createSuccessResponse(
-              serviceResponse.coupon,
-              serviceResponse.message
-            )
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
           );
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
@@ -1532,6 +1571,177 @@ export class AdminController implements IAdminController {
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal server error"));
+    }
+  }
+
+  async getTechnicianReviews(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entering to the admin controller that fetches the technician reviews"
+      );
+      const { technicianId } = req.query;
+      console.log(
+        "technicianId in the get technician reviews function in admin controller:",
+        technicianId
+      );
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              "technicianId is required and must be a valid string"
+            )
+          );
+        return;
+      }
+
+      const serviceResponse = await this._technicianService.getReviews(
+        technicianId.toString()
+      );
+      if (serviceResponse.success) {
+        res.status(HTTP_STATUS.OK).json(
+          createSuccessResponse(
+            {
+              reviews: serviceResponse.reviews,
+              averageRating: serviceResponse.averageRating,
+              totalReviews: serviceResponse.totalReviews,
+            },
+            serviceResponse.message
+          )
+        );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message ||
+                "Failed to fetch the technician reviews"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error in getServiceCategoryPerformance controller:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error"));
+    }
+  }
+
+  async getNotifications(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log(
+        "enetring the user controller function that fetches the all notifications:"
+      );
+      const adminId = req.user?.id;
+
+      if (!adminId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("admin not authenticated"));
+        return;
+      }
+
+      const notifications =
+        await this._notificationService.getNotificationsByUser(
+          adminId,
+          "admin"
+        );
+
+      res
+        .status(HTTP_STATUS.OK)
+        .json(
+          createSuccessResponse(
+            notifications,
+            "Notifications fetched successfully"
+          )
+        );
+    } catch (error) {
+      console.log("error occured while fetching the notifications:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getUnreadNotificationCount(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      const adminId = req.user?.id;
+
+      if (!adminId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("admin not authenticated"));
+        return;
+      }
+
+      const unreadCount = await this._notificationService.getUnreadCount(
+        adminId,
+        "admin"
+      );
+
+      res
+        .status(HTTP_STATUS.OK)
+        .json(
+          createSuccessResponse(
+            { unreadCount },
+            "Unread count fetched successfully"
+          )
+        );
+    } catch (error) {
+      console.log("error occured while fetching unread notifications:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async markNotificationRead(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      const adminId = req.user?.id;
+      const { notificationId } = req.params;
+
+      if (!adminId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      const updatedNotification =
+        await this._notificationService.markNotificationAsRead(notificationId);
+
+      if (updatedNotification) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(
+              updatedNotification,
+              "Notification marked as read"
+            )
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json(createErrorResponse("Notification not found"));
+      }
+    } catch (error) {
+      console.log(
+        "error occured while marking all notifications as read:",
+        error
+      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 

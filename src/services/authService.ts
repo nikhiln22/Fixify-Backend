@@ -6,10 +6,7 @@ import { inject, injectable } from "tsyringe";
 export class AuthService implements IAuthService {
   constructor(@inject("IJwtService") private _jwtService: IJwtService) {}
 
-  async refreshAccessToken(
-    refreshToken: string,
-    requestedRole: string
-  ): Promise<{
+  async newAccessToken(refreshToken: string): Promise<{
     success: boolean;
     data?: string;
     message: string;
@@ -30,21 +27,6 @@ export class AuthService implements IAuthService {
         };
       }
 
-      const tokenRole = payload.role.toLowerCase();
-      const expectedRole = requestedRole.toLowerCase();
-
-      console.log("tokenRole from JWT:", tokenRole);
-      console.log("requestedRole from frontend:", expectedRole);
-
-      if (tokenRole !== expectedRole) {
-        return {
-          success: false,
-          message: "Token role mismatch - unauthorized role access",
-        };
-      }
-
-      console.log("payload from authservice:", payload);
-
       const newAccessToken = this._jwtService.generateAccessToken(
         payload.Id,
         payload.role
@@ -57,8 +39,8 @@ export class AuthService implements IAuthService {
         data: newAccessToken,
         message: "Access token refreshed successfully",
       };
-    } catch (error: any) {
-      console.error("Error in AuthService.refreshAccessToken:", error.message);
+    } catch (error) {
+      console.error("Error in AuthService.refreshAccessToken:", error);
       return {
         success: false,
         message: "Unable to refresh access token",

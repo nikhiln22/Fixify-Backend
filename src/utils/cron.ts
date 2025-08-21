@@ -54,14 +54,4 @@ export class CronService implements ICronService {
 
     console.log("stopped all the cron jobs");
   }
-
-  async triggerSubscriptionCheck(): Promise<void> {
-    console.log("Manual triggering for the subscription checks");
-    await this._subscriptionPlanExpiryService.handleExpiredSubscriptions();
-  }
-
-  async triggerWalletCredits(): Promise<void> {
-    console.log("Manually triggering the wallet credits:");
-    await this._walletCreditService.processWalletCredits();
-  }
 }

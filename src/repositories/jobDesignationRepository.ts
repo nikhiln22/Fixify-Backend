@@ -18,7 +18,7 @@ export class JobDesignationRepository
     page?: number;
     limit?: number;
     search?: string;
-    status?:string;
+    status?: string;
   }): Promise<{
     data: IJobDesignation[];
     total: number;
@@ -39,11 +39,11 @@ export class JobDesignationRepository
         ];
       }
 
-      if(options.status){
-        if(options.status === "active"){
-          filter.status = true;
-        }else if(options.status === "blocked"){
-          filter.status = false
+      if (options.status) {
+        if (options.status === "active") {
+          filter.status = "Active";
+        } else if (options.status === "blocked") {
+          filter.status = "Blocked";
         }
       }
 
@@ -62,9 +62,9 @@ export class JobDesignationRepository
           pages: Math.ceil(result.total / limit),
         };
       } else {
-        const allDesignations = await this.model
-          .find(filter)
-          .sort({ createdAt: -1 });
+        const allDesignations = (await this.find(filter, {
+          sort: { createdAt: -1 },
+        })) as IJobDesignation[];
 
         console.log("all designations without pagination:", allDesignations);
         return {
@@ -75,7 +75,6 @@ export class JobDesignationRepository
           pages: 1,
         };
       }
-
     } catch (error) {
       console.log("error occurred while fetching job designations:", error);
       throw new Error("Failed to fetch job designations");
@@ -113,13 +112,18 @@ export class JobDesignationRepository
 
   async blockDesignation(
     id: string,
-    status: boolean
+    newStatus: "Active" | "Blocked"
   ): Promise<IJobDesignation | null> {
     try {
       const updatedDesignation = await this.updateOne(
         { _id: id },
-        { status: status }
+        { status: newStatus }
       );
+
+      if (!updatedDesignation) {
+        console.log(`Designation with ID ${id} not found`);
+        throw new Error("Designation not found");
+      }
 
       console.log(
         "blocking the designation in the jobdesignation repository:",

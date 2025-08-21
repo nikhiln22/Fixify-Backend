@@ -40,8 +40,8 @@ export class CouponRepository
   }> {
     try {
       console.log("entering the function which fetches all the coupons");
-      const page = options.page || 1;
-      const limit = options.limit || 5;
+      const page = options.page;
+      const limit = options.limit;
 
       const filter: FilterQuery<ICoupon> = {};
 
@@ -54,26 +54,41 @@ export class CouponRepository
 
       if (options.filterStatus) {
         if (options.filterStatus === "active") {
-          filter.status = true;
-        } else if (options.filterStatus === "inactive") {
-          filter.status = false;
+          filter.status = "Active";
+        } else if (options.filterStatus === "blocked") {
+          filter.status = "Blocked";
         }
       }
 
-      const result = (await this.find(filter, {
-        pagination: { page, limit },
-        sort: { createdAt: -1 },
-      })) as { data: ICoupon[]; total: number };
+      if (page !== undefined && limit !== undefined) {
+        const result = (await this.find(filter, {
+          pagination: { page, limit },
+          sort: { createdAt: -1 },
+        })) as { data: ICoupon[]; total: number };
 
-      console.log("data fetched from the coupon repository:", result);
+        console.log("data fetched from the coupon repository:", result);
 
-      return {
-        data: result.data,
-        total: result.total,
-        page,
-        limit,
-        pages: Math.ceil(result.total / limit),
-      };
+        return {
+          data: result.data,
+          total: result.total,
+          page,
+          limit,
+          pages: Math.ceil(result.total / limit),
+        };
+      } else {
+        const allCoupons = (await this.find(filter, {
+          sort: { createdAt: -1 },
+        })) as ICoupon[];
+
+        console.log("all coupons without pagination:", allCoupons);
+        return {
+          data: allCoupons,
+          total: allCoupons.length,
+          page: 1,
+          limit: allCoupons.length,
+          pages: 1,
+        };
+      }
     } catch (error) {
       console.log("error occurred while fetching the offers:", error);
       throw new Error("Failed to fetch the offers");
@@ -91,10 +106,11 @@ export class CouponRepository
     }
   }
 
-  async blockCoupon(id: string, status: boolean): Promise<void> {
+  async blockCoupon(id: string, status: string): Promise<ICoupon | null> {
     try {
       const response = await this.updateOne({ _id: id }, { status: status });
       console.log("blocking the coupon in the coupon repository:", response);
+      return response;
     } catch (error) {
       throw new Error("Failed to block coupon: " + error);
     }
@@ -175,7 +191,7 @@ export class CouponRepository
         { $addToSet: { used_by_users: userId } }
       );
 
-      console.log("updating coupon:",updatedCoupon);
+      console.log("updating coupon:", updatedCoupon);
 
       if (!updatedCoupon) {
         throw new Error("Failed to update coupon");

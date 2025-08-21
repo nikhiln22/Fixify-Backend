@@ -192,7 +192,7 @@ export class UserRoutes {
 
     this.router.get(
       "/offers",
-      this.authMiddleware.authenticate(Roles.USER),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
       userController.getOffers.bind(userController)
     );
 
@@ -204,13 +204,13 @@ export class UserRoutes {
 
     this.router.get(
       "/coupons",
-      this.authMiddleware.authenticate(Roles.USER),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
       userController.getEligibleCoupons.bind(userController)
     );
 
     this.router.post(
       "/applycoupon",
-      this.authMiddleware.authenticate(Roles.USER),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
       userController.applyCoupon.bind(userController)
     );
 
@@ -234,7 +234,7 @@ export class UserRoutes {
 
     this.router.get(
       "/logout",
-      this.authMiddleware.authenticate(Roles.USER),
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
       userController.logout.bind(userController)
     );
   }

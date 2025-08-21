@@ -9,8 +9,9 @@ const jobDesignationSchema: Schema<IJobDesignation> = new Schema(
       required: true,
     },
     status: {
-      type: Boolean,
-      default: true,
+      type: String,
+      enum: ["Active", "Blocked"],
+      default: "Active",
     },
   },
   { timestamps: true }

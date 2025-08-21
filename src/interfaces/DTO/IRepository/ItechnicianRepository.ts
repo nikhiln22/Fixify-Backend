@@ -1,5 +1,4 @@
 import { ITechnician } from "../../Models/Itechnician";
-import { ITempTechnician } from "../../Models/ItempTechnician";
 
 export interface FindByEmailResponse {
   success: boolean;
@@ -12,23 +11,11 @@ export interface CreateTempTechnicianResponse {
   email: string;
 }
 
-export interface FindTempTechnicianById {
-  success: boolean;
-  tempTechnicianData?: ITempTechnician;
-  message?: string;
-}
-
 export interface CreateTechnician {
   username: string;
   email: string;
   phone: number;
   password: string;
-}
-
-export interface FindTempTechnicianByEmail {
-  success: boolean;
-  tempTechnicianData?: ITempTechnician;
-  message?: string;
 }
 
 export interface UpdatePasswordResponse {
@@ -43,6 +30,8 @@ export interface TechnicianQualification {
   latitude: number;
   longitude: number;
   address: string;
+  status: string;
+  is_verified: boolean;
   profilePhoto?: string;
   certificates?: string[];
 }

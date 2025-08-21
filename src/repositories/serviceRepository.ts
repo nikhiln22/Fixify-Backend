@@ -70,8 +70,8 @@ export class ServiceRepository
   }> {
     try {
       console.log("entering the function which fetches all the services");
-      const page = options.page || 1;
-      const limit = options.limit || 5;
+      const page = options.page;
+      const limit = options.limit;
 
       const filter: FilterQuery<IService> = {};
 
@@ -88,33 +88,49 @@ export class ServiceRepository
 
       if (options.status) {
         if (options.status === "active") {
-          filter.status = true;
+          filter.status = "Active";
         } else if (options.status === "blocked") {
-          filter.status = false;
+          filter.status = "Blocked";
         }
       }
 
-      const result = (await this.find(filter, {
-        pagination: { page, limit },
-        sort: { createdAt: -1 },
-        populate: { path: "category", select: "name" },
-      })) as { data: IService[]; total: number };
+      if (page !== undefined && limit !== undefined) {
+        const result = (await this.find(filter, {
+          pagination: { page, limit },
+          sort: { createdAt: -1 },
+          populate: { path: "category", select: "name" },
+        })) as { data: IService[]; total: number };
 
-      console.log("populated data from the service repository:", result);
+        console.log("populated data from the service repository:", result);
 
-      return {
-        data: result.data,
-        total: result.total,
-        page,
-        limit,
-        pages: Math.ceil(result.total / limit),
-      };
+        return {
+          data: result.data,
+          total: result.total,
+          page,
+          limit,
+          pages: Math.ceil(result.total / limit),
+        };
+      } else {
+        const allServices = (await this.find(filter, {
+          sort: { createdAt: -1 },
+          populate: { path: "category", select: "name" },
+        })) as IService[];
+
+        return {
+          data: allServices,
+          total: allServices.length,
+          page: 1,
+          limit: allServices.length,
+          pages: 1,
+        };
+      }
     } catch (error) {
-      console.log("error occured while fetching the data:", error);
+      console.log("error occurred while fetching the data:", error);
       throw new Error("Failed to fetch the services");
     }
   }
 
+  
   async findServiceById(id: string): Promise<IService | null> {
     try {
       const service = await this.findById(id);
@@ -126,7 +142,7 @@ export class ServiceRepository
 
   async updateServiceStatus(
     serviceId: string,
-    newStatus: boolean
+    newStatus: string
   ): Promise<IService | null> {
     try {
       console.log(

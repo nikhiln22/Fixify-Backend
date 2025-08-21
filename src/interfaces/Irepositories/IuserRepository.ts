@@ -1,17 +1,12 @@
-import {
-  CreateUser,
-  FindByEmailResponse,
-  UpdatePasswordResponse,
-} from "../DTO/IRepository/IuserRepository";
+import { CreateUser } from "../DTO/IRepository/IuserRepository";
 import { IUser } from "../Models/Iuser";
 
 export interface IUserRepository {
   createUser(userData: CreateUser): Promise<IUser>;
-  findByEmail(email: string): Promise<FindByEmailResponse>;
-  updatePassword(
-    email: string,
-    hashedPassword: string
-  ): Promise<UpdatePasswordResponse>;
+  updateUserExpiry(email: string, newExpiresAt: Date): Promise<void>;
+  updateUserVerification(email: string): Promise<void>;
+  findByEmail(email: string): Promise<IUser | null>;
+  updatePassword(email: string, hashedPassword: string): Promise<void>;
 
   getAllUsers(options: {
     page?: number;
@@ -25,7 +20,7 @@ export interface IUserRepository {
     limit: number;
     pages: number;
   }>;
-  blockUser(id: string, status: boolean): Promise<void>;
+  blockUser(id: string, newStatus: "Active" | "Blocked"): Promise<IUser>;
   findById(id: string): Promise<IUser | null>;
   editProfile(
     userId: string,

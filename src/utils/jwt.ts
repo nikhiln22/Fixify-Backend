@@ -1,7 +1,9 @@
 import jwt, { Secret, SignOptions } from "jsonwebtoken";
-import { IJwtService } from "../interfaces/Ijwt/Ijwt";
+import { IJwtService, ITokenPayload } from "../interfaces/Ijwt/Ijwt";
 import config from "../config/env";
+import { injectable } from "tsyringe";
 
+@injectable()
 export class JWTService implements IJwtService {
   generateAccessToken(Id: string, role: string): string {
     try {
@@ -31,25 +33,21 @@ export class JWTService implements IJwtService {
     }
   }
 
-  verifyAccessToken(token: string): any {
+  verifyAccessToken(token: string): ITokenPayload | null {
     try {
-      return jwt.verify(token, config.JWT_SECRET);
+      return jwt.verify(token, config.JWT_SECRET) as ITokenPayload;
     } catch (error) {
       console.log("error:", error);
       throw new Error("Invalid or expired access token");
     }
   }
 
-  verifyRefreshToken(token: string): any {
+  verifyRefreshToken(token: string): ITokenPayload | null {
     try {
-      return jwt.verify(token, config.JWT_REFRESH_SECRET);
+      return jwt.verify(token, config.JWT_REFRESH_SECRET) as ITokenPayload;
     } catch (error) {
       console.log("error:", error);
       throw new Error("Invalid or expired refresh token");
     }
-  }
-
-  decodeToken(token: string): any {
-    return jwt.decode(token);
   }
 }

@@ -19,10 +19,24 @@ export interface ISubscriptionPlanHistoryRepository {
     subscriptionPlanId: string;
     paymentId?: string;
     amount: number;
+    hasNextUpgrade?: boolean;
     status: "Active" | "Expired";
+    expiryDate?: Date;
   }): Promise<ISubscriptionPlanHistory>;
   updateSubscriptionHistory(
-    technicianId: string
+    technicianId: string,
+    updateData?: {
+      status?: "Active" | "Expired";
+      hasNextUpgrade?: boolean;
+      nextUpgrade?: {
+        planId: string;
+        amount: number;
+        paymentId: string;
+      };
+    }
   ): Promise<ISubscriptionPlanHistory | null>;
   findAllActiveSubscriptions(): Promise<ISubscriptionPlanHistory[]>;
+  findActiveSubscriptionByTechnicianId(
+    technicianId: string
+  ): Promise<ISubscriptionPlanHistory | null>;
 }

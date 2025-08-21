@@ -36,8 +36,9 @@ const offerSchema: Schema<IOffer> = new Schema(
       ref: "service",
     },
     status: {
-      type: Boolean,
-      default: true,
+      type: String,
+      enum: ["Active", "Blocked"],
+      default: "Active",
     },
     valid_until: {
       type: Date,

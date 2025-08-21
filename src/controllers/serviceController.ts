@@ -56,11 +56,21 @@ export class ServiceController implements IServiceController {
     try {
       console.log("function fetching all the services");
 
-      const page = parseInt(req.query.page as string) || undefined;
-      const limit = parseInt(req.query.limit as string) || undefined;
-      const search = (req.query.search as string) || undefined;
-      const categoryId = (req.query.category as string) || undefined;
-      const status = (req.query.status as string) || undefined;
+      const page = req.query.page
+        ? parseInt(req.query.page as string)
+        : undefined;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
+      const search = req.query.search
+        ? (req.query.search as string)
+        : undefined;
+      const categoryId = req.query.categoryId
+        ? (req.query.categoryId as string)
+        : undefined;
+      const status = req.query.status
+        ? (req.query.status as string)
+        : undefined;
 
       const serviceResponse = await this._serviceService.getAllServices({
         page,
@@ -247,10 +257,18 @@ export class ServiceController implements IServiceController {
     try {
       console.log("entering to the function fetching all the categories");
 
-      const page = parseInt(req.query.page as string) || undefined;
-      const limit = parseInt(req.query.limit as string) || undefined;
-      const search = (req.query.search as string) || undefined;
-      const status = (req.query.status as string) || undefined;
+      const page = req.query.page
+        ? parseInt(req.query.page as string)
+        : undefined;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
+      const search = req.query.search
+        ? (req.query.search as string)
+        : undefined;
+      const status = req.query.status
+        ? (req.query.status as string)
+        : undefined;
 
       const serviceResponse = await this._serviceService.getAllCategories({
         page,

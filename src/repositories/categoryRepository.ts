@@ -61,9 +61,9 @@ export class CategoryRepository
 
       if (options.status) {
         if (options.status === "active") {
-          filter.status = true;
+          filter.status = "Active";
         } else if (options.status === "blocked") {
-          filter.status = false;
+          filter.status = "Blocked";
         }
       }
 
@@ -82,9 +82,9 @@ export class CategoryRepository
           pages: Math.ceil(result.total / limit),
         };
       } else {
-        const allCategories = await this.model
-          .find(filter)
-          .sort({ createdAt: -1 });
+        const allCategories = (await this.find(filter, {
+          sort: { createdAt: -1 },
+        })) as ICategory[];
 
         console.log("all categories without pagination:", allCategories);
         return {
@@ -100,7 +100,7 @@ export class CategoryRepository
       throw new Error("An error occurred while retrieving the categories");
     }
   }
-
+  
   async findCategoryById(id: string): Promise<ICategory | null> {
     try {
       return await this.findById(id);
@@ -111,7 +111,7 @@ export class CategoryRepository
 
   async updateCategoryStatus(
     categoryId: string,
-    newStatus: boolean
+    newStatus: string
   ): Promise<ICategory | null> {
     try {
       console.log(
@@ -129,10 +129,7 @@ export class CategoryRepository
       );
       return updatedCategory;
     } catch (error) {
-      console.error(
-        `Error in repository while updating category status:`,
-        error
-      );
+      console.log(`Error in repository while updating category status:`, error);
       throw new Error(
         "Error occured while updating the category status:" + error
       );

@@ -6,7 +6,9 @@ export interface IUser extends Document {
   email: string;
   password: string;
   phone: number;
-  status: boolean;
+  status: string;
+  is_verified: boolean;
+  expiresAt: Date;
   image?: string;
   createdAt?: Date;
   updatedAt?: Date;

@@ -15,7 +15,7 @@ export interface ICouponRepository {
     limit: number;
     pages: number;
   }>;
-  blockCoupon(id: string, status: boolean): Promise<void>;
+  blockCoupon(id: string, status: string): Promise<ICoupon | null>;
   findCouponById(id: string): Promise<ICoupon | null>;
   updateCoupon(
     id: string,

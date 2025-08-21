@@ -1,9 +1,11 @@
 import { Document } from "mongoose";
 
 export interface IAdmin extends Document {
-    email: string;
-    password: string;
-    image?: string;
-    createdAt: Date;
-    updatedAt: Date;
+  _id: string;
+  email: string;
+  password: string;
+  status: string;
+  image?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

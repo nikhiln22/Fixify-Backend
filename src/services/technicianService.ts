@@ -3,7 +3,6 @@ import {
   OtpPurpose,
   OTP_EXPIRY_SECONDS,
   OTP_PREFIX,
-  TEMP_USER_EXPIRY_SECONDS,
 } from "../config/otpConfig";
 import { EmailType, APP_NAME } from "../config/emailConfig";
 import {
@@ -11,25 +10,22 @@ import {
   ForgotPasswordResponse,
   LoginData,
   LoginResponse,
-  RegisterResponse,
-  RejectTechnicianServiceResponse,
   ResendOtpResponse,
   ResetPasswordData,
   ResetPasswordResponse,
+  signupResponse,
   SignupTechnicianData,
   TechnicianProfileResponse,
   TechnicianQualification,
   TechnicianQualificationSaveData,
   TechnicianQualificationUpdateResponse,
-  TempTechnicianResponse,
   ToggleTechnicianStatusResponse,
   VerifyOtpData,
-  VerifyTechnicianServiceResponse,
+  ApproveTechnicianResponse,
+  RejectTechnicianResponse,
 } from "../interfaces/DTO/IServices/ItechnicianService";
-import { ITempTechnicianRepository } from "../interfaces/Irepositories/ItempTechnicianRepository";
 import { ITechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
 import { ITechnicianService } from "../interfaces/Iservices/ItechnicianService";
-import { ITempTechnician } from "../interfaces/Models/ItempTechnician";
 import { IEmailService } from "../interfaces/Iemail/Iemail";
 import { IJwtService } from "../interfaces/Ijwt/Ijwt";
 import { IOTPService } from "../interfaces/Iotp/IOTP";
@@ -49,14 +45,16 @@ import { ISubscriptionPlanRepository } from "../interfaces/Irepositories/Isubscr
 import { INearbyTechnicianResponse } from "../interfaces/DTO/IRepository/ItechnicianRepository";
 import { IBookingRepository } from "../interfaces/Irepositories/IbookingRespository";
 import { IPaymentRepository } from "../interfaces/Irepositories/IpaymentRepository";
+import { VerifyOtpResponse } from "../interfaces/DTO/IServices/IuserService";
+import { ISubscriptionPlan } from "../interfaces/Models/IsubscriptionPlan";
+import { INotificationService } from "../interfaces/Iservices/InotificationService";
+import { IAdminRepository } from "../interfaces/Irepositories/IadminRepository";
 
 @injectable()
 export class TechnicianService implements ITechnicianService {
   constructor(
     @inject("ITechnicianRepository")
     private _technicianRepository: ITechnicianRepository,
-    @inject("ITempTechnicianRepository")
-    private _tempTechnicianRepository: ITempTechnicianRepository,
     @inject("IEmailService") private _emailService: IEmailService,
     @inject("IOTPService") private _otpService: IOTPService,
     @inject("IPasswordHasher") private _passwordService: IPasswordHasher,
@@ -73,7 +71,11 @@ export class TechnicianService implements ITechnicianService {
     private _subsciptionPlanRepository: ISubscriptionPlanRepository,
     @inject("IBookingRepository")
     private _bookingRepository: IBookingRepository,
-    @inject("IPaymentRepository") private _paymentRepository: IPaymentRepository
+    @inject("IPaymentRepository")
+    private _paymentRepository: IPaymentRepository,
+    @inject("INotificationService")
+    private _notificationService: INotificationService,
+    @inject("IAdminRepository") private _adminRepository: IAdminRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -130,45 +132,71 @@ export class TechnicianService implements ITechnicianService {
     };
   }
 
-  async technicianSignUp(
-    data: SignupTechnicianData
-  ): Promise<TempTechnicianResponse> {
+  async technicianSignUp(data: SignupTechnicianData): Promise<signupResponse> {
     try {
       console.log(
         "entering to the techniciansignup function in the technician service"
       );
       console.log("data:", data);
       const { email, password } = data;
-      const result = await this._technicianRepository.findByEmail(email);
-      if (result.success) {
-        return {
-          message: "technician already exists",
-          success: false,
-        };
-      }
-      const hashedPassword = await this._passwordService.hash(password);
 
+      const existingTechnician = await this._technicianRepository.findByEmail(
+        email
+      );
+
+      if (existingTechnician) {
+        if (existingTechnician.is_verified && existingTechnician.is_verified) {
+          return {
+            message: "Technician already exists, Please login",
+            success: false,
+          };
+        } else if (!existingTechnician.email_verified) {
+          const otp = await this.generateAndSendOtp(
+            email,
+            OtpPurpose.REGISTRATION
+          );
+          console.log("Resent OTP for existing unverified technician:", otp);
+          const newExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+          await this._technicianRepository.updateTechnicianExpiry(
+            email,
+            newExpiresAt
+          );
+          return {
+            message: "OTP sent to complete email verification",
+            email,
+            success: true,
+          };
+        } else {
+          return {
+            message:
+              "Email verified. Application submitted and waiting for admin approval.",
+            success: false,
+          };
+        }
+      }
+
+      const hashedPassword = await this._passwordService.hash(password);
       const otp = await this.generateAndSendOtp(email, OtpPurpose.REGISTRATION);
 
-      console.log("Generated Otp for the Technician Registration:", otp);
+      console.log("Generated OTP for new technician registration:", otp);
 
-      const expiresAt = new Date(Date.now() + TEMP_USER_EXPIRY_SECONDS * 1000);
-      const tempTechnicianData = {
+      const newExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+      const technicianData = {
         ...data,
         password: hashedPassword,
-        expiresAt,
-      } as ITempTechnician;
+        expiresAt: newExpiresAt,
+      };
 
-      const response =
-        await this._tempTechnicianRepository.createTempTechnician(
-          tempTechnicianData
-        );
+      const newTechnician = await this._technicianRepository.createTechnician(
+        technicianData
+      );
+      console.log("New technician created:", newTechnician);
 
-      console.log("response in technicianService:", response);
       return {
-        message: "Technician created successfully,OTP sent",
-        email: response.email,
-        tempTechnicianId: response.tempTechnicianId,
+        message:
+          "OTP sent to your email. Please verify to submit your application.",
+        email,
         success: true,
       };
     } catch (error) {
@@ -177,40 +205,40 @@ export class TechnicianService implements ITechnicianService {
     }
   }
 
-  async verifyOtp(data: VerifyOtpData): Promise<RegisterResponse> {
+  async verifyOtp(data: VerifyOtpData): Promise<VerifyOtpResponse> {
     try {
       console.log("entering to the verifyotp function in technicianService");
 
-      const { otp, tempTechnicianId, email, purpose } = data;
+      const { otp, email, purpose } = data;
 
       console.log("otp:", otp);
-      console.log("tempTechnicianId:", tempTechnicianId);
       console.log("email:", email);
       console.log("purpose:", purpose);
 
-      let technicianEmail: string;
+      if (OtpPurpose.REGISTRATION === purpose) {
+        const technician = await this._technicianRepository.findByEmail(email);
 
-      if (OtpPurpose.REGISTRATION === purpose && tempTechnicianId) {
-        const tempTechnicianResponse =
-          await this._tempTechnicianRepository.findTempTechnicianById(
-            tempTechnicianId
-          );
-        console.log("tempTechnicianResponse:", tempTechnicianResponse);
+        console.log(
+          "technician found for registration verification:",
+          technician
+        );
 
-        if (
-          !tempTechnicianResponse.success ||
-          !tempTechnicianResponse.tempTechnicianData
-        ) {
+        if (!technician) {
           return {
             success: false,
-            message: "Temporary Technician not found or expired",
+            message: "Technician not found or registration expired",
           };
         }
-        const tempTechnician = tempTechnicianResponse.tempTechnicianData;
-        technicianEmail = tempTechnician.email;
+
+        if (technician.email_verified) {
+          return {
+            success: false,
+            message: "Email already verified. Waiting for admin approval.",
+          };
+        }
 
         const verificationResult = await this.verifyOtpGeneric(
-          technicianEmail,
+          email,
           otp,
           OtpPurpose.REGISTRATION
         );
@@ -222,91 +250,56 @@ export class TechnicianService implements ITechnicianService {
           };
         }
 
-        const subscriptionPlan =
-          await this._subsciptionPlanRepository.findByPlanName("Basic");
-
-        if (!subscriptionPlan) {
-          return {
-            success: false,
-            message: "Basic subscription plan not found",
-          };
-        }
-
-        const technicianData = {
-          username: tempTechnician.username,
-          email: tempTechnician.email,
-          password: tempTechnician.password,
-          phone: tempTechnician.phone,
-          subscriptionPlanId: subscriptionPlan?._id,
-        };
-
-        const newTechnician = await this._technicianRepository.createTechnician(
-          technicianData
+        await this._technicianRepository.updateTechnicianEmailVerification(
+          email
         );
-        console.log("new created technician:", newTechnician);
+        console.log("Technician email verified successfully");
 
-        const subscriptionHistoryData = {
-          technicianId: newTechnician?._id.toString(),
-          subscriptionPlanId: subscriptionPlan?._id.toString(),
-          amount: 0,
-          status: "Active" as const,
-        };
-
-        await this._subscriptionPlanHistoryRepository.createHistory(
-          subscriptionHistoryData
-        );
-
-        const newWallet = await this._walletRepository.createWallet(
-          newTechnician._id.toString(),
-          "technician"
-        );
-
-        console.log("newly created wallet:", newWallet);
-
-        const newTechnicianObj = newTechnician.toObject
-          ? newTechnician.toObject()
-          : { ...newTechnician };
-        console.log("newUserObj:", newTechnicianObj);
-
-        const safeTechnician = { ...newTechnicianObj };
-
-        delete safeTechnician.password;
-
-        console.log("safeTechnician:", safeTechnician);
-
-        const redisKey = this.getOtpRedisKey(
-          technicianEmail,
-          OtpPurpose.REGISTRATION
-        );
+        const redisKey = this.getOtpRedisKey(email, OtpPurpose.REGISTRATION);
         await this._redisService.delete(redisKey);
 
         return {
-          message: "OTP verified successfully, Technician registered",
+          message: "Email verified successfully! Please login to continue",
           success: true,
-          userData: safeTechnician,
         };
-      } else if (OtpPurpose.PASSWORD_RESET === purpose && email) {
+      } else if (OtpPurpose.PASSWORD_RESET === purpose) {
         console.log("password resetting in the technican Service");
-        technicianEmail = email;
 
-        const technician = await this._technicianRepository.findByEmail(
-          technicianEmail
-        );
-        console.log("user from the password resetting:", technician);
-        if (!technician.success || !technician.technicianData) {
+        const technician = await this._technicianRepository.findByEmail(email);
+
+        console.log("technician found for password reset:", technician);
+
+        if (!technician) {
           return {
             success: false,
             message: "Technician not found with this email",
           };
         }
 
+        if (!technician.email_verified) {
+          return {
+            success: false,
+            message: "Please verify your email first",
+          };
+        }
+
+        if (!technician.is_verified) {
+          return {
+            success: false,
+            message: "Your account is pending admin approval",
+          };
+        }
+
         const verificationResult = await this.verifyOtpGeneric(
-          technicianEmail,
+          email,
           otp,
           OtpPurpose.PASSWORD_RESET
         );
 
-        return verificationResult;
+        return {
+          success: verificationResult.success,
+          message: verificationResult.message,
+        };
       } else {
         return {
           success: false,
@@ -325,46 +318,61 @@ export class TechnicianService implements ITechnicianService {
   async resendOtp(data: string): Promise<ResendOtpResponse> {
     try {
       console.log("entering resendotp function in the technician service");
-      const tempTechnician =
-        await this._tempTechnicianRepository.findTempTechnicianByEmail(data);
-      console.log(
-        "temptechnician in resendotp technician service:",
-        tempTechnician
-      );
 
       const technician = await this._technicianRepository.findByEmail(data);
-      console.log("technician in the resendOtp in the technician service");
+      console.log(
+        "technician in the resendOtp in the technician service:",
+        technician
+      );
+
+      if (!technician) {
+        return {
+          success: false,
+          message: "Technician not found",
+        };
+      }
 
       let purpose: OtpPurpose;
+      let message: string;
 
-      if (tempTechnician.success && tempTechnician.tempTechnicianData) {
+      if (!technician.email_verified) {
         purpose = OtpPurpose.REGISTRATION;
-      } else if (technician.success && technician.technicianData) {
+        message = "OTP sent successfully for email verification";
+
+        const newExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+        await this._technicianRepository.updateTechnicianExpiry(
+          data,
+          newExpiresAt
+        );
+      } else if (technician.email_verified && !technician.is_verified) {
+        return {
+          success: false,
+          message:
+            "Your account is pending admin approval. Cannot reset password at this time.",
+        };
+      } else if (technician.email_verified && technician.is_verified) {
         purpose = OtpPurpose.PASSWORD_RESET;
+        message = "OTP sent successfully for password reset";
       } else {
         return {
           success: false,
-          message: "technician not found",
+          message: "Invalid account state",
         };
       }
 
       const newOtp = await this.generateAndSendOtp(data, purpose);
-
       console.log("generated new Otp:", newOtp);
 
       return {
         success: true,
-        message: `OTP sent successfully for ${
-          purpose === OtpPurpose.REGISTRATION
-            ? "registration"
-            : "password reset"
-        }`,
+        message,
+        email: data,
       };
     } catch (error) {
-      console.log("error occured while resending the otp", error);
+      console.log("error occurred while resending the otp", error);
       return {
         success: false,
-        message: "Error occured while resending the otp",
+        message: "Error occurred while resending the otp",
       };
     }
   }
@@ -377,10 +385,33 @@ export class TechnicianService implements ITechnicianService {
       const { email } = data;
 
       const technician = await this._technicianRepository.findByEmail(email);
-      if (!technician.success || !technician.technicianData) {
+
+      if (!technician) {
         return {
           success: false,
           message: "Technician not found with this email",
+        };
+      }
+
+      if (!technician.email_verified) {
+        return {
+          success: false,
+          message: "Please verify your email before resetting password",
+        };
+      }
+
+      if (!technician.is_verified) {
+        return {
+          success: false,
+          message:
+            "Your account is pending admin approval. Cannot reset password at this time.",
+        };
+      }
+
+      if (technician.status !== "Active") {
+        return {
+          success: false,
+          message: "Your account has been blocked. Please contact support.",
         };
       }
 
@@ -410,27 +441,39 @@ export class TechnicianService implements ITechnicianService {
       const { email, password } = data;
 
       const technician = await this._technicianRepository.findByEmail(email);
-      console.log("userData in resetPasssword:", technician);
-      if (!technician.success || !technician.technicianData) {
+      console.log("technician data in resetPassword:", technician);
+
+      if (!technician) {
         return {
           success: false,
-          message: "technician not found with this email",
+          message: "Technician not found with this email",
+        };
+      }
+
+      if (!technician.email_verified) {
+        return {
+          success: false,
+          message: "Please verify your email first",
+        };
+      }
+
+      if (!technician.is_verified) {
+        return {
+          success: false,
+          message: "Your account is pending admin approval",
+        };
+      }
+
+      if (technician.status !== "Active") {
+        return {
+          success: false,
+          message: "Your account has been blocked. Please contact support.",
         };
       }
 
       const hashedPassword = await this._passwordService.hash(password);
 
-      const updateResult = await this._technicianRepository.updatePassword(
-        email,
-        hashedPassword
-      );
-
-      if (!updateResult.success) {
-        return {
-          success: false,
-          message: "Failed to update password",
-        };
-      }
+      await this._technicianRepository.updatePassword(email, hashedPassword);
 
       const redisKey = this.getOtpRedisKey(email, OtpPurpose.PASSWORD_RESET);
       await this._redisService.delete(redisKey);
@@ -454,15 +497,30 @@ export class TechnicianService implements ITechnicianService {
       const { email, password } = data;
       const technician = await this._technicianRepository.findByEmail(email);
       console.log("technician", technician);
-      if (!technician.success || !technician.technicianData) {
+
+      if (!technician) {
         return {
           success: false,
           message: "Technician not found",
         };
       }
 
+      if (!technician.email_verified) {
+        return {
+          success: false,
+          message: "Please verify your email before logging in",
+        };
+      }
+
+      if (technician.status === "Blocked") {
+        return {
+          success: false,
+          message: "Your account has been blocked. Please contact support.",
+        };
+      }
+
       const isPasswordValid = await this._passwordService.verify(
-        technician.technicianData.password,
+        technician.password,
         password
       );
 
@@ -471,18 +529,11 @@ export class TechnicianService implements ITechnicianService {
       if (!isPasswordValid) {
         return {
           success: false,
-          message: "invalid password",
+          message: "Invalid password",
         };
       }
 
-      if (technician.technicianData.status === "InActive") {
-        return {
-          success: false,
-          message: "Your account has been blocked. Please contact support.",
-        };
-      }
-
-      const technicianId = String(technician.technicianData._id);
+      const technicianId = String(technician._id);
 
       const access_token = this._jwtService.generateAccessToken(
         technicianId,
@@ -500,8 +551,16 @@ export class TechnicianService implements ITechnicianService {
         message: "Login Successfull",
         access_token,
         refresh_token,
-        role: Roles.TECHNICIAN,
-        technician: technician.technicianData,
+        data: {
+          _id: technician._id,
+          username: technician.username,
+          email: technician.email,
+          phone: technician.phone,
+          email_verified: technician.email_verified,
+          status: technician.status,
+          image: technician.image,
+          is_verified: technician.is_verified,
+        },
       };
     } catch (error) {
       console.log("error", error);
@@ -533,6 +592,8 @@ export class TechnicianService implements ITechnicianService {
         latitude: qualificationData.latitude,
         address: qualificationData.address,
         about: qualificationData.about,
+        status: "Pending" as const,
+        is_verified: false,
       };
 
       if (qualificationData.profilePhoto) {
@@ -572,10 +633,32 @@ export class TechnicianService implements ITechnicianService {
 
       console.log("result from the technician service:", result);
 
+      const admin = await this._adminRepository.getAdmin();
+
+      if (!admin) {
+        return {
+          success: false,
+          message: "admin not found",
+        };
+      }
+
+      try {
+        await this._notificationService.createNotification({
+          recipientId: admin._id.toString(),
+          recipientType: "admin",
+          title: "New Application",
+          message: "New technician application submitted for review",
+          type: "application_submitted",
+        });
+      } catch (error) {
+        console.log("error occured while creating the notification:", error);
+      }
+
       return {
         message: "Qualification submitted successfully",
         success: true,
         technician: result.technician,
+        adminId:admin._id.toString()
       };
     } catch (error) {
       console.error("Error submitting technician qualification:", error);
@@ -603,8 +686,8 @@ export class TechnicianService implements ITechnicianService {
   }> {
     try {
       console.log("Function fetching all the applcants");
-      const page = options.page || 1;
-      const limit = options.limit || 5;
+      const page = options.page;
+      const limit = options.limit;
       const result = await this._technicianRepository.getAllApplicants({
         page,
         limit,
@@ -621,9 +704,9 @@ export class TechnicianService implements ITechnicianService {
             total: result.total,
             page: result.page,
             pages: result.pages,
-            limit: limit,
+            limit: result.limit,
             hasNextPage: result.page < result.pages,
-            hasPrevPage: page > 1,
+            hasPrevPage: result.page > 1,
           },
         },
       };
@@ -649,33 +732,33 @@ export class TechnicianService implements ITechnicianService {
         technicianId
       );
 
-      if (!result.success || !result.technicianData) {
+      if (!result) {
         return {
-          message: result.message || "Technician not found",
+          message: "Technician not found",
           success: false,
         };
       }
 
       const designation =
-        typeof result.technicianData.Designation === "object"
-          ? (result.technicianData.Designation as { designation?: string })
-              ?.designation
-          : result.technicianData.Designation;
+        typeof result.Designation === "object"
+          ? (result.Designation as { designation?: string })?.designation
+          : result.Designation;
 
       return {
         message: "Technician profile fetched successfully",
         success: true,
         technician: {
-          username: result.technicianData.username,
-          email: result.technicianData.email,
-          phone: result.technicianData.phone,
-          is_verified: result.technicianData.is_verified,
-          yearsOfExperience: result.technicianData.yearsOfExperience,
+          username: result.username,
+          email: result.email,
+          phone: result.phone,
+          is_verified: result.is_verified,
+          email_verified: result.email_verified,
+          yearsOfExperience: result.yearsOfExperience,
           Designation: designation,
-          address: result.technicianData.address,
-          About: result.technicianData.About,
-          image: result.technicianData.image,
-          certificates: result.technicianData.certificates,
+          address: result.address,
+          About: result.About,
+          image: result.image,
+          certificates: result.certificates,
         },
       };
     } catch (error) {
@@ -689,21 +772,56 @@ export class TechnicianService implements ITechnicianService {
 
   async verifyTechnician(
     technicianId: string
-  ): Promise<VerifyTechnicianServiceResponse> {
+  ): Promise<ApproveTechnicianResponse> {
     try {
       console.log("Verifying technician in service layer:", technicianId);
 
-      const technicianResult =
-        await this._technicianRepository.getTechnicianById(technicianId);
+      const technician = await this._technicianRepository.getTechnicianById(
+        technicianId
+      );
 
-      if (!technicianResult.success || !technicianResult.technicianData) {
+      if (!technician) {
         return {
           success: false,
           message: "Technician not found",
         };
       }
 
-      const technician = technicianResult.technicianData;
+      const subscriptionPlan =
+        await this._subsciptionPlanRepository.findByPlanName("Basic");
+
+      if (!subscriptionPlan) {
+        return {
+          success: false,
+          message: "Basic subscription plan not found",
+        };
+      }
+
+      const subscriptionHistoryData = {
+        technicianId: technician._id.toString(),
+        subscriptionPlanId: subscriptionPlan?._id.toString(),
+        amount: 0,
+        status: "Active" as const,
+      };
+
+      const subscriptionHistory =
+        await this._subscriptionPlanHistoryRepository.createHistory(
+          subscriptionHistoryData
+        );
+
+      const newWallet = await this._walletRepository.createWallet(
+        technician._id.toString(),
+        "technician"
+      );
+
+      if (!subscriptionHistory || !newWallet) {
+        return {
+          success: false,
+          message: "Failed to setup technician resources. Please try again.",
+        };
+      }
+
+      console.log("newly created wallet:", newWallet);
 
       const verificationResult =
         await this._technicianRepository.verifyTechnician(technicianId);
@@ -753,21 +871,20 @@ export class TechnicianService implements ITechnicianService {
   async rejectTechnician(
     technicianId: string,
     reason?: string
-  ): Promise<RejectTechnicianServiceResponse> {
+  ): Promise<RejectTechnicianResponse> {
     try {
       console.log("Rejecting technician in service layer:", technicianId);
 
-      const technicianResult =
-        await this._technicianRepository.getTechnicianById(technicianId);
+      const technician = await this._technicianRepository.getTechnicianById(
+        technicianId
+      );
 
-      if (!technicianResult.success || !technicianResult.technicianData) {
+      if (!technician) {
         return {
           success: false,
           message: "Technician not found",
         };
       }
-
-      const technician = technicianResult.technicianData;
 
       const rejectionResult = await this._technicianRepository.rejectTechnician(
         technicianId
@@ -840,8 +957,12 @@ export class TechnicianService implements ITechnicianService {
   }> {
     try {
       console.log("Function fetching all the technicians");
-      const page = options.page || 1;
-      const limit = options.limit || 5;
+      console.log(
+        "options in the fetching etchncians in techncian service:",
+        options
+      );
+      const page = options.page;
+      const limit = options.limit;
       const result = await this._technicianRepository.getAllTechnicians({
         page,
         limit,
@@ -861,9 +982,9 @@ export class TechnicianService implements ITechnicianService {
             total: result.total,
             page: result.page,
             pages: result.pages,
-            limit: limit,
+            limit: result.limit,
             hasNextPage: result.page < result.pages,
-            hasPrevPage: page > 1,
+            hasPrevPage: result.page > 1,
           },
         },
       };
@@ -944,25 +1065,22 @@ export class TechnicianService implements ITechnicianService {
   ): Promise<ToggleTechnicianStatusResponse> {
     try {
       console.log("toogling hte technician status in the service layer:", id);
-      const technicianResult =
-        await this._technicianRepository.getTechnicianById(id);
-      if (!technicianResult.success || !technicianResult.technicianData) {
+      const technician = await this._technicianRepository.getTechnicianById(id);
+      if (!technician) {
         return {
           success: false,
           message: "TeChnician not found",
         };
       }
-      const currentTechnician = technicianResult.technicianData;
 
-      if (!currentTechnician.is_verified) {
+      if (!technician.is_verified) {
         return {
           success: false,
           message: "Cannot toggle status of unverified technician",
         };
       }
 
-      const newStatus =
-        currentTechnician.status === "Active" ? "Blocked" : "Active";
+      const newStatus = technician.status === "Active" ? "Blocked" : "Active";
 
       const toggleResult =
         await this._technicianRepository.toggleTechnicianStatus(id, newStatus);
@@ -970,7 +1088,10 @@ export class TechnicianService implements ITechnicianService {
       return {
         success: true,
         message: `Technician ${newStatus.toLowerCase()} successfully`,
-        technician: toggleResult.technicianData,
+        data: {
+          technicianId: toggleResult._id,
+          status: toggleResult.status,
+        },
       };
     } catch (error) {
       console.log("Error during technician status toggle:", error);
@@ -1120,9 +1241,10 @@ export class TechnicianService implements ITechnicianService {
         };
       }
 
-      const technicianResult =
-        await this._technicianRepository.getTechnicianById(technicianId);
-      if (!technicianResult.success || !technicianResult.technicianData) {
+      const technician = await this._technicianRepository.getTechnicianById(
+        technicianId
+      );
+      if (!technician) {
         return {
           success: false,
           message: "Technician not found",
@@ -1157,34 +1279,116 @@ export class TechnicianService implements ITechnicianService {
     success: boolean;
     message: string;
     data?: {
-      planName: string;
-      status: string;
-      commissionRate: number;
-      walletCreditDelay: number;
-      profileBoost: boolean;
-      durationInMonths: number;
-      expiresAt?: string;
-      amount: number;
+      currentSubscription: {
+        planName: string;
+        status: string;
+        commissionRate: number;
+        walletCreditDelay: number;
+        profileBoost: boolean;
+        durationInMonths: number;
+        expiresAt?: string;
+        amount: number;
+      };
+      upcomingSubscription?: {
+        planName: string;
+        commissionRate: number;
+        walletCreditDelay: number;
+        profileBoost: boolean;
+        durationInMonths: number;
+        amount: number;
+        activatesOn?: string;
+      } | null;
     };
   }> {
     try {
       console.log("Service: Getting technician active subscription plan");
 
-      const result = await this._technicianRepository.getActiveSubscriptionPlan(
+      const technician = await this._technicianRepository.getTechnicianById(
         technicianId
       );
 
-      if (!result.success || !result.subscriptionData) {
+      if (!technician) {
         return {
           success: false,
-          message: "No active subscription found for technician",
+          message: "Technician not found",
+        };
+      }
+
+      const activeSubscription =
+        await this._subscriptionPlanHistoryRepository.findActiveSubscriptionByTechnicianId(
+          technicianId
+        );
+
+      console.log(
+        "fetched active subscription plan in the technician service:",
+        activeSubscription
+      );
+
+      if (!activeSubscription) {
+        return {
+          success: false,
+          message: "No active subscription found",
+        };
+      }
+
+      const subscriptionPlan =
+        await this._subsciptionPlanRepository.findSubscriptionPlanById(
+          activeSubscription.subscriptionPlanId.toString()
+        );
+
+      if (!subscriptionPlan) {
+        return {
+          success: false,
+          message: "Subscription plan not found",
+        };
+      }
+
+      let status = "Active";
+      if (activeSubscription.expiryDate) {
+        const isStillActive =
+          new Date() <= new Date(activeSubscription.expiryDate);
+        status = isStillActive ? "Active" : "Expired";
+      }
+
+      let upcomingSubscription = null;
+      if (
+        activeSubscription.hasNextUpgrade &&
+        activeSubscription.nextUpgrade?.planId
+      ) {
+        const upcomingPlan = activeSubscription.nextUpgrade
+          .planId as ISubscriptionPlan;
+
+        upcomingSubscription = {
+          planName: upcomingPlan.planName,
+          commissionRate: upcomingPlan.commissionRate,
+          walletCreditDelay: upcomingPlan.WalletCreditDelay,
+          profileBoost: upcomingPlan.profileBoost,
+          durationInMonths: upcomingPlan.durationInMonths || 0,
+          amount: activeSubscription.nextUpgrade.amount,
+          activatesOn: activeSubscription.expiryDate
+            ? activeSubscription.expiryDate.toISOString()
+            : undefined,
         };
       }
 
       return {
         success: true,
         message: "Active subscription plan fetched successfully",
-        data: result.subscriptionData,
+        data: {
+          currentSubscription: {
+            planName: subscriptionPlan.planName,
+            status: status,
+            commissionRate: subscriptionPlan.commissionRate,
+            walletCreditDelay: subscriptionPlan.WalletCreditDelay,
+            profileBoost: subscriptionPlan.profileBoost,
+            durationInMonths: subscriptionPlan.durationInMonths || 0,
+            expiresAt: activeSubscription.expiryDate
+              ? activeSubscription.expiryDate.toISOString()
+              : undefined,
+            amount: activeSubscription.amount,
+          },
+          upcomingSubscription: upcomingSubscription,
+        },
       };
     } catch (error) {
       console.log("Error in service getting subscription plan:", error);

@@ -1,10 +1,11 @@
-import { IAdmin } from "../../Models/Iadmin";
-
 export interface LoginResponse {
   success: boolean;
   message: string;
-  data?: IAdmin;
-  role?: string;
+  data?: {
+    _id: string;
+    email: string;
+    status: string;
+  };
   access_token?: string;
   refresh_token?: string;
 }

@@ -36,16 +36,16 @@ export class AdminRoutes {
       jobController.addDesignation.bind(jobController)
     );
 
-    this.router.patch(
-      "/blockjobdesignation/:id",
-      this.authMiddleware.authenticate(Roles.ADMIN),
-      jobController.toggleDesignationStatus.bind(jobController)
-    );
-
     this.router.get(
       "/jobdesignations",
       this.authMiddleware.authenticate(Roles.ADMIN),
       jobController.getAllDesignations.bind(jobController)
+    );
+
+    this.router.patch(
+      "/blockjobdesignation/:id",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      jobController.toggleDesignationStatus.bind(jobController)
     );
 
     this.router.get(
@@ -266,6 +266,30 @@ export class AdminRoutes {
       "/servicecategoryperformance",
       this.authMiddleware.authenticate(Roles.ADMIN),
       adminController.getServiceCategoryPerformance.bind(adminController)
+    );
+
+    this.router.get(
+      "/technicianreviews",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.getTechnicianReviews.bind(adminController)
+    );
+
+    this.router.get(
+      "/notifications",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.getNotifications.bind(adminController)
+    );
+
+    this.router.get(
+      "/unreadnotifications",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.getUnreadNotificationCount.bind(adminController)
+    );
+
+    this.router.patch(
+      "/readnotification/:notificationId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      adminController.markNotificationRead.bind(adminController)
     );
 
     this.router.get(

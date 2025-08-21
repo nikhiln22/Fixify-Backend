@@ -12,9 +12,9 @@ export class AuthRoutes {
   private setupRoutes() {
     const authController = container.resolve(AuthController);
 
-    this.router.post(
+    this.router.get(
       "/refreshtoken",
-      authController.refreshAccessToken.bind(authController)
+      authController.newAccessToken.bind(authController)
     );
   }
 

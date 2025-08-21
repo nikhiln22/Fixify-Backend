@@ -9,7 +9,7 @@ export interface ISubscriptionPlan extends Document {
   profileBoost: boolean;
   durationInMonths: number;
   description: string;
-  status: boolean;
+  status: string;
   createdAt: Date;
   updatedAt: Date;
 }

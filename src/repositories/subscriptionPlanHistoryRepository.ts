@@ -3,7 +3,7 @@ import { ISubscriptionPlanHistory } from "../interfaces/Models/IsubscriptionPlan
 import subscriptionPlanHistory from "../models/subscriptionPlanHistoryModel";
 import { BaseRepository } from "./baseRepository";
 import { ISubscriptionPlanHistoryRepository } from "../interfaces/Irepositories/IsubscriptionPlanHistoryRepository";
-import { FilterQuery, Types } from "mongoose";
+import mongoose, { FilterQuery, Types } from "mongoose";
 
 @injectable()
 export class SubscriptionPlanHistoryRepository
@@ -31,7 +31,7 @@ export class SubscriptionPlanHistoryRepository
       console.log("Fetching subscription plan history with options:", options);
 
       const page = options.page || 1;
-      const limit = options.limit || 5;
+      const limit = options.limit || 6;
 
       const filter: FilterQuery<ISubscriptionPlanHistory> = {};
 
@@ -45,9 +45,9 @@ export class SubscriptionPlanHistoryRepository
 
       if (options.filterStatus) {
         if (options.filterStatus === "Active") {
-          filter.status = true;
+          filter.status = "Active";
         } else if (options.filterStatus === "Expired") {
-          filter.status = false;
+          filter.status = "Expired";
         }
       }
 
@@ -93,6 +93,13 @@ export class SubscriptionPlanHistoryRepository
     paymentId?: string;
     amount: number;
     status: "Active" | "Expired";
+    expiryDate?: Date;
+    hasNextUpgrade?: boolean;
+    nextUpgrade?: {
+      planId: string;
+      amount: number;
+      paymentId: string;
+    };
   }): Promise<ISubscriptionPlanHistory> {
     try {
       console.log("Creating subscription plan history:", historyData);
@@ -101,9 +108,22 @@ export class SubscriptionPlanHistoryRepository
         technicianId: new Types.ObjectId(historyData.technicianId),
         subscriptionPlanId: new Types.ObjectId(historyData.subscriptionPlanId),
         amount: historyData.amount,
-        paymentId: new Types.ObjectId(historyData.paymentId),
         status: historyData.status,
+        expiryDate: historyData.expiryDate,
+        hasNextUpgrade: historyData.hasNextUpgrade || false,
       };
+
+      if (historyData.paymentId) {
+        mongoHistoryData.paymentId = new Types.ObjectId(historyData.paymentId);
+      }
+
+      if (historyData.nextUpgrade) {
+        mongoHistoryData.nextUpgrade = {
+          planId: new Types.ObjectId(historyData.nextUpgrade.planId),
+          amount: historyData.nextUpgrade.amount,
+          paymentId: new Types.ObjectId(historyData.nextUpgrade.paymentId),
+        };
+      }
 
       const newHistory = await this.create(mongoHistoryData);
       return newHistory;
@@ -114,7 +134,16 @@ export class SubscriptionPlanHistoryRepository
   }
 
   async updateSubscriptionHistory(
-    technicianId: string
+    technicianId: string,
+    updateData: {
+      status?: "Active" | "Expired";
+      hasNextUpgrade?: boolean;
+      nextUpgrade?: {
+        planId: string;
+        amount: number;
+        paymentId: string;
+      };
+    }
   ): Promise<ISubscriptionPlanHistory | null> {
     try {
       console.log(
@@ -124,14 +153,34 @@ export class SubscriptionPlanHistoryRepository
         "technicianId in the subscription history repository:",
         technicianId
       );
+
+      const processedUpdateData: {
+        status?: "Active" | "Expired";
+        hasNextUpgrade?: boolean;
+        nextUpgrade?: {
+          planId: Types.ObjectId;
+          amount: number;
+          paymentId: Types.ObjectId;
+        };
+      } = {
+        status: updateData.status,
+        hasNextUpgrade: updateData.hasNextUpgrade,
+      };
+
+      if (updateData.nextUpgrade) {
+        processedUpdateData.nextUpgrade = {
+          planId: new Types.ObjectId(updateData.nextUpgrade.planId),
+          amount: updateData.nextUpgrade.amount,
+          paymentId: new Types.ObjectId(updateData.nextUpgrade.paymentId),
+        };
+      }
+
       const updatedSubscriptionHistory = await this.updateOne(
         {
           technicianId: new Types.ObjectId(technicianId),
           status: "Active",
         },
-        {
-          status: "Expired",
-        }
+        processedUpdateData
       );
 
       return updatedSubscriptionHistory;
@@ -153,6 +202,40 @@ export class SubscriptionPlanHistoryRepository
       return result;
     } catch (error) {
       console.log("error occured while fetching all the active subscriptions");
+      throw error;
+    }
+  }
+
+  async findActiveSubscriptionByTechnicianId(
+    technicianId: string
+  ): Promise<ISubscriptionPlanHistory | null> {
+    try {
+      console.log(
+        "finding the active subscriptions of the technician:",
+        technicianId
+      );
+      const technicianPlan = await this.findOne(
+        {
+          technicianId: new mongoose.Types.ObjectId(technicianId),
+          status: "Active",
+          $or: [{ expiryDate: { $gt: new Date() } }, { expiryDate: null }],
+        },
+        {
+          populate: {
+            path: "nextUpgrade.planId",
+            select:
+              "planName durationInMonths commissionRate WalletCreditDelay profileBoost",
+          },
+        }
+      );
+
+      console.log("found active subscription:", technicianPlan);
+      return technicianPlan;
+    } catch (error) {
+      console.log(
+        "error occured while fetching the techncian active plan:",
+        error
+      );
       throw error;
     }
   }

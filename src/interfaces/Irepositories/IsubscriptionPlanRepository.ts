@@ -15,7 +15,10 @@ export interface ISubscriptionPlanRepository {
 
   findSubscriptionPlanById(id: string): Promise<ISubscriptionPlan | null>;
 
-  blockSubscriptionPlan(id: string, status: boolean): Promise<void>;
+  blockSubscriptionPlan(
+    id: string,
+    status: string
+  ): Promise<ISubscriptionPlan | null>;
 
   getAllSubscriptionPlans(options: {
     page?: number;

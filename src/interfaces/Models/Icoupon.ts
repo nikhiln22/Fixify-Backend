@@ -11,7 +11,7 @@ export interface ICoupon extends Document {
   min_booking_amount?: number;
   used_by_users?: Types.ObjectId[];
   valid_until?: Date;
-  status: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  status: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

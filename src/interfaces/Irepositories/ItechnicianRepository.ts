@@ -1,11 +1,8 @@
 import {
   CreateTechnician,
-  FindByEmailResponse,
-  FindByIdResponse,
   INearbyTechnicianResponse,
   RejectTechnicianResponse,
   TechnicianQualification,
-  UpdatePasswordResponse,
   UpdateTechnicianQualificationResponse,
   VerifyTechnicianResponse,
 } from "../DTO/IRepository/ItechnicianRepository";
@@ -13,12 +10,11 @@ import { ITechnician } from "../Models/Itechnician";
 
 export interface ITechnicianRepository {
   createTechnician(technicianData: CreateTechnician): Promise<ITechnician>;
-  findByEmail(email: string): Promise<FindByEmailResponse>;
-  getTechnicianById(id: string): Promise<FindByIdResponse>;
-  updatePassword(
-    email: string,
-    hashedPassword: string
-  ): Promise<UpdatePasswordResponse>;
+  findByEmail(email: string): Promise<ITechnician | null>;
+  updateTechnicianExpiry(email: string, newExpiresAt: Date): Promise<void>;
+  updateTechnicianEmailVerification(email: string): Promise<void>;
+  getTechnicianById(id: string): Promise<ITechnician | null>;
+  updatePassword(email: string, hashedPassword: string): Promise<void>;
   updateTechnicianQualification(
     technicianId: string,
     qualificationData: TechnicianQualification
@@ -48,46 +44,12 @@ export interface ITechnicianRepository {
   toggleTechnicianStatus(
     technicianId: string,
     newStatus: "Active" | "Blocked"
-  ): Promise<{
-    success: boolean;
-    message?: string;
-    technicianData?: ITechnician;
-  }>;
+  ): Promise<ITechnician>;
   nearbyTechnicians(
     designationId: string,
     userLongitude: number,
     userLatitude: number,
     radius: number
   ): Promise<INearbyTechnicianResponse[]>;
-
-  getTechniciansWithSubscriptions(options: {
-    page?: number;
-    limit?: number;
-    search?: string;
-    filterPlan?: string;
-  }): Promise<{
-    data: ITechnician[];
-    total: number;
-    page: number;
-    limit: number;
-    pages: number;
-  }>;
-  getActiveSubscriptionPlan(technicianId: string): Promise<{
-    success: boolean;
-    subscriptionData?: {
-      planName: string;
-      status: string;
-      commissionRate: number;
-      walletCreditDelay: number;
-      profileBoost: boolean;
-      durationInMonths: number;
-      expiresAt?: string;
-      amount: number;
-    };
-  }>;
-  updateSubscriptionPlan(
-    technicianId: string,
-    planId: string
-  ): Promise<{ data: ITechnician } | null>;
   countActiveTechnicians(): Promise<number>;
 }

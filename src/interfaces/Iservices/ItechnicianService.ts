@@ -4,25 +4,25 @@ import {
   ForgotPasswordResponse,
   LoginData,
   LoginResponse,
-  RegisterResponse,
-  RejectTechnicianServiceResponse,
   ResendOtpResponse,
   ResetPasswordData,
   ResetPasswordResponse,
   SignupTechnicianData,
   TechnicianProfileResponse,
-  TempTechnicianResponse,
   ToggleTechnicianStatusResponse,
   VerifyOtpData,
   TechnicianQualificationUpdateResponse,
+  signupResponse,
+  RejectTechnicianResponse,
 } from "../DTO/IServices/ItechnicianService";
+import { VerifyOtpResponse } from "../DTO/IServices/IuserService";
 import { IRating } from "../Models/Irating";
 import { ITechnician } from "../Models/Itechnician";
 import { IWalletTransaction } from "../Models/IwalletTransaction";
 
 export interface ITechnicianService {
-  technicianSignUp(data: SignupTechnicianData): Promise<TempTechnicianResponse>;
-  verifyOtp(data: VerifyOtpData): Promise<RegisterResponse>;
+  technicianSignUp(data: SignupTechnicianData): Promise<signupResponse>;
+  verifyOtp(data: VerifyOtpData): Promise<VerifyOtpResponse>;
   resendOtp(data: string): Promise<ResendOtpResponse>;
   forgotPassword(data: ForgotPasswordRequest): Promise<ForgotPasswordResponse>;
   resetPassword(data: ResetPasswordData): Promise<ResetPasswordResponse>;
@@ -61,7 +61,7 @@ export interface ITechnicianService {
   rejectTechnician(
     technicianId: string,
     reason?: string
-  ): Promise<RejectTechnicianServiceResponse>;
+  ): Promise<RejectTechnicianResponse>;
   getTechnicianProfile(
     technicianId: string
   ): Promise<TechnicianProfileResponse>;
@@ -141,14 +141,25 @@ export interface ITechnicianService {
     success: boolean;
     message: string;
     data?: {
-      planName: string;
-      status: string;
-      commissionRate: number;
-      walletCreditDelay: number;
-      profileBoost: boolean;
-      durationInMonths: number;
-      expiresAt?: string;
-      amount: number;
+      currentSubscription: {
+        planName: string;
+        status: string;
+        commissionRate: number;
+        walletCreditDelay: number;
+        profileBoost: boolean;
+        durationInMonths: number;
+        expiresAt?: string;
+        amount: number;
+      };
+      upcomingSubscription?: {
+        planName: string;
+        commissionRate: number;
+        walletCreditDelay: number;
+        profileBoost: boolean;
+        durationInMonths: number;
+        amount: number;
+        activatesOn?: string;
+      } | null;
     };
   }>;
   countActiveTechnicians(): Promise<number>;

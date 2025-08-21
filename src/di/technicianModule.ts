@@ -2,7 +2,6 @@ import "reflect-metadata";
 import { container } from "tsyringe";
 import { TechnicianService } from "../services/technicianService";
 import { TechnicianRepository } from "../repositories/technicianRepository";
-import { TempTechnicianRepository } from "../repositories/tempRepositories/tempTechnicianRepository";
 import { JobDesignationRepository } from "../repositories/jobDesignationRepository";
 import { PasswordHasher } from "../utils/password";
 import { JWTService } from "../utils/jwt";
@@ -12,7 +11,6 @@ import { OTPService } from "../utils/otp";
 import { RedisService } from "../utils/redis";
 import { ITechnicianService } from "../interfaces/Iservices/ItechnicianService";
 import { ITechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
-import { ITempTechnicianRepository } from "../interfaces/Irepositories/ItempTechnicianRepository";
 import { IJobDesignationRepository } from "../interfaces/Irepositories/IjobDesignationRepository";
 import { IPasswordHasher } from "../interfaces/IpasswordHasher/IpasswordHasher";
 import { IJwtService } from "../interfaces/Ijwt/Ijwt";
@@ -50,11 +48,9 @@ import { INotificationRepository } from "../interfaces/Irepositories/Inotificati
 import { NotificationRepository } from "../repositories/notificationRepository";
 
 
-
 container.registerSingleton<ITechnicianController>("ITechnicianController",TechnicianController)
 container.registerSingleton<ITechnicianService>("ITechnicianService", TechnicianService);
 container.registerSingleton<ITechnicianRepository>("ITechnicianRepository", TechnicianRepository);
-container.registerSingleton<ITempTechnicianRepository>("ITempTechnicianRepository", TempTechnicianRepository);
 container.registerSingleton<IJobDesignationRepository>("IJobDesignationRepository", JobDesignationRepository);
 container.registerSingleton<IPasswordHasher>("IPasswordHasher", PasswordHasher);
 container.registerSingleton<IJwtService>("IJwtService", JWTService);

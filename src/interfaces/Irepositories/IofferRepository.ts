@@ -15,7 +15,7 @@ export interface IOfferRepository {
     limit: number;
     pages: number;
   }>;
-  blockOffer(id: string, status: boolean): Promise<void>;
+  blockOffer(id: string, status: string): Promise<IOffer | null>;
   findOfferById(id: string): Promise<IOffer | null>;
   updateOffer(
     id: string,
@@ -27,7 +27,7 @@ export interface IOfferRepository {
       discount_value?: number;
       max_discount?: number;
       min_booking_amount?: number;
-      service_id?: string;
+      serviceId?: string;
       valid_until?: Date;
     }
   ): Promise<IOffer | null>;
