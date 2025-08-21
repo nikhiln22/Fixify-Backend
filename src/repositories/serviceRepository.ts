@@ -98,7 +98,10 @@ export class ServiceRepository
         const result = (await this.find(filter, {
           pagination: { page, limit },
           sort: { createdAt: -1 },
-          populate: { path: "category", select: "name" },
+          populate: [
+            { path: "category", select: "name" },
+            { path: "designation", select: "_id designation" },
+          ],
         })) as { data: IService[]; total: number };
 
         console.log("populated data from the service repository:", result);
@@ -130,7 +133,6 @@ export class ServiceRepository
     }
   }
 
-  
   async findServiceById(id: string): Promise<IService | null> {
     try {
       const service = await this.findById(id);

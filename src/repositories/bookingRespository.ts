@@ -191,10 +191,12 @@ export class BookingRepository
   ): Promise<IBooking | null> {
     try {
       console.log("Fetching booking details for ID:", bookingId);
-      console.log("userId in the booking respository:", userId);
+      console.log("userId in the booking repository:", userId);
       console.log("technicianId in the booking repository:", technicianId);
 
-      const filter: any = { _id: new Types.ObjectId(bookingId) };
+      const filter: FilterQuery<IBooking> = {
+        _id: new Types.ObjectId(bookingId),
+      };
       if (userId) {
         filter.userId = new Types.ObjectId(userId);
       }
@@ -205,26 +207,40 @@ export class BookingRepository
 
       console.log("filter object in the booking repository:", filter);
 
-      const booking = await this.model
-        .findOne(filter)
-        .populate("serviceId", "name price description image")
-        .populate("userId", "username email phone")
-        .populate({
-          path: "technicianId",
-          select:
-            "username email phone image is_verified yearsOfExperience Designation",
-          populate: {
-            path: "Designation",
-            select: "designation",
+      const booking = await this.findOne(filter, {
+        populate: [
+          {
+            path: "serviceId",
+            select: "name price description image",
           },
-        })
-        .populate("addressId", "fullAddress landmark addressType")
-        .populate("timeSlotId", "date startTime endTime")
-        .populate(
-          "paymentId",
-          "paymentMethod paymentStatus amountPaid refundStatus refundDate refundAmount fixifyShare technicianShare technicianPaid technicianPaidAt"
-        )
-        .exec();
+          {
+            path: "userId",
+            select: "username email phone",
+          },
+          {
+            path: "technicianId",
+            select:
+              "username email phone image is_verified yearsOfExperience Designation",
+            populate: {
+              path: "Designation",
+              select: "designation",
+            },
+          },
+          {
+            path: "addressId",
+            select: "fullAddress landmark addressType",
+          },
+          {
+            path: "timeSlotId",
+            select: "date startTime endTime",
+          },
+          {
+            path: "paymentId",
+            select:
+              "paymentMethod paymentStatus amountPaid refundStatus refundDate refundAmount fixifyShare technicianShare technicianPaid technicianPaidAt creditReleaseDate",
+          },
+        ],
+      });
 
       console.log(
         "Booking details fetched successfully with populated timeSlot:",

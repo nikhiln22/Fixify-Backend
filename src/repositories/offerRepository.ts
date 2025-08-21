@@ -103,7 +103,7 @@ export class OfferRepository
 
       const filter: FilterQuery<IOffer> = {
         offer_type: offerType,
-        status: true,
+        status: "Active",
         valid_until: { $gte: new Date() },
       };
 

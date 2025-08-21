@@ -5,24 +5,24 @@ import {
   ForgotPasswordResponse,
   LoginData,
   LoginResponse,
-  RegisterResponse,
+  SignUpUserResponse,
   ResendOtpResponse,
   ResetPasswordData,
   ResetPasswordResponse,
   SignupUserData,
-  TempUserResponse,
   ToggleUserStatusResponse,
   UserProfileResponse,
   VerifyOtpData,
   UserProfileUpdateData,
+  VerifyOtpResponse,
 } from "../DTO/IServices/IuserService";
 import { IUser } from "../../interfaces/Models/Iuser";
 import { IWallet } from "../Models/Iwallet";
 import { IWalletTransaction } from "../Models/IwalletTransaction";
 
 export interface IUserService {
-  userSignUp(data: SignupUserData): Promise<TempUserResponse>;
-  verifyOtp(data: VerifyOtpData): Promise<RegisterResponse>;
+  userSignUp(data: SignupUserData): Promise<SignUpUserResponse>;
+  verifyOtp(data: VerifyOtpData): Promise<VerifyOtpResponse>;
   resendOtp(data: string): Promise<ResendOtpResponse>;
   forgotPassword(data: ForgotPasswordRequest): Promise<ForgotPasswordResponse>;
   resetPassword(data: ResetPasswordData): Promise<ResetPasswordResponse>;

@@ -355,10 +355,23 @@ export class UserController implements IUserController {
   async getAllServices(req: Request, res: Response): Promise<void> {
     try {
       console.log("services fetching to be listed in the user side");
-      const page = parseInt(req.query.page as string) || undefined;
-      const limit = parseInt(req.query.limit as string) || undefined;
-      const search = (req.query.search as string) || undefined;
-      const categoryId = req.query.category as string;
+      const page = req.query.page
+        ? parseInt(req.query.page as string)
+        : undefined;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
+      const search = req.query.search
+        ? (req.query.search as string)
+        : undefined;
+      const categoryId = req.query.categoryId
+        ? (req.query.categoryId as string)
+        : undefined;
+
+      console.log(
+        "all filtereing parameters in the usercontroller for fetching the service",
+        { page, limit, search, categoryId }
+      );
 
       const serviceResponse = await this._serviceService.getAllServices({
         page,
@@ -684,6 +697,11 @@ export class UserController implements IUserController {
       const radius = req.query.radius
         ? parseFloat(req.query.radius as string)
         : 10;
+
+      console.log(
+        "filter parameters in the get nearby technicians in the user controller:",
+        { designationId, userLongitude, userLatitude, radius }
+      );
 
       if (!designationId || isNaN(userLongitude) || isNaN(userLatitude)) {
         res
@@ -1479,7 +1497,7 @@ export class UserController implements IUserController {
     try {
       console.log("fetching the offers for the user");
       const userId = req.user?.id;
-      console.log("userId in the user controller:",userId);
+      console.log("userId in the user controller:", userId);
 
       if (!userId) {
         res
@@ -1518,6 +1536,9 @@ export class UserController implements IUserController {
     res: Response
   ): Promise<void> {
     try {
+      console.log(
+        "entered into the apply best offer in the user controller function"
+      );
       const userId = req.user?.id;
       console.log(
         "userId in the applybest offer method in the user controller:",

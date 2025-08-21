@@ -1,6 +1,10 @@
 import { Model, Document, FilterQuery, UpdateQuery, SortOrder } from "mongoose";
 
-type PopulateOption = { path: string; select?: string };
+type PopulateOption = {
+  path: string;
+  select?: string;
+  populate?: PopulateOption | PopulateOption[];
+};
 
 export class BaseRepository<T extends Document> {
   protected model: Model<T>;
@@ -70,8 +74,15 @@ export class BaseRepository<T extends Document> {
     }
   ): Promise<T | null> {
     let query = this.model.findOne(filter);
+
     if (options?.populate) {
-      query = query.populate(options.populate);
+      const populateOptions = Array.isArray(options.populate)
+        ? options.populate
+        : [options.populate];
+
+      populateOptions.forEach((populateOption) => {
+        query = query.populate(populateOption);
+      });
     }
 
     return await query.exec();

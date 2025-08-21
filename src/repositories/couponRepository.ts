@@ -157,7 +157,7 @@ export class CouponRepository
       );
 
       const filter: FilterQuery<ICoupon> = {
-        status: true,
+        status: "Active",
         valid_until: { $gte: new Date() },
         min_booking_amount: { $lte: price },
         used_by_users: { $ne: [userId] },

@@ -115,7 +115,7 @@ export class CouponService implements ICouponService {
         };
       }
 
-      // Toggle the status
+  
       const newStatus = coupon.status === "Active" ? "Blocked" : "Active";
       const response = await this._couponRepository.blockCoupon(id, newStatus);
       console.log(
