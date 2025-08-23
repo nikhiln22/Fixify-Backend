@@ -170,14 +170,15 @@ export class TechnicianRepository
   async getTechnicianById(id: string): Promise<ITechnician | null> {
     try {
       console.log("Finding technician by ID in repository:", id);
-      const technicianData = await this.model
-        .findById(id)
-        .populate("Designation")
-        .exec();
+      const technicianData = await this.findById(id, {
+        populate: {
+          path: "Designation",
+          select: "designation",
+        },
+      });
 
       console.log("Found technician data:", technicianData);
-      console.log("Designation field:", technicianData?.Designation);
-
+      
       return technicianData;
     } catch (error) {
       console.log("Error occurred while fetching the technician by ID:", error);

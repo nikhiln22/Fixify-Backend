@@ -66,9 +66,21 @@ export class TechnicianRoutes {
     );
 
     this.router.get(
-      "/technicianprofile",
+      "/logout",
       this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      technicianController.logout.bind(technicianController)
+    );
+
+    this.router.get(
+      "/technicianprofile",
+      this.authMiddleware.authenticateAndCheckBlocked(Roles.TECHNICIAN),
       technicianController.getProfile.bind(technicianController)
+    );
+
+    this.router.get(
+      "/reviews",
+      this.authMiddleware.authenticateAndCheckBlocked(Roles.TECHNICIAN),
+      technicianController.getReviews.bind(technicianController)
     );
 
     this.router.get(
@@ -144,12 +156,6 @@ export class TechnicianRoutes {
     );
 
     this.router.get(
-      "/reviews",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
-      technicianController.getReviews.bind(technicianController)
-    );
-
-    this.router.get(
       "/rating/:bookingId",
       this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
       technicianController.getRating.bind(technicianController)
@@ -188,18 +194,12 @@ export class TechnicianRoutes {
     this.router.get(
       "/notifications",
       this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
-      technicianController.getNotifications.bind(technicianController)
-    );
-
-    this.router.get(
-      "/unreadnotifications",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
-      technicianController.getUnreadNotificationCount.bind(technicianController)
+      technicianController.getAllUnReadNotifications.bind(technicianController)
     );
 
     this.router.patch(
-      "/readnotification/:notificationId",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      "/marknotificationread/:notificationId",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
       technicianController.markNotificationRead.bind(technicianController)
     );
 
@@ -229,12 +229,6 @@ export class TechnicianRoutes {
       technicianController.getTechnicianBookingStatusDistribution.bind(
         technicianController
       )
-    );
-
-    this.router.get(
-      "/logout",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
-      technicianController.logout.bind(technicianController)
     );
   }
 

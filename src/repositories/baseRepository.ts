@@ -88,8 +88,25 @@ export class BaseRepository<T extends Document> {
     return await query.exec();
   }
 
-  async findById(id: string): Promise<T | null> {
-    return await this.model.findById(id).exec();
+  async findById(
+    id: string,
+    options?: {
+      populate?: PopulateOption | PopulateOption[];
+    }
+  ): Promise<T | null> {
+    let query = this.model.findById(id);
+
+    if (options?.populate) {
+      const populateOptions = Array.isArray(options.populate)
+        ? options.populate
+        : [options.populate];
+
+      populateOptions.forEach((populateOption) => {
+        query = query.populate(populateOption);
+      });
+    }
+
+    return await query.exec();
   }
 
   async updateOne(

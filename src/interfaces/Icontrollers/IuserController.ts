@@ -36,8 +36,7 @@ export interface IUserController {
   applyBestOffer(req: Request, res: Response): Promise<void>;
   getEligibleCoupons(req: Request, res: Response): Promise<void>;
   applyCoupon(req: Request, res: Response): Promise<void>;
-  getNotifications(req: Request, res: Response): Promise<void>;
-  getUnreadNotificationCount(req: Request, res: Response): Promise<void>;
+  getAllUnReadNotifications(req: Request, res: Response): Promise<void>;
   markNotificationRead(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

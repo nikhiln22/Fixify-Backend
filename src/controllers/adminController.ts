@@ -1628,7 +1628,7 @@ export class AdminController implements IAdminController {
     }
   }
 
-  async getNotifications(
+  async getAllUnReadNotifications(
     req: AuthenticatedRequest,
     res: Response
   ): Promise<void> {
@@ -1646,7 +1646,7 @@ export class AdminController implements IAdminController {
       }
 
       const notifications =
-        await this._notificationService.getNotificationsByUser(
+        await this._notificationService.getUnReadNotificationsByUser(
           adminId,
           "admin"
         );
@@ -1661,41 +1661,6 @@ export class AdminController implements IAdminController {
         );
     } catch (error) {
       console.log("error occured while fetching the notifications:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async getUnreadNotificationCount(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
-    try {
-      const adminId = req.user?.id;
-
-      if (!adminId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("admin not authenticated"));
-        return;
-      }
-
-      const unreadCount = await this._notificationService.getUnreadCount(
-        adminId,
-        "admin"
-      );
-
-      res
-        .status(HTTP_STATUS.OK)
-        .json(
-          createSuccessResponse(
-            { unreadCount },
-            "Unread count fetched successfully"
-          )
-        );
-    } catch (error) {
-      console.log("error occured while fetching unread notifications:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal Server Error"));

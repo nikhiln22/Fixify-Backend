@@ -1,6 +1,5 @@
 import { EmailType } from "../../config/emailConfig";
-// import { EmailTemplate } from "../../types/email.types";
-// import { EmailContentResult } from "./IemailTemplate";
+
 
 export interface IEmailService {
   sendOtpEmail(toEmail: string, otp: string): Promise<void>;

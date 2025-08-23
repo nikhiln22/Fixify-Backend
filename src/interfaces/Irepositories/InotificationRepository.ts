@@ -9,15 +9,10 @@ export interface INotificationRepository {
     type: string;
   }): Promise<INotification>;
 
-  getNotificationsByUser(
+  getUnReadNotificationsByUser(
     userId: string,
     userType: "user" | "admin" | "technician"
   ): Promise<INotification[]>;
 
   markAsRead(notificationId: string): Promise<INotification | null>;
-
-  getUnreadCount(
-    userId: string,
-    userType: "user" | "admin" | "technician"
-  ): Promise<number>;
 }

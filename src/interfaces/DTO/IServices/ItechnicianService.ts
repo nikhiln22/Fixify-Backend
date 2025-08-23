@@ -117,7 +117,7 @@ export interface TechnicianQualificationUpdateResponse {
     | "email_verified"
     | "is_verified"
   >;
-  adminId?:string;
+  adminId?: string;
 }
 
 export interface TechnicianProfileResponse {
@@ -131,7 +131,9 @@ export interface TechnicianProfileResponse {
     email_verified?: boolean;
     status?: string;
     yearsOfExperience?: number;
-    Designation?: string;
+    Designation?: {
+      designation: string;
+    };
     address?: string;
     About?: string;
     image?: string;
@@ -165,4 +167,19 @@ export interface TechnicianQualificationSaveData {
   is_verified: boolean;
   profilePhoto?: string;
   certificates?: string[];
+}
+
+export interface TechnicianProfileUpdateData {
+  username?: string;
+  phone?: string;
+  yearsOfExperience?: string;
+  image?: string;
+  certificates?: string;
+  About?: string;
+}
+
+export interface EditProfileResponse {
+  success: boolean;
+  message: string;
+  technician?: ITechnician;
 }

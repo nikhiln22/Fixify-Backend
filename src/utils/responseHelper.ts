@@ -15,10 +15,10 @@ export const createSuccessResponse = <T>(
 });
 
 export const createErrorResponse = (
-  error: string,
-  message?: string
+  message: string,
+  error?: string
 ): IResponseModel<null> => ({
   success: false,
-  error,
   message,
+  error,
 });

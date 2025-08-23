@@ -277,17 +277,11 @@ export class AdminRoutes {
     this.router.get(
       "/notifications",
       this.authMiddleware.authenticate(Roles.ADMIN),
-      adminController.getNotifications.bind(adminController)
-    );
-
-    this.router.get(
-      "/unreadnotifications",
-      this.authMiddleware.authenticate(Roles.ADMIN),
-      adminController.getUnreadNotificationCount.bind(adminController)
+      adminController.getAllUnReadNotifications.bind(adminController)
     );
 
     this.router.patch(
-      "/readnotification/:notificationId",
+      "/marknotificationread/:notificationId",
       this.authMiddleware.authenticate(Roles.ADMIN),
       adminController.markNotificationRead.bind(adminController)
     );

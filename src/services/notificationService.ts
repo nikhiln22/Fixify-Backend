@@ -38,7 +38,7 @@ export class NotificationService implements INotificationService {
     }
   }
 
-  async getNotificationsByUser(
+  async getUnReadNotificationsByUser(
     userId: string,
     userType: "user" | "admin" | "technician"
   ): Promise<INotification[]> {
@@ -48,7 +48,7 @@ export class NotificationService implements INotificationService {
       );
 
       const notifications =
-        await this._notificationRepository.getNotificationsByUser(
+        await this._notificationRepository.getUnReadNotificationsByUser(
           userId,
           userType
         );
@@ -84,28 +84,6 @@ export class NotificationService implements INotificationService {
       return updatedNotification;
     } catch (error) {
       console.log("error occurred while marking notification as read:", error);
-      throw error;
-    }
-  }
-
-  async getUnreadCount(
-    userId: string,
-    userType: "user" | "admin" | "technician"
-  ): Promise<number> {
-    try {
-      console.log(
-        `Getting unread count for user: ${userId}, type: ${userType}`
-      );
-
-      const unreadCount = await this._notificationRepository.getUnreadCount(
-        userId,
-        userType
-      );
-
-      console.log(`User ${userId} has ${unreadCount} unread notifications`);
-      return unreadCount;
-    } catch (error) {
-      console.log("error occurred while getting unread count:", error);
       throw error;
     }
   }

@@ -803,7 +803,7 @@ export class UserController implements IUserController {
       console.log("entering to the user booking the controller function");
       const userId = req.user?.id;
       const data = req.body;
-      console.log("Received Data:", data);
+      const paymentMethod = data.paymentMethod;
 
       if (!userId) {
         res
@@ -816,41 +816,89 @@ export class UserController implements IUserController {
         userId,
         data
       );
-      console.log(
-        "response from the user service booking controller:",
-        serviceResponse
-      );
 
       if (serviceResponse.success && serviceResponse.data) {
         const booking = serviceResponse.data;
         const technicianId = booking.technicianId.toString();
 
         try {
-          const notification =
-            await this._notificationService.createNotification({
-              recipientId: technicianId,
-              recipientType: "technician",
-              title: "New Booking Request",
-              message: `You have received a new service booking request`,
-              type: "booking_created",
-            });
+          if (paymentMethod === "wallet") {
+            const userNotification =
+              await this._notificationService.createNotification({
+                recipientId: userId,
+                recipientType: "user",
+                title: "Booking Confirmed",
+                message: `Your booking has been confirmed and payment processed via wallet.`,
+                type: "booking_confirmed",
+              });
 
-          const socketData: ISocketNotificationData = {
-            id: notification._id.toString(),
-            title: notification.title,
-            message: notification.message,
-            type: notification.type,
-            createdAt: notification.createdAt!,
-            recipientId: notification.recipientId.toString(),
-            recipientType: notification.recipientType,
-          };
+            const userSocketData: ISocketNotificationData = {
+              id: userNotification._id.toString(),
+              title: userNotification.title,
+              message: userNotification.message,
+              type: userNotification.type,
+              createdAt: userNotification.createdAt,
+              recipientId: userNotification.recipientId.toString(),
+              recipientType: userNotification.recipientType,
+              isRead: false,
+            };
 
-          req.io
-            ?.to(`technician_${technicianId}`)
-            .emit("new_notification", socketData);
-          console.log(`Notification sent to technician ${technicianId}`);
+            req.io
+              ?.to(`user_${userId}`)
+              .emit("new_notification", userSocketData);
+
+            const technicianNotification =
+              await this._notificationService.createNotification({
+                recipientId: technicianId,
+                recipientType: "technician",
+                title: "New Confirmed Booking",
+                message: `You have received a new confirmed booking with payment completed.`,
+                type: "booking_confirmed",
+              });
+
+            const technicianSocketData: ISocketNotificationData = {
+              id: technicianNotification._id.toString(),
+              title: technicianNotification.title,
+              message: technicianNotification.message,
+              type: technicianNotification.type,
+              createdAt: technicianNotification.createdAt,
+              recipientId: technicianNotification.recipientId.toString(),
+              recipientType: technicianNotification.recipientType,
+              isRead: false,
+            };
+
+            req.io
+              ?.to(`technician_${technicianId}`)
+              .emit("new_notification", technicianSocketData);
+          } else if (paymentMethod === "Online") {
+            const userNotification =
+              await this._notificationService.createNotification({
+                recipientId: userId,
+                recipientType: "user",
+                title: "Booking Request Submitted",
+                message: `Your booking request has been submitted. Please complete payment to confirm.`,
+                type: "booking_submitted",
+              });
+
+            const userSocketData: ISocketNotificationData = {
+              id: userNotification._id.toString(),
+              title: userNotification.title,
+              message: userNotification.message,
+              type: userNotification.type,
+              createdAt: userNotification.createdAt,
+              recipientId: userNotification.recipientId.toString(),
+              recipientType: userNotification.recipientType,
+              isRead: false,
+            };
+
+            req.io
+              ?.to(`user_${userId}`)
+              .emit("new_notification", userSocketData);
+          }
+
+          console.log(`Notifications sent for ${paymentMethod} payment`);
         } catch (notificationError) {
-          console.log("Failed to send notification:", notificationError);
+          console.log("Failed to send notifications:", notificationError);
         }
 
         res
@@ -880,14 +928,8 @@ export class UserController implements IUserController {
     res: Response
   ): Promise<void> {
     try {
-      console.log(
-        "entering to the verifyStripeSession in the user controller function for booking"
-      );
-
       const userId = req.user?.id;
       const sessionId = req.params.sessionId as string;
-      console.log("userId in the stripe verify function:", userId);
-      console.log("sessionId in the stripe verify function:", sessionId);
 
       if (!userId) {
         res
@@ -901,12 +943,60 @@ export class UserController implements IUserController {
         userId
       );
 
-      console.log(
-        "result from the verifying stripe session in user controller:",
-        serviceResponse
-      );
-
       if (serviceResponse.success) {
+        try {
+          const userNotification =
+            await this._notificationService.createNotification({
+              recipientId: userId,
+              recipientType: "user",
+              title: "Booking Confirmed",
+              message: `Your payment has been processed successfully. Your booking is now confirmed.`,
+              type: "booking_confirmed",
+            });
+
+          const userSocketData: ISocketNotificationData = {
+            id: userNotification._id.toString(),
+            title: userNotification.title,
+            message: userNotification.message,
+            type: userNotification.type,
+            createdAt: userNotification.createdAt,
+            recipientId: userNotification.recipientId.toString(),
+            recipientType: userNotification.recipientType,
+            isRead: false,
+          };
+
+          req.io?.to(`user_${userId}`).emit("new_notification", userSocketData);
+
+          const booking = serviceResponse.data;
+          if (booking && booking.technicianId) {
+            const technicianId = booking.technicianId.toString();
+
+            const technicianNotification =
+              await this._notificationService.createNotification({
+                recipientId: technicianId,
+                recipientType: "technician",
+                title: "New Confirmed Booking",
+                message: `Payment has been confirmed. You have a new confirmed booking.`,
+                type: "booking_confirmed",
+              });
+
+            req.io?.to(`technician_${technicianId}`).emit("new_notification", {
+              id: technicianNotification._id.toString(),
+              title: technicianNotification.title,
+              message: technicianNotification.message,
+              type: technicianNotification.type,
+              createdAt: technicianNotification.createdAt!,
+              recipientId: technicianNotification.recipientId.toString(),
+              recipientType: technicianNotification.recipientType,
+            });
+          }
+        } catch (notificationError) {
+          console.log(
+            "Failed to send payment confirmation notifications:",
+            notificationError
+          );
+        }
+
         res
           .status(HTTP_STATUS.OK)
           .json(
@@ -1380,6 +1470,73 @@ export class UserController implements IUserController {
       );
 
       if (serviceResponse.success) {
+        try {
+          const booking = serviceResponse.data?.booking;
+          const technicianId =
+            booking?.technicianId?._id?.toString() ||
+            booking?.technicianId?.toString();
+
+          if (technicianId) {
+            const technicianNotification =
+              await this._notificationService.createNotification({
+                recipientId: technicianId,
+                recipientType: "technician",
+                title: "Booking Cancelled",
+                message: `A booking #${bookingId
+                  .slice(-8)
+                  .toUpperCase()} has been cancelled by the customer. Reason: ${cancellationReason} Reason: ${cancellationReason}`,
+                type: "booking_cancelled",
+              });
+
+            const technicianSocketData: ISocketNotificationData = {
+              id: technicianNotification._id.toString(),
+              title: technicianNotification.title,
+              message: technicianNotification.message,
+              type: technicianNotification.type,
+              createdAt: technicianNotification.createdAt,
+              recipientId: technicianNotification.recipientId.toString(),
+              recipientType: technicianNotification.recipientType,
+              isRead: false,
+            };
+
+            req.io
+              ?.to(`technician_${technicianId}`)
+              .emit("new_notification", technicianSocketData);
+            console.log(
+              `Cancellation notification sent to technician ${technicianId}`
+            );
+          }
+
+          const userNotification =
+            await this._notificationService.createNotification({
+              recipientId: userId,
+              recipientType: "user",
+              title: "Booking Cancelled Successfully",
+              message: serviceResponse.message,
+              type: "booking_cancelled",
+            });
+
+          const userSocketData: ISocketNotificationData = {
+            id: userNotification._id.toString(),
+            title: userNotification.title,
+            message: userNotification.message,
+            type: userNotification.type,
+            createdAt: userNotification.createdAt,
+            recipientId: userNotification.recipientId.toString(),
+            recipientType: userNotification.recipientType,
+            isRead: false,
+          };
+
+          req.io?.to(`user_${userId}`).emit("new_notification", userSocketData);
+          console.log(
+            `Cancellation confirmation notification sent to user ${userId}`
+          );
+        } catch (notificationError) {
+          console.log(
+            "Failed to send cancellation notifications:",
+            notificationError
+          );
+        }
         res
           .status(HTTP_STATUS.OK)
           .json(
@@ -1714,7 +1871,7 @@ export class UserController implements IUserController {
     }
   }
 
-  async getNotifications(
+  async getAllUnReadNotifications(
     req: AuthenticatedRequest,
     res: Response
   ): Promise<void> {
@@ -1732,7 +1889,10 @@ export class UserController implements IUserController {
       }
 
       const notifications =
-        await this._notificationService.getNotificationsByUser(userId, "user");
+        await this._notificationService.getUnReadNotificationsByUser(
+          userId,
+          "user"
+        );
 
       res
         .status(HTTP_STATUS.OK)
@@ -1744,41 +1904,6 @@ export class UserController implements IUserController {
         );
     } catch (error) {
       console.log("error occured while fetching the notifications:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async getUnreadNotificationCount(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
-    try {
-      const userId = req.user?.id;
-
-      if (!userId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("User not authenticated"));
-        return;
-      }
-
-      const unreadCount = await this._notificationService.getUnreadCount(
-        userId,
-        "user"
-      );
-
-      res
-        .status(HTTP_STATUS.OK)
-        .json(
-          createSuccessResponse(
-            { unreadCount },
-            "Unread count fetched successfully"
-          )
-        );
-    } catch (error) {
-      console.log("error occured while fetching unread notifications:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal Server Error"));

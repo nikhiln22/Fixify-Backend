@@ -31,8 +31,7 @@ export interface IAdminController {
   getRevenueTrends(req: Request, res: Response): Promise<void>;
   getServiceCategoryPerformance(req: Request, res: Response): Promise<void>;
   getTechnicianReviews(req: Request, res: Response): Promise<void>;
-  getNotifications(req: Request, res: Response): Promise<void>;
-  getUnreadNotificationCount(req: Request, res: Response): Promise<void>;
+  getAllUnReadNotifications(req: Request, res: Response): Promise<void>;
   markNotificationRead(req: Request, res: Response): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

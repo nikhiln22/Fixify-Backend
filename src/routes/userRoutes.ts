@@ -22,27 +22,41 @@ export class UserRoutes {
       container.resolve<IUserController>("IUserController");
 
     this.router.post("/login", userController.login.bind(userController));
-
     this.router.post("/register", userController.register.bind(userController));
-
     this.router.post(
       "/verifyOtp",
       userController.verifyOtp.bind(userController)
     );
-
     this.router.post(
       "/resendotp",
       userController.resendOtp.bind(userController)
     );
-
     this.router.post(
       "/forgotpassword",
       userController.forgotPassword.bind(userController)
     );
-
     this.router.post(
       "/resetpassword",
       userController.resetPassword.bind(userController)
+    );
+
+    this.router.get(
+      "/logout",
+      this.authMiddleware.authenticate(Roles.USER),
+      userController.logout.bind(userController)
+    );
+
+    this.router.get(
+      "/profile",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      userController.getProfile.bind(userController)
+    );
+
+    this.router.put(
+      "/updateprofile",
+      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      this.localUpload.upload.single("image"),
+      userController.editProfile.bind(userController)
     );
 
     this.router.get(
@@ -61,19 +75,6 @@ export class UserRoutes {
       "/servicedetails/:serviceId",
       this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
       userController.getServiceDetails.bind(userController)
-    );
-
-    this.router.get(
-      "/profile",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
-      userController.getProfile.bind(userController)
-    );
-
-    this.router.put(
-      "/updateprofile",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
-      this.localUpload.upload.single("image"),
-      userController.editProfile.bind(userController)
     );
 
     this.router.get(
@@ -217,25 +218,13 @@ export class UserRoutes {
     this.router.get(
       "/notifications",
       this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
-      userController.getNotifications.bind(userController)
-    );
-
-    this.router.get(
-      "/unreadnotifications",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
-      userController.getUnreadNotificationCount.bind(userController)
+      userController.getAllUnReadNotifications.bind(userController)
     );
 
     this.router.patch(
-      "/readnotification/:notificationId",
+      "/marknotificationread/:notificationId",
       this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
       userController.markNotificationRead.bind(userController)
-    );
-
-    this.router.get(
-      "/logout",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
-      userController.logout.bind(userController)
     );
   }
 

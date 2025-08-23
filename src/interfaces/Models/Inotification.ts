@@ -8,6 +8,6 @@ export interface INotification extends Document {
   message: string;
   type: string;
   isRead: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }

@@ -8,13 +8,9 @@ export interface INotificationService {
     message: string;
     type: string;
   }): Promise<INotification>;
-  getNotificationsByUser(
+  getUnReadNotificationsByUser(
     userId: string,
     userType: "user" | "admin" | "technician"
   ): Promise<INotification[]>;
-  getUnreadCount(
-    userId: string,
-    userType: "user" | "admin" | "technician"
-  ): Promise<number>;
   markNotificationAsRead(notificationId: string): Promise<INotification | null>;
 }

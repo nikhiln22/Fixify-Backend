@@ -658,7 +658,7 @@ export class TechnicianService implements ITechnicianService {
         message: "Qualification submitted successfully",
         success: true,
         technician: result.technician,
-        adminId:admin._id.toString()
+        adminId: admin._id.toString(),
       };
     } catch (error) {
       console.error("Error submitting technician qualification:", error);
@@ -732,17 +732,17 @@ export class TechnicianService implements ITechnicianService {
         technicianId
       );
 
+      console.log(
+        "result in the get technician by ID function in the technician service:",
+        result
+      );
+
       if (!result) {
         return {
           message: "Technician not found",
           success: false,
         };
       }
-
-      const designation =
-        typeof result.Designation === "object"
-          ? (result.Designation as { designation?: string })?.designation
-          : result.Designation;
 
       return {
         message: "Technician profile fetched successfully",
@@ -754,7 +754,13 @@ export class TechnicianService implements ITechnicianService {
           is_verified: result.is_verified,
           email_verified: result.email_verified,
           yearsOfExperience: result.yearsOfExperience,
-          Designation: designation,
+          Designation: result.Designation
+            ? {
+                designation: (
+                  result.Designation as unknown as { designation: string }
+                ).designation,
+              }
+            : undefined,
           address: result.address,
           About: result.About,
           image: result.image,

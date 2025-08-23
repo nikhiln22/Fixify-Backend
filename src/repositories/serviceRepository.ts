@@ -182,7 +182,13 @@ export class ServiceRepository
     try {
       console.log(`Updating service with ID: ${id}`, updateData);
 
-      const updateObject: any = {};
+      const updateObject: {
+        name?: string;
+        image?: string;
+        price?: number;
+        description?: string;
+        category?: string;
+      } = {};
 
       if (updateData.name !== undefined) {
         updateObject.name = updateData.name;
@@ -226,7 +232,7 @@ export class ServiceRepository
 
       const services = await this.findAll({
         _id: { $in: objectIds },
-        status: true,
+        status: "Active",
       });
 
       console.log("Services fetched by IDs:", services);

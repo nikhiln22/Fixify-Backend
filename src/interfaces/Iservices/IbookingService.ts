@@ -1,3 +1,4 @@
+import { IBookingDetails } from "../DTO/IServices/IbookingService";
 import {
   BookServiceResponse,
   CreateBookingRequest,
@@ -57,6 +58,7 @@ export interface IBookingService {
   ): Promise<{
     success: boolean;
     message: string;
+    data?: { booking: IBookingDetails };
   }>;
   cancelBookingByUser(
     userId: string,

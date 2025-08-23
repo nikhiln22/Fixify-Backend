@@ -9,6 +9,7 @@ export interface ITechnicianController {
   login(req: Request, res: Response): Promise<void>;
   submitQualifications(req: Request, res: Response): Promise<void>;
   getProfile(req: Request, res: Response): Promise<void>;
+  // editProfile(req: Request, res: Response): Promise<void>;
   getJobDesignations(req: Request, res: Response): Promise<void>;
   getTimeSlots(req: Request, res: Response): Promise<void>;
   addTimeSlots(req: Request, res: Response): Promise<void>;
@@ -29,12 +30,17 @@ export interface ITechnicianController {
   getSubscriptionHistory(req: Request, res: Response): Promise<void>;
   purchaseSubscriptionPlan(req: Request, res: Response): Promise<void>;
   verifyStripeSession(req: Request, res: Response): Promise<void>;
-  getNotifications(req: Request, res: Response): Promise<void>;
-  getUnreadNotificationCount(req: Request, res: Response): Promise<void>;
+  getAllUnReadNotifications(req: Request, res: Response): Promise<void>;
   markNotificationRead(req: Request, res: Response): Promise<void>;
   getDashboardStats(req: Request, res: Response): Promise<void>;
   getTechnicianEarnings(req: Request, res: Response): Promise<void>;
-  getTechnicianServiceCategoriesRevenue(req: Request, res: Response):Promise<void>;
-  getTechnicianBookingStatusDistribution(req: Request,res: Response): Promise<void>
+  getTechnicianServiceCategoriesRevenue(
+    req: Request,
+    res: Response
+  ): Promise<void>;
+  getTechnicianBookingStatusDistribution(
+    req: Request,
+    res: Response
+  ): Promise<void>;
   logout(req: Request, res: Response): Promise<void>;
 }

@@ -11,7 +11,6 @@ export class TimeSlotService implements ITimeSlotService {
     private _timeSlotRepository: ITimeSlotRepository
   ) {}
 
-  
   async addTimeSlots(
     technicianId: string,
     data: {
@@ -146,7 +145,6 @@ export class TimeSlotService implements ITimeSlotService {
           nextTimeStr
         );
 
-        const timeSlot = `${formattedDate} ${currentTimeStr} - ${nextTimeStr}`;
         slots.push(createdSlot);
       }
 
@@ -335,39 +333,8 @@ export class TimeSlotService implements ITimeSlotService {
         message: `Time slot ${action} successfully`,
         data: updatedSlot,
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error in updateSlotBookingStatus service:", error);
-      if (
-        error.message.includes("not found") ||
-        error.message.includes("permission")
-      ) {
-        return {
-          success: false,
-          message:
-            "Time slot not found or you don't have permission to modify this slot",
-        };
-      }
-
-      if (error.message.includes("already booked")) {
-        return {
-          success: false,
-          message: "Time slot is already booked",
-        };
-      }
-
-      if (error.message.includes("already unbooked")) {
-        return {
-          success: false,
-          message: "Time slot is not currently booked",
-        };
-      }
-
-      if (error.message.includes("not available")) {
-        return {
-          success: false,
-          message: "Time slot is not available for booking",
-        };
-      }
       return {
         success: false,
         message: "Failed to update slot booking status",

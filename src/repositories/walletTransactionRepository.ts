@@ -24,7 +24,7 @@ export class WalletTransactionRepository
     referenceId: string,
     type?: string
   ): Promise<IWalletTransaction | null> {
-    const filter: any = { referenceId };
+    const filter: FilterQuery<IWalletTransaction> = { referenceId };
     if (type) {
       filter.type = type;
     }

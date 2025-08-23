@@ -37,7 +37,7 @@ export class NotificationRepository
     }
   }
 
-  async getNotificationsByUser(
+  async getUnReadNotificationsByUser(
     userId: string,
     userType: "user" | "admin" | "technician"
   ): Promise<INotification[]> {
@@ -50,6 +50,7 @@ export class NotificationRepository
         {
           recipientId: userId,
           recipientType: userType,
+          isRead:false
         },
         {
           sort: { createdAt: -1 },
@@ -90,29 +91,6 @@ export class NotificationRepository
       return updatedNotification;
     } catch (error) {
       console.error("Error marking notification as read in repository:", error);
-      throw error;
-    }
-  }
-
-  async getUnreadCount(
-    userId: string,
-    userType: "user" | "admin" | "technician"
-  ): Promise<number> {
-    try {
-      console.log(
-        `Getting unread count for user: ${userId}, type: ${userType}`
-      );
-
-      const unreadCount = await this.countDocument({
-        recipientId: userId,
-        recipientType: userType,
-        isRead: false,
-      });
-
-      console.log(`User ${userId} has ${unreadCount} unread notifications`);
-      return unreadCount;
-    } catch (error) {
-      console.error("Error getting unread count in repository:", error);
       throw error;
     }
   }

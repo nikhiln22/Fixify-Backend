@@ -33,6 +33,7 @@ import { ICouponRepository } from "../interfaces/Irepositories/IcouponRepository
 import { INotificationService } from "../interfaces/Iservices/InotificationService";
 import { ISubscriptionPlanHistoryRepository } from "../interfaces/Irepositories/IsubscriptionPlanHistoryRepository";
 import { ISubscriptionPlanRepository } from "../interfaces/Irepositories/IsubscriptionPlanRepository";
+import { IBookingDetails } from "../interfaces/DTO/IServices/IbookingService";
 
 @injectable()
 export class BookingService implements IBookingService {
@@ -761,7 +762,7 @@ export class BookingService implements IBookingService {
 
       const booking = (await this._bookingRepository.getBookingDetailsById(
         bookingId
-      )) as any;
+      )) as IBookingDetails | null;
 
       console.log("fetched booking:", booking);
 
@@ -819,8 +820,7 @@ export class BookingService implements IBookingService {
       console.log("OTP stored in Redis with key:", redisKey);
 
       const emailData = {
-        customerName:
-          booking.userId?.username || booking.userId?.name || "Customer",
+        customerName: booking.userId?.username,
         serviceName: booking.serviceId?.name || "Service",
         technicianName:
           booking.technicianId?.username ||
@@ -869,6 +869,7 @@ export class BookingService implements IBookingService {
   ): Promise<{
     success: boolean;
     message: string;
+    data?: { booking: IBookingDetails };
   }> {
     try {
       console.log("BookingService: Verifying completion OTP");
@@ -982,6 +983,18 @@ export class BookingService implements IBookingService {
       );
       await this._redisService.delete(redisKey);
 
+      const completedBooking =
+        (await this._bookingRepository.getBookingDetailsById(
+          bookingId
+        )) as IBookingDetails | null;
+
+      if (!completedBooking) {
+        return {
+          message: "booking not found",
+          success: false,
+        };
+      }
+
       console.log(
         `Booking ${bookingId} completed successfully by technician ${technicianId}. Payment will be processed according to subscription plan.`
       );
@@ -990,6 +1003,7 @@ export class BookingService implements IBookingService {
         success: true,
         message:
           "Service completed successfully. Payment will be credited according to your subscription plan.",
+        data: { booking: completedBooking },
       };
     } catch (error) {
       console.error("Error in verifyCompletionOtp:", error);

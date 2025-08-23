@@ -15,6 +15,7 @@ import {
 import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
 import { INotificationService } from "../interfaces/Iservices/InotificationService";
 import config from "../config/env";
+import { ISocketNotificationData } from "../interfaces/DTO/IServices/InotificationService";
 
 @injectable()
 export class TechnicianController implements ITechnicianController {
@@ -191,17 +192,19 @@ export class TechnicianController implements ITechnicianController {
           )
         );
       } else {
-        const statusCode = serviceResponse.message?.includes("not found")
+        const statusCode = serviceResponse.message?.includes(
+          "Technician not found"
+        )
           ? HTTP_STATUS.NOT_FOUND
-          : serviceResponse.message?.includes("invalid password")
+          : serviceResponse.message?.includes("Invalid password")
           ? HTTP_STATUS.UNAUTHORIZED
-          : serviceResponse.message?.includes("blocked")
+          : serviceResponse.message?.includes("Blocked")
           ? HTTP_STATUS.FORBIDDEN
           : HTTP_STATUS.BAD_REQUEST;
 
         res
           .status(statusCode)
-          .json(createErrorResponse(serviceResponse.message || "Login failed"));
+          .json(createErrorResponse(serviceResponse.message));
       }
     } catch (error) {
       console.log("error:", error);
@@ -338,10 +341,7 @@ export class TechnicianController implements ITechnicianController {
         );
 
       if (serviceResponse.success) {
-        console.log(
-          "EMITTING NOTIFICATION TO ADMIN:",
-          serviceResponse.adminId
-        );
+        console.log("EMITTING NOTIFICATION TO ADMIN:", serviceResponse.adminId);
         console.log("Room name:", `admin_${serviceResponse.adminId}`);
         req.io
           ?.to(`admin_${serviceResponse.adminId}`)
@@ -349,7 +349,7 @@ export class TechnicianController implements ITechnicianController {
             title: "New Application",
             message: "Technician application ready for review",
           });
-          console.log("✅ Notification emitted successfully");
+        console.log("✅ Notification emitted successfully");
         res
           .status(HTTP_STATUS.OK)
           .json(
@@ -418,6 +418,76 @@ export class TechnicianController implements ITechnicianController {
         .json(createErrorResponse("Internal Server Error"));
     }
   }
+
+  // async editProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
+  //   try {
+  //     console.log(
+  //       "entering to the technician controller that edits the technician profile"
+  //     );
+  //     const techncianId = req.user?.id;
+  //     console.log("technicianID in the edit profile:", techncianId);
+  //     if (!techncianId) {
+  //       res
+  //         .status(HTTP_STATUS.UNAUTHORIZED)
+  //         .json(createErrorResponse("Unauthorized access"));
+  //       return;
+  //     }
+
+  //     const profileUpdateData = {
+  //       username: req.body.name,
+  //       phone: req.body.phone,
+  //       about: req.body.about,
+  //       experience: req.body.experience,
+  //       image: req.file?.path as string | undefined,
+  //       certificate: req.file?.path as string | undefined,
+  //     };
+
+  //     console.log(
+  //       "profile update data in the edit technician profile in the technician controller:",
+  //       profileUpdateData
+  //     );
+
+  //     const serviceResponse = await this._technicianService.updateProfile(
+  //       techncianId,
+  //       profileUpdateData
+  //     );
+
+  //     console.log(
+  //       "serverResponse in the technician controller in edit profile:",
+  //       serviceResponse
+  //     );
+
+  //     if (serviceResponse.success) {
+  //       res
+  //         .status(HTTP_STATUS.OK)
+  //         .json(
+  //           createSuccessResponse(
+  //             serviceResponse.technician,
+  //             serviceResponse.message
+  //           )
+  //         );
+  //     } else {
+  //       const statusCode = serviceResponse.message?.includes("not found")
+  //         ? HTTP_STATUS.NOT_FOUND
+  //         : HTTP_STATUS.BAD_REQUEST;
+  //       res
+  //         .status(statusCode)
+  //         .json(
+  //           createErrorResponse(
+  //             serviceResponse.message || "Failed to update profile"
+  //           )
+  //         );
+  //     }
+  //   } catch (error) {
+  //     console.log(
+  //       "Error in editProfile function in the technician controller:",
+  //       error
+  //     );
+  //     res
+  //       .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+  //       .json(createErrorResponse("Internal Server Error"));
+  //   }
+  // }
 
   async getJobDesignations(req: Request, res: Response): Promise<void> {
     try {
@@ -898,9 +968,94 @@ export class TechnicianController implements ITechnicianController {
       );
 
       if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(createSuccessResponse(serviceResponse.message));
+        try {
+          const booking = serviceResponse.data?.booking;
+          const userId =
+            booking?.userId?._id?.toString() || booking?.userId?.toString();
+          const paymentDetails = booking?.paymentId;
+          const technicianShare = paymentDetails?.technicianShare;
+          const creditReleaseDate = paymentDetails?.creditReleaseDate;
+
+          if (userId) {
+            const userNotification =
+              await this._notificationService.createNotification({
+                recipientId: userId,
+                recipientType: "user",
+                title: "Service Completed",
+                message: `Your service for booking #${bookingId
+                  .slice(-8)
+                  .toUpperCase()} has been completed successfully. Please rate your experience.`,
+                type: "service_completed",
+              });
+
+            const userSocketData: ISocketNotificationData = {
+              id: userNotification._id.toString(),
+              title: userNotification.title,
+              message: userNotification.message,
+              type: userNotification.type,
+              createdAt: userNotification.createdAt!,
+              recipientId: userNotification.recipientId.toString(),
+              recipientType: userNotification.recipientType,
+              isRead: false,
+            };
+
+            req.io
+              ?.to(`user_${userId}`)
+              .emit("new_notification", userSocketData);
+            console.log(
+              `Service completion notification sent to user ${userId}`
+            );
+          }
+
+          let technicianMessage = `You have successfully completed booking #${bookingId
+            .slice(-8)
+            .toUpperCase()}.`;
+
+          if (technicianShare && creditReleaseDate) {
+            const releaseDate = new Date(creditReleaseDate);
+            const formattedDate = releaseDate.toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            });
+
+            technicianMessage += ` Your payment of ₹${technicianShare} will be credited to your wallet on ${formattedDate}.`;
+            const technicianNotification =
+              await this._notificationService.createNotification({
+                recipientId: technicianId,
+                recipientType: "technician",
+                title: "Service Completed - Payment Scheduled",
+                message: technicianMessage,
+                type: "service_completed_payment",
+              });
+
+            const technicianSocketData: ISocketNotificationData = {
+              id: technicianNotification._id.toString(),
+              title: technicianNotification.title,
+              message: technicianNotification.message,
+              type: technicianNotification.type,
+              createdAt: technicianNotification.createdAt!,
+              recipientId: technicianNotification.recipientId.toString(),
+              recipientType: technicianNotification.recipientType,
+              isRead: false,
+            };
+
+            req.io
+              ?.to(`technician_${technicianId}`)
+              .emit("new_notification", technicianSocketData);
+            console.log(
+              `Service completion and payment schedule notification sent to technician ${technicianId}`
+            );
+            res
+              .status(HTTP_STATUS.OK)
+              .json(createSuccessResponse(serviceResponse.message));
+          }
+        } catch (notificationError) {
+          console.log(
+            "Failed to send service completion notifications:",
+            notificationError
+          );
+        }
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
           ? HTTP_STATUS.NOT_FOUND
@@ -1070,6 +1225,77 @@ export class TechnicianController implements ITechnicianController {
       );
 
       if (serviceResponse.success) {
+        try {
+          const booking = serviceResponse.data?.booking;
+          const userId =
+            booking?.userId?._id?.toString() || booking?.userId?.toString();
+
+          if (userId) {
+            const userNotification =
+              await this._notificationService.createNotification({
+                recipientId: userId,
+                recipientType: "user",
+                title: "Booking Cancelled by Technician",
+                message: `Your booking #${bookingId
+                  .slice(-8)
+                  .toUpperCase()} has been cancelled by the technician. You will receive a full refund. Reason: ${cancellationReason}`,
+                type: "booking_cancelled",
+              });
+
+            const userSocketData: ISocketNotificationData = {
+              id: userNotification._id.toString(),
+              title: userNotification.title,
+              message: userNotification.message,
+              type: userNotification.type,
+              createdAt: userNotification.createdAt!,
+              recipientId: userNotification.recipientId.toString(),
+              recipientType: userNotification.recipientType,
+              isRead: false,
+            };
+
+            req.io
+              ?.to(`user_${userId}`)
+              .emit("new_notification", userSocketData);
+            console.log(
+              `Technician cancellation notification sent to user ${userId}`
+            );
+          }
+
+          const technicianNotification =
+            await this._notificationService.createNotification({
+              recipientId: technicianId,
+              recipientType: "technician",
+              title: "Booking Cancelled Successfully",
+              message: `You have successfully cancelled booking #${bookingId
+                .slice(-8)
+                .toUpperCase()}.`,
+              type: "booking_cancelled",
+            });
+
+          const technicianSocketData: ISocketNotificationData = {
+            id: technicianNotification._id.toString(),
+            title: technicianNotification.title,
+            message: technicianNotification.message,
+            type: technicianNotification.type,
+            createdAt: technicianNotification.createdAt!,
+            recipientId: technicianNotification.recipientId.toString(),
+            recipientType: technicianNotification.recipientType,
+            isRead: false,
+          };
+
+          req.io
+            ?.to(`technician_${technicianId}`)
+            .emit("new_notification", technicianSocketData);
+          console.log(
+            `Cancellation confirmation notification sent to technician ${technicianId}`
+          );
+        } catch (notificationError) {
+          console.log(
+            "Failed to send technician cancellation notifications:",
+            notificationError
+          );
+        }
+
         res
           .status(HTTP_STATUS.OK)
           .json(
@@ -1455,7 +1681,7 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async getNotifications(
+  async getAllUnReadNotifications(
     req: AuthenticatedRequest,
     res: Response
   ): Promise<void> {
@@ -1473,7 +1699,7 @@ export class TechnicianController implements ITechnicianController {
       }
 
       const notifications =
-        await this._notificationService.getNotificationsByUser(
+        await this._notificationService.getUnReadNotificationsByUser(
           technicianId,
           "technician"
         );
@@ -1494,41 +1720,6 @@ export class TechnicianController implements ITechnicianController {
     }
   }
 
-  async getUnreadNotificationCount(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
-    try {
-      const technicianId = req.user?.id;
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("technician not authenticated"));
-        return;
-      }
-
-      const unreadCount = await this._notificationService.getUnreadCount(
-        technicianId,
-        "technician"
-      );
-
-      res
-        .status(HTTP_STATUS.OK)
-        .json(
-          createSuccessResponse(
-            { unreadCount },
-            "Unread count fetched successfully"
-          )
-        );
-    } catch (error) {
-      console.log("error occured while fetching unread notifications:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
   async markNotificationRead(
     req: AuthenticatedRequest,
     res: Response
@@ -1536,6 +1727,11 @@ export class TechnicianController implements ITechnicianController {
     try {
       const technicianId = req.user?.id;
       const { notificationId } = req.params;
+
+      console.log(
+        "notificationId in the technician controller:",
+        notificationId
+      );
 
       if (!technicianId) {
         res

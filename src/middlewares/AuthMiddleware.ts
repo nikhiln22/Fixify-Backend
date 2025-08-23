@@ -44,6 +44,7 @@ export class AuthMiddleware {
     return header.split(" ")[1];
   }
 
+
   authenticate(role: Roles) {
     return (req: Request, res: Response, next: NextFunction) => {
       const token = this.getToken(req);
@@ -79,26 +80,70 @@ export class AuthMiddleware {
     };
   }
 
-  private async checkUserStatus(userId: string, role: Roles): Promise<boolean> {
+  // Level 2: Check if account is blocked (for profile access)
+  private async checkAccountBlocked(
+    userId: string,
+    role: Roles
+  ): Promise<boolean> {
     try {
       if (role === Roles.USER) {
-        console.log(`checking user status for ID: ${userId}`);
+        console.log(`checking user account blocked status for ID: ${userId}`);
         const user = await this.userRepository.findById(userId);
         if (!user) {
           console.log("User not found");
           return false;
         }
-
+        // For users: only allow if status is Active
         return user.status === "Active";
       } else if (role === Roles.TECHNICIAN) {
-        console.log(`checking technician status for ID: ${userId}`);
+        console.log(
+          `checking technician account blocked status for ID: ${userId}`
+        );
         const technicianResult =
           await this.technicianRepository.getTechnicianById(userId);
         if (!technicianResult) {
           console.log("Technician not found");
           return false;
         }
+        // For technicians: allow unless explicitly blocked
+        // Allow: undefined status, "Pending", "Active"
+        // Block: "Blocked"
+        return technicianResult.status !== "Blocked";
+      } else {
+        console.log("Invalid role provided");
+        return false;
+      }
+    } catch (error) {
+      console.log(
+        "Error occurred while checking account blocked status:",
+        error
+      );
+      return false;
+    }
+  }
 
+ 
+  private async checkFullVerification(
+    userId: string,
+    role: Roles
+  ): Promise<boolean> {
+    try {
+      if (role === Roles.USER) {
+        console.log(`checking user full verification for ID: ${userId}`);
+        const user = await this.userRepository.findById(userId);
+        if (!user) {
+          console.log("User not found");
+          return false;
+        }
+        return user.status === "Active";
+      } else if (role === Roles.TECHNICIAN) {
+        console.log(`checking technician full verification for ID: ${userId}`);
+        const technicianResult =
+          await this.technicianRepository.getTechnicianById(userId);
+        if (!technicianResult) {
+          console.log("Technician not found");
+          return false;
+        }
         return (
           technicianResult.is_verified === true &&
           technicianResult.status === "Active"
@@ -108,40 +153,59 @@ export class AuthMiddleware {
         return false;
       }
     } catch (error) {
-      console.log("Error occurred while checking the user status:", error);
+      console.log("Error occurred while checking full verification:", error);
       return false;
     }
   }
 
-  checkStatus(role: Roles) {
+
+  authenticateAndCheckBlocked(role: Roles) {
     return async (req: Request, res: Response, next: NextFunction) => {
-      const authenticatedReq = req as AuthenticatedRequest;
-      const userId = authenticatedReq.user?.id;
-
-      if (!userId) {
+      const token = this.getToken(req);
+      if (!token) {
         res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json({ message: "User ID is required - please authenticate first" });
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json({ message: "No token provided" });
         return;
       }
 
-      const isActive = await this.checkUserStatus(userId, role);
+      try {
+        const payload = this.jwtService.verifyAccessToken(token) as JwtPayload;
+        if (!payload || payload.role !== role) {
+          res
+            .status(HTTP_STATUS.UNAUTHORIZED)
+            .json({ message: "Access denied: invalid role" });
+          return;
+        }
 
-      if (!isActive) {
-        res.clearCookie(`refresh_token`, {
-          httpOnly: true,
-          secure: true,
-          sameSite: "strict",
-        });
+        (req as AuthenticatedRequest).user = {
+          id: payload.Id,
+          role: payload.role,
+        };
 
-        res.status(HTTP_STATUS.FORBIDDEN).json({
-          message: "Account has been suspended. Please contact support.",
-          accountBlocked: true,
-        });
+        const isNotBlocked = await this.checkAccountBlocked(payload.Id, role);
+        if (!isNotBlocked) {
+          res.clearCookie(`refresh_token`, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+          });
+
+          res.status(HTTP_STATUS.FORBIDDEN).json({
+            message: "Account has been suspended. Please contact support.",
+            accountBlocked: true,
+          });
+          return;
+        }
+
+        next();
+      } catch (error) {
+        console.log("error occured while validating token:", error);
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json({ message: "Invalid or expired token" });
         return;
       }
-
-      next();
     };
   }
 
@@ -169,8 +233,11 @@ export class AuthMiddleware {
           role: payload.role,
         };
 
-        const isActive = await this.checkUserStatus(payload.Id, role);
-        if (!isActive) {
+        const isFullyVerified = await this.checkFullVerification(
+          payload.Id,
+          role
+        );
+        if (!isFullyVerified) {
           res.clearCookie(`refresh_token`, {
             httpOnly: true,
             secure: true,
@@ -178,7 +245,7 @@ export class AuthMiddleware {
           });
 
           res.status(HTTP_STATUS.FORBIDDEN).json({
-            message: "Account has been suspended. Please contact support.",
+            message: "Account verification required or account suspended.",
             accountBlocked: true,
           });
           return;
@@ -192,6 +259,39 @@ export class AuthMiddleware {
           .json({ message: "Invalid or expired token" });
         return;
       }
+    };
+  }
+
+
+  checkStatus(role: Roles) {
+    return async (req: Request, res: Response, next: NextFunction) => {
+      const authenticatedReq = req as AuthenticatedRequest;
+      const userId = authenticatedReq.user?.id;
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json({ message: "User ID is required - please authenticate first" });
+        return;
+      }
+
+      const isFullyVerified = await this.checkFullVerification(userId, role);
+
+      if (!isFullyVerified) {
+        res.clearCookie(`refresh_token`, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "strict",
+        });
+
+        res.status(HTTP_STATUS.FORBIDDEN).json({
+          message: "Account verification required or account suspended.",
+          accountBlocked: true,
+        });
+        return;
+      }
+
+      next();
     };
   }
 }
