@@ -12,7 +12,7 @@ export class LocalUpload {
     if (!fs.existsSync(this.uploadPath)) {
       fs.mkdirSync(this.uploadPath, { recursive: true });
     }
-    
+
     const storage = multer.diskStorage({
       destination: (req, file, cb) => {
         cb(null, this.uploadPath);
@@ -22,13 +22,12 @@ export class LocalUpload {
         cb(null, uniqueName);
       },
     });
-    
+
     this.upload = multer({ storage });
-    
-    
+
     this.technicianQualificationUpload = this.upload.fields([
-      { name: 'profilePhoto', maxCount: 1 },
-      { name: 'certificates', maxCount: 5 }
+      { name: "profilePhoto", maxCount: 1 },
+      { name: "certificates", maxCount: 5 },
     ]);
   }
 }

@@ -44,7 +44,6 @@ export class AuthMiddleware {
     return header.split(" ")[1];
   }
 
-
   authenticate(role: Roles) {
     return (req: Request, res: Response, next: NextFunction) => {
       const token = this.getToken(req);
@@ -80,7 +79,6 @@ export class AuthMiddleware {
     };
   }
 
-  // Level 2: Check if account is blocked (for profile access)
   private async checkAccountBlocked(
     userId: string,
     role: Roles
@@ -105,9 +103,6 @@ export class AuthMiddleware {
           console.log("Technician not found");
           return false;
         }
-        // For technicians: allow unless explicitly blocked
-        // Allow: undefined status, "Pending", "Active"
-        // Block: "Blocked"
         return technicianResult.status !== "Blocked";
       } else {
         console.log("Invalid role provided");
@@ -122,7 +117,6 @@ export class AuthMiddleware {
     }
   }
 
- 
   private async checkFullVerification(
     userId: string,
     role: Roles
@@ -157,7 +151,6 @@ export class AuthMiddleware {
       return false;
     }
   }
-
 
   authenticateAndCheckBlocked(role: Roles) {
     return async (req: Request, res: Response, next: NextFunction) => {
@@ -261,7 +254,6 @@ export class AuthMiddleware {
       }
     };
   }
-
 
   checkStatus(role: Roles) {
     return async (req: Request, res: Response, next: NextFunction) => {
