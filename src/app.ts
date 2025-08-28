@@ -29,7 +29,11 @@ export class App {
     this.app.use(LoggerMiddleware.getMiddleware());
 
     const corsOptions = {
-      origin: config.CLIENT_URL,
+      origin: [
+        config.CLIENT_URL,
+        "https://fixify.homes",
+        "https://www.fixify.homes",
+      ],
       methods: "GET,POST,PUT,DELETE,PATCH",
       credentials: true,
       allowedHeaders: "Content-Type,Authorization",
