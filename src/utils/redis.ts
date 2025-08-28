@@ -1,4 +1,4 @@
-import Redis, { RedisOptions } from "ioredis";
+import Redis from "ioredis";
 import { IRedisService } from "../interfaces/Iredis/Iredis";
 import config from "../config/env";
 
@@ -8,18 +8,21 @@ export class RedisService implements IRedisService {
   constructor() {
     const needsTLS = config.REDIS_HOST.includes("redis-cloud.com");
 
-    const redisConfig: RedisOptions = {
-      host: config.REDIS_HOST,
-      port: config.REDIS_PORT,
-      password: config.REDIS_PASSWORD || undefined,
-      username: config.REDIS_USERNAME || undefined,
-    };
-
     if (needsTLS) {
-      redisConfig.tls = {};
+      const redisUrl = `redis://${config.REDIS_USERNAME}:${config.REDIS_PASSWORD}@${config.REDIS_HOST}:${config.REDIS_PORT}`;
+      this.client = new Redis(redisUrl, {
+        tls: {
+          rejectUnauthorized: false,
+        },
+        family: 4,
+      });
+    } else {
+      this.client = new Redis({
+        host: config.REDIS_HOST,
+        port: config.REDIS_PORT,
+        password: config.REDIS_PASSWORD || undefined,
+      });
     }
-
-    this.client = new Redis(redisConfig);
 
     this.client.on("error", (err) => {
       console.error("Redis connection error:", err);
