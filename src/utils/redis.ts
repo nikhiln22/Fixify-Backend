@@ -9,11 +9,11 @@ export class RedisService implements IRedisService {
     const needsTLS = config.REDIS_HOST.includes("redis-cloud.com");
 
     if (needsTLS) {
-      const redisUrl = `redis://${config.REDIS_USERNAME}:${config.REDIS_PASSWORD}@${config.REDIS_HOST}:${config.REDIS_PORT}`;
+      const redisUrl = `rediss://${config.REDIS_USERNAME}:${config.REDIS_PASSWORD}@${config.REDIS_HOST}:${config.REDIS_PORT}`;
       this.client = new Redis(redisUrl, {
         tls: {
           rejectUnauthorized: false,
-        },
+        },  
         family: 4,
       });
     } else {
