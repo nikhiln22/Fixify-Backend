@@ -4,7 +4,7 @@ dotenv.config();
 interface Config {
   PORT: number;
   CLIENT_URL: string;
-  MONGODB_URL: string;
+  MONGODB_URI: string;
   EMAIL_USER: string;
   EMAIL_PASS: string;
   JWT_SECRET: string;
@@ -15,6 +15,7 @@ interface Config {
   REDIS_HOST: string;
   REDIS_PORT: number;
   REDIS_PASSWORD: string | null;
+  REDIS_USERNAME: string | null;
   CLOUDINARY_CLOUD_NAME: string;
   CLOUDINARY_API_KEY: string;
   CLOUDINARY_API_SECRET: string;
@@ -26,7 +27,7 @@ function validateEnvVars(): void {
   const requiredEnvVars = [
     "PORT",
     "CLIENT_URL",
-    "MONGODB_URL",
+    "MONGODB_URI",
     "EMAIL_USER",
     "EMAIL_PASS",
     "JWT_SECRET",
@@ -55,7 +56,7 @@ validateEnvVars();
 const config: Config = {
   PORT: Number(process.env.PORT) || 3000,
   CLIENT_URL: (process.env.CLIENT_URL as string) || "http://localhost:5173",
-  MONGODB_URL: process.env.MONGODB_URL as string,
+  MONGODB_URI: process.env.MONGODB_URI as string,
   EMAIL_USER: process.env.EMAIL_USER as string,
   EMAIL_PASS: process.env.EMAIL_PASS as string,
   JWT_SECRET: process.env.JWT_SECRET as string,
@@ -67,6 +68,7 @@ const config: Config = {
   REDIS_HOST: (process.env.REDIS_HOST as string) || "127.0.0.1",
   REDIS_PORT: Number(process.env.REDIS_PORT) || 6379,
   REDIS_PASSWORD: (process.env.REDIS_PASSWORD as string) || null,
+  REDIS_USERNAME: (process.env.REDIS_USERNAME as string) || "default",
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME as string,
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY as string,
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET as string,
