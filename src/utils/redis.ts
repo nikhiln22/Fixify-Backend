@@ -13,8 +13,10 @@ export class RedisService implements IRedisService {
       this.client = new Redis(redisUrl, {
         tls: {
           rejectUnauthorized: false,
-        },  
+          secureProtocol: "TLSv1_2_method",
+        },
         family: 4,
+        connectTimeout: 30000,
       });
     } else {
       this.client = new Redis({
