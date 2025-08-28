@@ -6,22 +6,21 @@ export class RedisService implements IRedisService {
   private client: Redis;
 
   constructor() {
-    const needsTLS = config.REDIS_HOST.includes("redis-cloud.com");
+    const isRedisCloud = config.REDIS_HOST.includes("redis-cloud.com");
 
-    if (needsTLS) {
-      const redisUrl = `rediss://${config.REDIS_USERNAME}:${config.REDIS_PASSWORD}@${config.REDIS_HOST}:${config.REDIS_PORT}`;
-      this.client = new Redis(redisUrl, {
-        tls: {
-          rejectUnauthorized: false,
-          secureProtocol: "TLSv1_2_method",
-        },
+    if (isRedisCloud) {
+      this.client = new Redis({
+        host: config.REDIS_HOST,
+        port: Number(config.REDIS_PORT),
+        username: config.REDIS_USERNAME || undefined,
+        password: config.REDIS_PASSWORD || undefined,
         family: 4,
-        connectTimeout: 30000,
+        connectTimeout: 10000,
       });
     } else {
       this.client = new Redis({
         host: config.REDIS_HOST,
-        port: config.REDIS_PORT,
+        port: Number(config.REDIS_PORT),
         password: config.REDIS_PASSWORD || undefined,
       });
     }
@@ -31,12 +30,12 @@ export class RedisService implements IRedisService {
     });
 
     this.client.on("connect", () => {
-      const redisType = needsTLS ? "Redis Cloud" : "Local Redis";
+      const redisType = isRedisCloud ? "Redis Cloud" : "Local Redis";
       console.log(`Connecting to ${redisType}...`);
     });
 
     this.client.on("ready", () => {
-      const redisType = needsTLS ? "Redis Cloud" : "Local Redis";
+      const redisType = isRedisCloud ? "Redis Cloud" : "Local Redis";
       console.log(`Connected to ${redisType} successfully`);
     });
   }
