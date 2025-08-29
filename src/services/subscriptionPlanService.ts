@@ -377,6 +377,14 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
 
       const amountInCents = Math.round(subscriptionPlan?.price * 100);
 
+      const getClientUrl = () => {
+        if (config.NODE_ENV === "production") {
+          return "https://fixify.homes";
+        } else {
+          return config.CLIENT_URL;
+        }
+      };
+
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
         mode: "payment",
@@ -402,8 +410,8 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
           durationInMonths: subscriptionPlan.durationInMonths.toString(),
           price: subscriptionPlan.price,
         },
-        success_url: `${config.CLIENT_URL}/technician/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${config.CLIENT_URL}/technician/subscription?cancelled=true`,
+        success_url: `${getClientUrl()}/technician/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${getClientUrl()}/technician/subscription?cancelled=true`,
       });
 
       if (!session.url) {
@@ -527,7 +535,6 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
         };
       }
 
-      // ✅ Case 1: Immediate Activation (no current expiry date)
       if (!currentActiveSubscription.expiryDate) {
         await this._subscriptionPlanHistoryRepository.updateSubscriptionHistory(
           technicianId,
@@ -573,9 +580,7 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
           },
         };
       }
-      // ✅ Case 2: Queued Purchase (current plan still active)
       else {
-        // Get the current active subscription plan details
         const currentActiveSubscriptionPlan =
           await this._subscriptionPlanRepository.findSubscriptionPlanById(
             currentActiveSubscription.subscriptionPlanId.toString()
@@ -588,7 +593,6 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
           };
         }
 
-        // Update current subscription with nextUpgrade info
         const updatedSubscription =
           await this._subscriptionPlanHistoryRepository.updateSubscriptionHistory(
             technicianId,

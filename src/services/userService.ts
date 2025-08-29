@@ -715,6 +715,14 @@ export class UserService implements IUserService {
 
       const amountInCents = Math.round(amount * 100);
 
+      const getClientUrl = () => {
+        if (config.NODE_ENV === "production") {
+          return "https://fixify.homes";
+        } else {
+          return config.CLIENT_URL;
+        }
+      };
+
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
         mode: "payment",
@@ -736,8 +744,8 @@ export class UserService implements IUserService {
           amount: amount.toString(),
           type: "wallet_topup",
         },
-        success_url: `${config.CLIENT_URL}/user/wallet?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${config.CLIENT_URL}/user/wallet-cancelled`,
+        success_url: `${getClientUrl()}/user/wallet?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${getClientUrl()}/user/wallet-cancelled`,
       });
 
       console.log("Stripe session created:", session.id);

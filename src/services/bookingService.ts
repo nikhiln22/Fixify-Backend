@@ -378,6 +378,14 @@ export class BookingService implements IBookingService {
       try {
         const amountInCents = Math.round(data.bookingAmount * 100);
 
+        const getClientUrl = () => {
+          if (config.NODE_ENV === "production") {
+            return "https://fixify.homes";
+          } else {
+            return config.CLIENT_URL;
+          }
+        };
+
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
           mode: "payment",
@@ -403,8 +411,8 @@ export class BookingService implements IBookingService {
             offerId: data.offerId || "",
             couponId: data.couponId || "",
           },
-          success_url: `${config.CLIENT_URL}/user/bookingsuccess?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${config.CLIENT_URL}/user/payment-cancelled`,
+          success_url: `${getClientUrl()}/user/bookingsuccess?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${getClientUrl()}/user/payment-cancelled`,
         });
 
         console.log("Session:", session);
