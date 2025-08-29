@@ -28,24 +28,37 @@ export class App {
   private setupMiddlewares(): void {
     this.app.use(LoggerMiddleware.getMiddleware());
 
-    const corsOptions = {
-      origin: [
-        config.CLIENT_URL,
-        "https://fixify.homes",
-        "https://www.fixify.homes",
-      ],
-      methods: ["GET,POST,PUT,DELETE,PATCH", "OPTIONS"],
-      credentials: true,
-      allowedHeaders: [
-        "Content-Type",
-        "Authorization",
-        "X-Requested-With",
-        "Accept",
-        "Origin",
-      ],
-      optionsSuccessStatus: 200,
-    };
-    this.app.use(cors(corsOptions));
+    this.app.use(
+      cors({
+        origin: (origin, callback) => {
+          const allowedOrigins = [
+            config.CLIENT_URL,
+            "https://fixify.homes",
+            "https://www.fixify.homes",
+          ];
+          console.log("CORS checking origin::", origin);
+          if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, origin);
+          } else {
+            console.log("CORS blocked origin::", origin);
+            callback(new Error("Not allowed by CORS"));
+          }
+        },
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        allowedHeaders: [
+          "Authorization",
+          "Content-Type",
+          "Access-Control-Allow-Headers",
+          "Origin",
+          "Accept",
+          "X-Requested-With",
+          "Access-Control-Request-Method",
+          "Access-Control-Request-Headers",
+        ],
+        exposedHeaders: ["Set-Cookie"],
+        credentials: true,
+      })
+    );
 
     this.app.use(express.json());
     this.app.use(cookieparser());
