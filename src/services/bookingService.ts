@@ -1068,6 +1068,12 @@ export class BookingService implements IBookingService {
       }
 
       const timeSlot = booking.timeSlotId as ITimeSlot;
+
+      console.log(
+        "timeSlot extracted from the booking details in the user cancelling the booking:",
+        timeSlot
+      );
+
       if (!timeSlot || !timeSlot.date || !timeSlot.startTime) {
         return {
           success: false,
@@ -1077,19 +1083,40 @@ export class BookingService implements IBookingService {
 
       const dateStr = timeSlot.date;
       const timeStr = timeSlot.startTime;
+
+      console.log("Raw date:", dateStr, "Raw time:", timeStr);
+
       const [day, month, year] = dateStr.split("-");
       const jsDateStr = `${month}/${day}/${year} ${timeStr}`;
       const scheduledDate = new Date(jsDateStr);
+
+      console.log("Parsed date string:", jsDateStr);
+      console.log("Scheduled date object:", scheduledDate);
+      console.log("Is valid date?", !isNaN(scheduledDate.getTime()));
+
       const now = new Date();
-      const hoursUntilService =
-        (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+      console.log("Current time:", now);
+
+      const timeDiffMs = scheduledDate.getTime() - now.getTime();
+      const hoursUntilService = timeDiffMs / (1000 * 60 * 60);
+
+      console.log("Time difference (ms):", timeDiffMs);
+      console.log("Hours until service:", hoursUntilService);
 
       let refundPercentage = 0;
       if (hoursUntilService >= 6) {
         refundPercentage = 100;
+        console.log("Refund case: >= 6 hours - 100%");
       } else if (hoursUntilService >= 2) {
         refundPercentage = 50;
+        console.log("Refund case: 2-6 hours - 50%");
+      } else {
+        refundPercentage = 0;
+        console.log("Refund case: < 2 hours - 0%");
       }
+
+      console.log("Final refund percentage:", refundPercentage);
 
       const refundAmount = (booking.bookingAmount * refundPercentage) / 100;
 

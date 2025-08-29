@@ -228,7 +228,7 @@ export class UserRepository
       console.log(
         "entered to the function that fetches the total number of the active users"
       );
-      const countActiveUsers = await this.countDocument({ status: true });
+      const countActiveUsers = await this.countDocument({ status: "Active" });
       return countActiveUsers;
     } catch (error) {
       console.log("error occured while fetching the active users:", error);
