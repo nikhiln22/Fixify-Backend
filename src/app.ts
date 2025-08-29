@@ -11,6 +11,7 @@ import { createServer, Server as HttpServer } from "http";
 import { initializeSocket } from "./utils/socket";
 import { Server as SocketIOServer } from "socket.io";
 import { AuthenticatedRequest } from "./middlewares/AuthMiddleware";
+import { Request, Response } from "express";
 
 export class App {
   public app: Express;
@@ -83,6 +84,9 @@ export class App {
     this.app.use("/api/admin", adminRoutes.getRouter());
     this.app.use("/api/technician", technicianRoutes.getRouter());
     this.app.use("/api", authRoutes.getRouter());
+    this.app.get("/health", (_req: Request, res: Response) => {
+      res.status(200).json({ message: "backend is running..." });
+    });
   }
 
   public getServer(): HttpServer {
