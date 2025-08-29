@@ -1,4 +1,3 @@
-// import { EmailType } from "../../config/emailConfig";
 import { BookingCompletionData } from "../../utils/emailTemplates";
 
 export interface IEmailService {
