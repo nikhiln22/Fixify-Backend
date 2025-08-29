@@ -378,10 +378,14 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
       const amountInCents = Math.round(subscriptionPlan?.price * 100);
 
       const getClientUrl = () => {
-        if (config.NODE_ENV === "production") {
-          return "https://fixify.homes";
-        } else {
-          return config.CLIENT_URL;
+        switch (config.NODE_ENV) {
+          case "production":
+            return config.CLIENT_URL || "https://www.fixify.homes";
+          case "staging":
+            return config.CLIENT_URL || "https://staging.fixify.homes";
+          case "development":
+          default:
+            return config.CLIENT_URL || "http://localhost:5173";
         }
       };
 
@@ -579,8 +583,7 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
             newHistoryEntry: createdSubscriptionHistory,
           },
         };
-      }
-      else {
+      } else {
         const currentActiveSubscriptionPlan =
           await this._subscriptionPlanRepository.findSubscriptionPlanById(
             currentActiveSubscription.subscriptionPlanId.toString()

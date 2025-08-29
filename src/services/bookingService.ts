@@ -379,10 +379,14 @@ export class BookingService implements IBookingService {
         const amountInCents = Math.round(data.bookingAmount * 100);
 
         const getClientUrl = () => {
-          if (config.NODE_ENV === "production") {
-            return "https://fixify.homes";
-          } else {
-            return config.CLIENT_URL;
+          switch (config.NODE_ENV) {
+            case "production":
+              return config.CLIENT_URL || "https://www.fixify.homes";
+            case "staging":
+              return config.CLIENT_URL || "https://staging.fixify.homes";
+            case "development":
+            default:
+              return config.CLIENT_URL || "http://localhost:5173";
           }
         };
 
