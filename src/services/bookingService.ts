@@ -20,7 +20,6 @@ import {
   OTP_PREFIX,
 } from "../config/otpConfig";
 import { IEmailService } from "../interfaces/Iemail/Iemail";
-import { EmailType, APP_NAME } from "../config/emailConfig";
 import { ITimeSlot } from "../interfaces/Models/ItimeSlot";
 import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
 import { IRating } from "../interfaces/Models/Irating";
@@ -746,11 +745,8 @@ export class BookingService implements IBookingService {
     message: string;
   }> {
     try {
-      console.log(
-        "entering the booking service function which generates the completion otp"
-      );
-      console.log("technicianId in the booking service:", technicianId);
-      console.log("bookingId in the booking service:", bookingId);
+      console.log("Entering booking completion OTP generation");
+      console.log("technicianId:", technicianId, "bookingId:", bookingId);
 
       if (!technicianId || !bookingId) {
         return {
@@ -819,38 +815,35 @@ export class BookingService implements IBookingService {
 
       console.log("OTP stored in Redis with key:", redisKey);
 
-      const emailData = {
-        customerName: booking.userId?.username,
+      const bookingData = {
+        customerName: booking.userId?.username || "Customer",
         serviceName: booking.serviceId?.name || "Service",
-        technicianName:
-          booking.technicianId?.username ||
-          booking.technicianId?.username ||
-          "Technician",
+        technicianName: booking.technicianId?.username || "Technician",
         otp: otp,
         bookingId: bookingId,
       };
 
-      const emailContent = this._emailService.generateEmailContent(
-        EmailType.BOOKING_COMPLETION_OTP,
-        emailData
-      );
-
-      await this._emailService.sendEmail({
-        to: booking.userId.email,
-        subject: `Service Completion Verification - ${APP_NAME}`,
-        html: emailContent.html,
-        text: emailContent.text,
-      });
-
-      console.log(
-        "Completion OTP email sent to customer:",
-        booking.userId.email
-      );
+      let emailSent = false;
+      try {
+        await this._emailService.sendBookingCompletionEmail(
+          booking.userId.email,
+          bookingData
+        );
+        emailSent = true;
+        console.log(
+          "Completion OTP email sent to customer:",
+          booking.userId.email
+        );
+      } catch (emailError) {
+        console.error("Error sending completion OTP email:", emailError);
+      }
 
       return {
         success: true,
         status: HTTP_STATUS.OK,
-        message: "Completion OTP generated and sent to customer successfully",
+        message: emailSent
+          ? "Completion OTP generated and sent to customer successfully"
+          : "Completion OTP generated but email notification failed. OTP is still valid.",
       };
     } catch (error) {
       console.error("Error in generateCompletionOtp:", error);

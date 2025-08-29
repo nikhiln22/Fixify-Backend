@@ -34,9 +34,16 @@ export class App {
         "https://fixify.homes",
         "https://www.fixify.homes",
       ],
-      methods: "GET,POST,PUT,DELETE,PATCH",
+      methods: ["GET,POST,PUT,DELETE,PATCH", "OPTIONS"],
       credentials: true,
-      allowedHeaders: "Content-Type,Authorization",
+      allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Accept",
+        "Origin",
+      ],
+      optionsSuccessStatus: 200,
     };
     this.app.use(cors(corsOptions));
 

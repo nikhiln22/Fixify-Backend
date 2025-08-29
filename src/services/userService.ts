@@ -59,6 +59,8 @@ export class UserService implements IUserService {
     return `${OTP_PREFIX}${purpose}:${email}`;
   }
 
+  private static readonly USER_EXPIRY_MS = 15 * 60 * 1000;
+
   private async generateAndSendOtp(
     email: string,
     purpose: OtpPurpose
@@ -134,7 +136,9 @@ export class UserService implements IUserService {
 
           console.log("generated the otp for the unverified users:", otp);
 
-          const newExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+          const newExpiresAt = new Date(
+            Date.now() + UserService.USER_EXPIRY_MS
+          );
 
           await this._userRepository.updateUserExpiry(email, newExpiresAt);
 
@@ -286,7 +290,7 @@ export class UserService implements IUserService {
         purpose = OtpPurpose.REGISTRATION;
         message = "OTP sent successfully for registration";
 
-        const newExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+        const newExpiresAt = new Date(Date.now() + UserService.USER_EXPIRY_MS);
         await this._userRepository.updateUserExpiry(data, newExpiresAt);
       } else {
         purpose = OtpPurpose.PASSWORD_RESET;
@@ -654,6 +658,13 @@ export class UserService implements IUserService {
       );
 
       console.log("updatedUser from the user repository:", updatedUser);
+
+      if (!updatedUser) {
+        return {
+          success: false,
+          message: "Failed to update the user",
+        };
+      }
 
       return {
         success: true,

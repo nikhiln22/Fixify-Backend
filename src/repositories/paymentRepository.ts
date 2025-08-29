@@ -5,7 +5,6 @@ import payment from "../models/paymentModel";
 import { IPayment } from "../interfaces/Models/Ipayment";
 import {
   CreatePaymentData,
-  EarningsAggregationResult,
   FormattedEarningsResult,
   ProjectedEarningsResult,
 } from "../interfaces/DTO/IRepository/IpayementRepository";
@@ -431,7 +430,7 @@ export class PaymentRepository
       revenue: number;
       jobsCount: number;
     }>
-  > { 
+  > {
     try {
       console.log(
         `Fetching service revenue breakdown for technician:`,

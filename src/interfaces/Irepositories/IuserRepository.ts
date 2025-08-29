@@ -29,7 +29,7 @@ export interface IUserRepository {
       phone?: string;
       profilePhoto?: string;
     }
-  ): Promise<IUser | undefined>;
+  ): Promise<IUser | null>;
 
   countActiveUsers(): Promise<number>;
 }

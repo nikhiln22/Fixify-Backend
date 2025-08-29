@@ -200,7 +200,7 @@ export class UserRepository
       phone?: string;
       image?: string;
     }
-  ): Promise<IUser | undefined> {
+  ): Promise<IUser | null> {
     try {
       console.log("editing user profile in repository for ID:", userId);
       console.log("Profile data:", profileData);
@@ -216,14 +216,7 @@ export class UserRepository
         }
       );
 
-      if (updatedUser) {
-        const { password, ...safeUser } = updatedUser.toObject
-          ? updatedUser.toObject()
-          : updatedUser;
-        return safeUser as IUser;
-      } else {
-        return undefined;
-      }
+      return updatedUser;
     } catch (error) {
       console.log("Error occurred while updating user profile:", error);
       throw new Error("An error occurred while updating the user profile");

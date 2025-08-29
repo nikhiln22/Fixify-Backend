@@ -35,7 +35,7 @@ class LoggerMiddleware {
   public getCleanMiddleware(): RequestHandler {
     return morgan("dev", {
       stream: this.stream,
-      skip: (req, res) => {
+      skip: (req) => {
         return (
           req.url.includes(".css") ||
           req.url.includes(".js") ||

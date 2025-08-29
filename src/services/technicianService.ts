@@ -4,7 +4,6 @@ import {
   OTP_EXPIRY_SECONDS,
   OTP_PREFIX,
 } from "../config/otpConfig";
-import { EmailType, APP_NAME } from "../config/emailConfig";
 import {
   ForgotPasswordRequest,
   ForgotPasswordResponse,
@@ -785,40 +784,32 @@ export class TechnicianService implements ITechnicianService {
       const technician = await this._technicianRepository.getTechnicianById(
         technicianId
       );
-
       if (!technician) {
-        return {
-          success: false,
-          message: "Technician not found",
-        };
+        return { success: false, message: "Technician not found" };
       }
 
       const subscriptionPlan =
         await this._subsciptionPlanRepository.findByPlanName("Basic");
-
       if (!subscriptionPlan) {
-        return {
-          success: false,
-          message: "Basic subscription plan not found",
-        };
+        return { success: false, message: "Basic subscription plan not found" };
       }
 
       const subscriptionHistoryData = {
         technicianId: technician._id.toString(),
-        subscriptionPlanId: subscriptionPlan?._id.toString(),
+        subscriptionPlanId: subscriptionPlan._id.toString(),
         amount: 0,
         status: "Active" as const,
       };
 
-      const subscriptionHistory =
-        await this._subscriptionPlanHistoryRepository.createHistory(
+      const [subscriptionHistory, newWallet] = await Promise.all([
+        this._subscriptionPlanHistoryRepository.createHistory(
           subscriptionHistoryData
-        );
-
-      const newWallet = await this._walletRepository.createWallet(
-        technician._id.toString(),
-        "technician"
-      );
+        ),
+        this._walletRepository.createWallet(
+          technician._id.toString(),
+          "technician"
+        ),
+      ]);
 
       if (!subscriptionHistory || !newWallet) {
         return {
@@ -827,35 +818,19 @@ export class TechnicianService implements ITechnicianService {
         };
       }
 
-      console.log("newly created wallet:", newWallet);
-
       const verificationResult =
         await this._technicianRepository.verifyTechnician(technicianId);
-
       if (!verificationResult.success) {
-        return {
-          success: false,
-          message: verificationResult.message,
-        };
+        return { success: false, message: verificationResult.message };
       }
 
+      let emailSent = false;
       try {
-        const emailData = {
-          technicianName: technician.username,
-        };
-
-        const emailContent = this._emailService.generateEmailContent(
-          EmailType.VERIFICATION_SUCCESS,
-          emailData
+        await this._emailService.sendTechnicianApprovalEmail(
+          technician.email,
+          technician.username
         );
-
-        await this._emailService.sendEmail({
-          to: technician.email,
-          subject: `Welcome to ${APP_NAME} - Application Approved!`,
-          html: emailContent.html,
-          text: emailContent.text,
-        });
-
+        emailSent = true;
         console.log("Verification success email sent to:", technician.email);
       } catch (emailError) {
         console.log("Error sending verification email:", emailError);
@@ -863,7 +838,9 @@ export class TechnicianService implements ITechnicianService {
 
       return {
         success: true,
-        message: "Technician verified successfully and notification email sent",
+        message: emailSent
+          ? "Technician verified successfully and notification email sent"
+          : "Technician verified successfully but email notification failed",
       };
     } catch (error) {
       console.log("Error during technician verification:", error);
@@ -884,43 +861,25 @@ export class TechnicianService implements ITechnicianService {
       const technician = await this._technicianRepository.getTechnicianById(
         technicianId
       );
-
       if (!technician) {
-        return {
-          success: false,
-          message: "Technician not found",
-        };
+        return { success: false, message: "Technician not found" };
       }
 
       const rejectionResult = await this._technicianRepository.rejectTechnician(
         technicianId
       );
-
       if (!rejectionResult.success) {
-        return {
-          success: false,
-          message: rejectionResult.message,
-        };
+        return { success: false, message: rejectionResult.message };
       }
 
+      let emailSent = false;
       try {
-        const emailData = {
-          technicianName: technician.username,
-          reason: reason || "Application did not meet our current requirements",
-        };
-
-        const emailContent = this._emailService.generateEmailContent(
-          EmailType.APPLICATION_REJECTED,
-          emailData
+        await this._emailService.sendTechnicianRejectionEmail(
+          technician.email,
+          technician.username,
+          reason || "Application did not meet our current requirements"
         );
-
-        await this._emailService.sendEmail({
-          to: technician.email,
-          subject: `${APP_NAME} - Application Update`,
-          html: emailContent.html,
-          text: emailContent.text,
-        });
-
+        emailSent = true;
         console.log("Rejection email sent to:", technician.email);
       } catch (emailError) {
         console.log("Error sending rejection email:", emailError);
@@ -928,8 +887,9 @@ export class TechnicianService implements ITechnicianService {
 
       return {
         success: true,
-        message:
-          "Technician application rejected successfully and notification email sent",
+        message: emailSent
+          ? "Technician application rejected successfully and notification email sent"
+          : "Technician application rejected successfully but email notification failed",
       };
     } catch (error) {
       console.log("Error during technician rejection:", error);
