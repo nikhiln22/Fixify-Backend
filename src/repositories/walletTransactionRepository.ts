@@ -35,7 +35,7 @@ export class WalletTransactionRepository
     page?: number;
     limit?: number;
     ownerId: string;
-    ownerType: "user" | "technician";
+    ownerType: string;
   }): Promise<{
     data: IWalletTransaction[];
     total: number;
@@ -50,28 +50,52 @@ export class WalletTransactionRepository
         options.ownerType
       );
 
-      const page = options.page || 1;
-      const limit = options.limit || 5;
+      const page = options.page;
+      const limit = options.limit;
 
       const filter: FilterQuery<IWalletTransaction> = {
         ownerId: new Types.ObjectId(options.ownerId),
         ownerType: options.ownerType,
       };
 
-      const result = (await this.find(filter, {
-        pagination: { page, limit },
-        sort: { createdAt: -1 },
-      })) as { data: IWalletTransaction[]; total: number };
+      if (limit !== undefined && page !== undefined) {
+        const result = (await this.find(filter, {
+          pagination: { page, limit },
+          sort: { createdAt: -1 },
+        })) as { data: IWalletTransaction[]; total: number };
 
-      console.log("Found", result.total, "transactions for", options.ownerType);
+        console.log(
+          "Found",
+          result.total,
+          "transactions for",
+          options.ownerType
+        );
 
-      return {
-        data: result.data,
-        total: result.total,
-        page,
-        limit,
-        pages: Math.ceil(result.total / limit),
-      };
+        return {
+          data: result.data,
+          total: result.total,
+          page,
+          limit,
+          pages: Math.ceil(result.total / limit),
+        };
+      } else {
+        const allWalletTransactions = (await this.find(filter, {
+          sort: { createdAt: -1 },
+        })) as IWalletTransaction[];
+        console.log(
+          "Found",
+          allWalletTransactions,
+          "transactions for",
+          options.ownerType
+        );
+        return {
+          data: allWalletTransactions,
+          total: allWalletTransactions.length,
+          page: 1,
+          limit: allWalletTransactions.length,
+          pages: 1,
+        };
+      }
     } catch (error) {
       console.log("error occurred while fetching wallet transactions:", error);
       throw new Error("Failed to fetch wallet transactions");

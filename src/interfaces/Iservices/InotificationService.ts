@@ -10,7 +10,7 @@ export interface INotificationService {
   }): Promise<INotification>;
   getUnReadNotificationsByUser(
     userId: string,
-    userType: "user" | "admin" | "technician"
+    userType: string
   ): Promise<INotification[]>;
   markNotificationAsRead(notificationId: string): Promise<INotification | null>;
 }

@@ -44,7 +44,7 @@ export class AuthMiddleware {
     return header.split(" ")[1];
   }
 
-  authenticate(role: Roles) {
+  authenticate(...roles: Roles[]) {
     return (req: Request, res: Response, next: NextFunction) => {
       const token = this.getToken(req);
       if (!token) {
@@ -56,7 +56,7 @@ export class AuthMiddleware {
 
       try {
         const payload = this.jwtService.verifyAccessToken(token) as JwtPayload;
-        if (!payload || payload.role !== role) {
+        if (!payload || !roles.includes(payload.role)) {
           res
             .status(HTTP_STATUS.UNAUTHORIZED)
             .json({ message: "Access denied: invalid role" });
@@ -70,7 +70,7 @@ export class AuthMiddleware {
 
         next();
       } catch (error) {
-        console.log("error occured while authenticating user:", error);
+        console.log("error occurred while authenticating user:", error);
         res
           .status(HTTP_STATUS.UNAUTHORIZED)
           .json({ message: "Invalid or expired token" });
@@ -85,27 +85,15 @@ export class AuthMiddleware {
   ): Promise<boolean> {
     try {
       if (role === Roles.USER) {
-        console.log(`checking user account blocked status for ID: ${userId}`);
         const user = await this.userRepository.findById(userId);
-        if (!user) {
-          console.log("User not found");
-          return false;
-        }
-        // For users: only allow if status is Active
+        if (!user) return false;
         return user.status === "Active";
       } else if (role === Roles.TECHNICIAN) {
-        console.log(
-          `checking technician account blocked status for ID: ${userId}`
-        );
         const technicianResult =
           await this.technicianRepository.getTechnicianById(userId);
-        if (!technicianResult) {
-          console.log("Technician not found");
-          return false;
-        }
+        if (!technicianResult) return false;
         return technicianResult.status !== "Blocked";
       } else {
-        console.log("Invalid role provided");
         return false;
       }
     } catch (error) {
@@ -123,27 +111,18 @@ export class AuthMiddleware {
   ): Promise<boolean> {
     try {
       if (role === Roles.USER) {
-        console.log(`checking user full verification for ID: ${userId}`);
         const user = await this.userRepository.findById(userId);
-        if (!user) {
-          console.log("User not found");
-          return false;
-        }
+        if (!user) return false;
         return user.status === "Active";
       } else if (role === Roles.TECHNICIAN) {
-        console.log(`checking technician full verification for ID: ${userId}`);
         const technicianResult =
           await this.technicianRepository.getTechnicianById(userId);
-        if (!technicianResult) {
-          console.log("Technician not found");
-          return false;
-        }
+        if (!technicianResult) return false;
         return (
           technicianResult.is_verified === true &&
           technicianResult.status === "Active"
         );
       } else {
-        console.log("Invalid role provided");
         return false;
       }
     } catch (error) {
@@ -152,7 +131,7 @@ export class AuthMiddleware {
     }
   }
 
-  authenticateAndCheckBlocked(role: Roles) {
+  authenticateAndCheckBlocked(...roles: Roles[]) {
     return async (req: Request, res: Response, next: NextFunction) => {
       const token = this.getToken(req);
       if (!token) {
@@ -164,7 +143,7 @@ export class AuthMiddleware {
 
       try {
         const payload = this.jwtService.verifyAccessToken(token) as JwtPayload;
-        if (!payload || payload.role !== role) {
+        if (!payload || !roles.includes(payload.role)) {
           res
             .status(HTTP_STATUS.UNAUTHORIZED)
             .json({ message: "Access denied: invalid role" });
@@ -176,7 +155,10 @@ export class AuthMiddleware {
           role: payload.role,
         };
 
-        const isNotBlocked = await this.checkAccountBlocked(payload.Id, role);
+        const isNotBlocked = await this.checkAccountBlocked(
+          payload.Id,
+          payload.role
+        );
         if (!isNotBlocked) {
           res.clearCookie(`refresh_token`, {
             httpOnly: true,
@@ -193,7 +175,7 @@ export class AuthMiddleware {
 
         next();
       } catch (error) {
-        console.log("error occured while validating token:", error);
+        console.log("error occurred while validating token:", error);
         res
           .status(HTTP_STATUS.UNAUTHORIZED)
           .json({ message: "Invalid or expired token" });
@@ -202,7 +184,7 @@ export class AuthMiddleware {
     };
   }
 
-  authenticateAndCheckStatus(role: Roles) {
+  authenticateAndCheckStatus(...roles: Roles[]) {
     return async (req: Request, res: Response, next: NextFunction) => {
       const token = this.getToken(req);
       if (!token) {
@@ -214,7 +196,7 @@ export class AuthMiddleware {
 
       try {
         const payload = this.jwtService.verifyAccessToken(token) as JwtPayload;
-        if (!payload || payload.role !== role) {
+        if (!payload || !roles.includes(payload.role)) {
           res
             .status(HTTP_STATUS.UNAUTHORIZED)
             .json({ message: "Access denied: invalid role" });
@@ -228,7 +210,7 @@ export class AuthMiddleware {
 
         const isFullyVerified = await this.checkFullVerification(
           payload.Id,
-          role
+          payload.role
         );
         if (!isFullyVerified) {
           res.clearCookie(`refresh_token`, {
@@ -246,7 +228,7 @@ export class AuthMiddleware {
 
         next();
       } catch (error) {
-        console.log("error occured while validating token:", error);
+        console.log("error occurred while validating token:", error);
         res
           .status(HTTP_STATUS.UNAUTHORIZED)
           .json({ message: "Invalid or expired token" });
@@ -255,19 +237,30 @@ export class AuthMiddleware {
     };
   }
 
-  checkStatus(role: Roles) {
+  checkStatus(...roles: Roles[]) {
     return async (req: Request, res: Response, next: NextFunction) => {
       const authenticatedReq = req as AuthenticatedRequest;
       const userId = authenticatedReq.user?.id;
+      const userRole = authenticatedReq.user?.role;
 
-      if (!userId) {
+      if (!userId || !userRole) {
         res
           .status(HTTP_STATUS.BAD_REQUEST)
           .json({ message: "User ID is required - please authenticate first" });
         return;
       }
 
-      const isFullyVerified = await this.checkFullVerification(userId, role);
+      if (!roles.includes(userRole)) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json({ message: "Access denied: invalid role" });
+        return;
+      }
+
+      const isFullyVerified = await this.checkFullVerification(
+        userId,
+        userRole
+      );
 
       if (!isFullyVerified) {
         res.clearCookie(`refresh_token`, {

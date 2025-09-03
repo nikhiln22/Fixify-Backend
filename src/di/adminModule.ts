@@ -40,12 +40,6 @@ import { ISubscriptionPlanService } from "../interfaces/Iservices/IsubscriptionP
 import { SubscriptionPlanService } from "../services/subscriptionPlanService";
 import { ISubscriptionPlanRepository } from "../interfaces/Irepositories/IsubscriptionPlanRepository";
 import { SubscriptionPlanRepository } from "../repositories/subscriptionPlanRepository";
-import { IAdminController } from "../interfaces/Icontrollers/IadminController";
-import { AdminController } from "../controllers/adminController";
-import { IServiceController } from "../interfaces/Icontrollers/IserviceController";
-import { ServiceController } from "../controllers/serviceController";
-import { IJobController } from "../interfaces/Icontrollers/IjobController";
-import { JobController } from "../controllers/jobController";
 import { ISubscriptionPlanHistoryRepository } from "../interfaces/Irepositories/IsubscriptionPlanHistoryRepository";
 import { SubscriptionPlanHistoryRepository } from "../repositories/subscriptionPlanHistoryRepository";
 import { INotificationService } from "../interfaces/Iservices/InotificationService";
@@ -53,10 +47,6 @@ import { NotificationService } from "../services/notificationService";
 import { INotificationRepository } from "../interfaces/Irepositories/InotificationRepository";
 import { NotificationRepository } from "../repositories/notificationRepository";
 
-
-container.registerSingleton<IJobController>("IJobController",JobController)
-container.registerSingleton<IServiceController>("IServiceController",ServiceController)
-container.registerSingleton<IAdminController>("IAdminController",AdminController)
 container.registerSingleton<IAdminService>("IAdminService", AdminService);
 container.registerSingleton<IAdminRepository>("IAdminRepository", AdminRepository);
 container.registerSingleton<IPasswordHasher>("IPasswordHasher", PasswordHasher);

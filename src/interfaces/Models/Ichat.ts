@@ -6,7 +6,7 @@ export interface IChat extends Document {
   userId: Types.ObjectId;
   technicianId: Types.ObjectId;
   messageText: string;
-  senderType: "user" | "technician";
+  senderType: string;
   createdAt: Date;
   updatedAt: Date;
 }

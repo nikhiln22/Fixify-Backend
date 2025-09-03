@@ -1,37 +1,24 @@
-import { ITechnicianController } from "../interfaces/Icontrollers/ItechnicianController";
 import { ITechnicianService } from "../interfaces/Iservices/ItechnicianService";
-import { IJobsService } from "../interfaces/Iservices/IjobsService";
-import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
 import { IBookingService } from "../interfaces/Iservices/IbookingService";
-import { IChatService } from "../interfaces/Iservices/IchatService";
 import { ISubscriptionPlanService } from "../interfaces/Iservices/IsubscriptionPlanService";
 import {
   createErrorResponse,
   createSuccessResponse,
 } from "../utils/responseHelper";
 import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
-import { INotificationService } from "../interfaces/Iservices/InotificationService";
 import config from "../config/env";
-import { ISocketNotificationData } from "../interfaces/DTO/IServices/InotificationService";
 
 @injectable()
-export class TechnicianController implements ITechnicianController {
+export class TechnicianController {
   constructor(
     @inject("ITechnicianService")
     private _technicianService: ITechnicianService,
-    @inject("IJobsService")
-    private _jobsService: IJobsService,
-    @inject("ITimeSlotService")
-    private _timeSlotService: ITimeSlotService,
     @inject("IBookingService") private _bookingService: IBookingService,
-    @inject("IChatService") private _chatService: IChatService,
     @inject("ISubscriptionPlanService")
-    private _subscriptionPlanService: ISubscriptionPlanService,
-    @inject("INotificationService")
-    private _notificationService: INotificationService
+    private _subscriptionPlanService: ISubscriptionPlanService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {
@@ -349,7 +336,7 @@ export class TechnicianController implements ITechnicianController {
             title: "New Application",
             message: "Technician application ready for review",
           });
-        console.log("✅ Notification emitted successfully");
+        console.log("Notification emitted successfully");
         res
           .status(HTTP_STATUS.OK)
           .json(
@@ -488,1285 +475,6 @@ export class TechnicianController implements ITechnicianController {
   //       .json(createErrorResponse("Internal Server Error"));
   //   }
   // }
-
-  async getJobDesignations(req: Request, res: Response): Promise<void> {
-    try {
-      console.log(
-        "entering to the job designations fetching function from the technician controller"
-      );
-
-      const serviceResponse = await this._jobsService.getAllDesignations({});
-      console.log(
-        "response from the job designations controller:",
-        serviceResponse
-      );
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to fetch job designations"
-            )
-          );
-      }
-    } catch (error) {
-      console.log("error occurred:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal server error occurred"));
-    }
-  }
-
-  async addTimeSlots(req: AuthenticatedRequest, res: Response): Promise<void> {
-    try {
-      console.log(
-        "adding the time slots by the technician in time slot function"
-      );
-      const technicianId = req.user?.id;
-      const data = req.body;
-      console.log("data in the addtime slot controller:", data);
-      console.log("technicianId from the addtimeslot function:", technicianId);
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("Unauthorized access"));
-        return;
-      }
-
-      const serviceResponse = await this._timeSlotService.addTimeSlots(
-        technicianId,
-        data
-      );
-      console.log(
-        "response from the technician controller adding time Slots:",
-        serviceResponse
-      );
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.CREATED)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to add time slots"
-            )
-          );
-      }
-    } catch (error) {
-      console.log("error occurred while adding the time slots:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server error"));
-    }
-  }
-
-  async getTimeSlots(req: AuthenticatedRequest, res: Response): Promise<void> {
-    try {
-      console.log("fetching the added time slots for the technician");
-      const technicianId = req.user?.id;
-      const includePast = req.query.includePast === "true";
-      console.log(
-        "technicianId from the getTimeSlots function in technician controller:",
-        technicianId
-      );
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("Unauthorized access"));
-        return;
-      }
-
-      const serviceResponse = await this._timeSlotService.getTimeSlots(
-        technicianId,
-        includePast
-      );
-      console.log(
-        "response from the technician controller getting time slots:",
-        serviceResponse
-      );
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to fetch time slots"
-            )
-          );
-      }
-    } catch (error) {
-      console.log(
-        "error occurred while fetching the time slots for the controller:",
-        error
-      );
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server error"));
-    }
-  }
-
-  async blockTimeSlot(req: AuthenticatedRequest, res: Response): Promise<void> {
-    try {
-      console.log(
-        "entering the technician controller function that makes the released slots unavailable"
-      );
-      const technicianId = req.user?.id;
-      console.log(
-        "technicianId in the blocktime slots function:",
-        technicianId
-      );
-      const slotId = req.params.slotId;
-      console.log("slotId in the blocktime slots function:", slotId);
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("Unauthorized access"));
-        return;
-      }
-
-      const serviceResponse = await this._timeSlotService.blockTimeSlot(
-        technicianId,
-        slotId
-      );
-      console.log("response from the blockslotId Service:", serviceResponse);
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        const statusCode = serviceResponse.message?.includes("not found")
-          ? HTTP_STATUS.NOT_FOUND
-          : HTTP_STATUS.BAD_REQUEST;
-        res
-          .status(statusCode)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to block time slot"
-            )
-          );
-      }
-    } catch (error) {
-      console.log("error occurred while blocking the slots:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async getAllBookings(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
-    try {
-      console.log(
-        "entering to the technician controller which fetches all the bookings for the technician"
-      );
-      const page = parseInt(req.query.page as string) || undefined;
-      const limit = parseInt(req.query.limit as string) || undefined;
-      const search = (req.query.search as string) || undefined;
-      const filter = (req.query.filter as string) || undefined;
-
-      const technicianId = req.user?.id;
-      console.log(
-        "technicianId in the fetching booking in the technician controller:",
-        technicianId
-      );
-      console.log("filter in technician controller:", filter);
-
-      const serviceResponse = await this._bookingService.getAllBookings({
-        page,
-        limit,
-        technicianId,
-        search,
-        filter,
-        role: "technician",
-      });
-      console.log("result from the booking service:", serviceResponse);
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to fetch bookings"
-            )
-          );
-      }
-    } catch (error) {
-      console.error(
-        "Error in getAllBookings for technician controller:",
-        error
-      );
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Error fetching bookings"));
-    }
-  }
-
-  async getBookingDetails(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
-    try {
-      console.log("technician Controller: Getting booking details");
-
-      const technicianId = req.user?.id;
-      console.log(
-        "technicianId in the fetching booking details in the technician controller:",
-        technicianId
-      );
-      const { bookingId } = req.params;
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("technician not authenticated"));
-        return;
-      }
-
-      if (!bookingId) {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(createErrorResponse("Booking ID is required"));
-        return;
-      }
-
-      console.log(
-        "Fetching booking details for:",
-        bookingId,
-        "technician:",
-        technicianId
-      );
-
-      const serviceResponse = await this._bookingService.getBookingById(
-        bookingId,
-        {
-          technicianId: technicianId,
-        }
-      );
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        const statusCode = serviceResponse.message?.includes("not found")
-          ? HTTP_STATUS.NOT_FOUND
-          : HTTP_STATUS.BAD_REQUEST;
-        res
-          .status(statusCode)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to fetch booking details"
-            )
-          );
-      }
-    } catch (error) {
-      console.error("Error in getBookingDetails controller:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal server error"));
-    }
-  }
-
-  async getChatHistory(req: Request, res: Response): Promise<void> {
-    try {
-      console.log("Fetching chat history for booking");
-      const { bookingId } = req.params;
-
-      const serviceResponse = await this._chatService.getChatHistory(bookingId);
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to fetch chat history"
-            )
-          );
-      }
-    } catch (error) {
-      console.log("Error fetching chat history:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async sendChat(req: AuthenticatedRequest, res: Response): Promise<void> {
-    try {
-      console.log("Sending chat message to the user");
-      const technicianId = req.user?.id;
-      const { bookingId } = req.params;
-      const { messageText, userId } = req.body;
-      const io = req.io;
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("technician not authenticated"));
-        return;
-      }
-
-      const chatData = {
-        userId,
-        technicianId,
-        bookingId,
-        messageText,
-        senderType: "technician" as const,
-      };
-
-      const serviceResponse = await this._chatService.sendChat(chatData);
-
-      if (serviceResponse.success && io && serviceResponse.data) {
-        io.to(`booking_${bookingId}`).emit("new_message", serviceResponse.data);
-        console.log(`Message broadcasted to booking_${bookingId} room`);
-      }
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to send chat message"
-            )
-          );
-      }
-    } catch (error) {
-      console.log("Error sending chat:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async generateCompletionOtp(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
-    try {
-      console.log(
-        "entering to the technician controller function that generates the completion otp"
-      );
-      const technicianId = req.user?.id;
-      const bookingId = req.params.bookingId;
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("technician not authenticated"));
-        return;
-      }
-
-      const serviceResponse = await this._bookingService.generateCompletionOtp(
-        technicianId,
-        bookingId
-      );
-
-      console.log("response in the generate otp controller:", serviceResponse);
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(createSuccessResponse(serviceResponse.message));
-      } else {
-        const statusCode = serviceResponse.message?.includes("not found")
-          ? HTTP_STATUS.NOT_FOUND
-          : HTTP_STATUS.BAD_REQUEST;
-        res
-          .status(statusCode)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to generate completion OTP"
-            )
-          );
-      }
-    } catch (error) {
-      console.log("error occurred while generating the completion otp:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async verifyCompletionOtp(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
-    try {
-      console.log("entering the controller that verify the work completion");
-      const { otp } = req.body;
-      const { bookingId } = req.params;
-      const technicianId = req.user?.id;
-
-      console.log("bookingId and technicianId in the verify controller:", {
-        bookingId,
-        technicianId,
-      });
-
-      console.log("received data:", otp);
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("technician not authenticated"));
-        return;
-      }
-
-      const serviceResponse = await this._bookingService.verifyCompletionOtp(
-        technicianId,
-        bookingId,
-        otp
-      );
-      console.log(
-        "response after verifying the otp from the booking service:",
-        serviceResponse
-      );
-
-      if (serviceResponse.success) {
-        try {
-          const booking = serviceResponse.data?.booking;
-          const userId =
-            booking?.userId?._id?.toString() || booking?.userId?.toString();
-          const paymentDetails = booking?.paymentId;
-          const technicianShare = paymentDetails?.technicianShare;
-          const creditReleaseDate = paymentDetails?.creditReleaseDate;
-
-          if (userId) {
-            const userNotification =
-              await this._notificationService.createNotification({
-                recipientId: userId,
-                recipientType: "user",
-                title: "Service Completed",
-                message: `Your service for booking #${bookingId
-                  .slice(-8)
-                  .toUpperCase()} has been completed successfully. Please rate your experience.`,
-                type: "service_completed",
-              });
-
-            const userSocketData: ISocketNotificationData = {
-              id: userNotification._id.toString(),
-              title: userNotification.title,
-              message: userNotification.message,
-              type: userNotification.type,
-              createdAt: userNotification.createdAt!,
-              recipientId: userNotification.recipientId.toString(),
-              recipientType: userNotification.recipientType,
-              isRead: false,
-            };
-
-            req.io
-              ?.to(`user_${userId}`)
-              .emit("new_notification", userSocketData);
-            console.log(
-              `Service completion notification sent to user ${userId}`
-            );
-          }
-
-          let technicianMessage = `You have successfully completed booking #${bookingId
-            .slice(-8)
-            .toUpperCase()}.`;
-
-          if (technicianShare && creditReleaseDate) {
-            const releaseDate = new Date(creditReleaseDate);
-            const formattedDate = releaseDate.toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-            });
-
-            technicianMessage += ` Your payment of ₹${technicianShare} will be credited to your wallet on ${formattedDate}.`;
-            const technicianNotification =
-              await this._notificationService.createNotification({
-                recipientId: technicianId,
-                recipientType: "technician",
-                title: "Service Completed - Payment Scheduled",
-                message: technicianMessage,
-                type: "service_completed_payment",
-              });
-
-            const technicianSocketData: ISocketNotificationData = {
-              id: technicianNotification._id.toString(),
-              title: technicianNotification.title,
-              message: technicianNotification.message,
-              type: technicianNotification.type,
-              createdAt: technicianNotification.createdAt!,
-              recipientId: technicianNotification.recipientId.toString(),
-              recipientType: technicianNotification.recipientType,
-              isRead: false,
-            };
-
-            req.io
-              ?.to(`technician_${technicianId}`)
-              .emit("new_notification", technicianSocketData);
-            console.log(
-              `Service completion and payment schedule notification sent to technician ${technicianId}`
-            );
-            res
-              .status(HTTP_STATUS.OK)
-              .json(createSuccessResponse(serviceResponse.message));
-          }
-        } catch (notificationError) {
-          console.log(
-            "Failed to send service completion notifications:",
-            notificationError
-          );
-        }
-      } else {
-        const statusCode = serviceResponse.message?.includes("not found")
-          ? HTTP_STATUS.NOT_FOUND
-          : serviceResponse.message?.includes("Invalid OTP")
-          ? HTTP_STATUS.UNAUTHORIZED
-          : HTTP_STATUS.BAD_REQUEST;
-        res
-          .status(statusCode)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to verify completion OTP"
-            )
-          );
-      }
-    } catch (error) {
-      console.log("error occurred while verifying the completion otp:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async getWalletBalance(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
-    try {
-      console.log(
-        "fetching the wallet balance for the technician in the technician controller function"
-      );
-      const technicianId = req.user?.id;
-      console.log(
-        "technicianId in the getWalletBalance function in technician controller:",
-        technicianId
-      );
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("technician not authenticated"));
-        return;
-      }
-
-      const serviceResponse = await this._technicianService.getWalletBalance(
-        technicianId
-      );
-      console.log(
-        "response in the technician controller for fetching the technician wallet balance:",
-        serviceResponse
-      );
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to fetch wallet balance"
-            )
-          );
-      }
-    } catch (error) {
-      console.log(
-        "error occurred while fetching the technician wallet balance:",
-        error
-      );
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async getWalletTransactions(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
-    try {
-      console.log("fetching the wallet transactions by the technician:");
-      const page = parseInt(req.query.page as string) || undefined;
-      const limit = parseInt(req.query.limit as string) || undefined;
-      const technicianId = req.user?.id;
-      console.log(
-        "technicianId in the getwallet transactions in the technician controller:",
-        technicianId
-      );
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("technician not authenticated"));
-        return;
-      }
-
-      const serviceResponse =
-        await this._technicianService.getAllWalletTransactions({
-          page,
-          limit,
-          technicianId,
-        });
-
-      console.log("response in the getWalletTransactions:", serviceResponse);
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to fetch wallet transactions"
-            )
-          );
-      }
-    } catch (error) {
-      console.log(
-        "error occurred while fetching all the wallet transactions of the technician:",
-        error
-      );
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async cancelBooking(req: AuthenticatedRequest, res: Response): Promise<void> {
-    try {
-      console.log(
-        "technician controller which cancels the booking from the technician controller"
-      );
-      const technicianId = req.user?.id;
-      const { bookingId } = req.params;
-      const { cancellationReason } = req.body;
-      console.log(
-        "technicianId in the cancelbooking controller function:",
-        technicianId
-      );
-      console.log(
-        "bookingId in the cancelbooking controller function:",
-        bookingId
-      );
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("technician not authenticated"));
-        return;
-      }
-
-      const serviceResponse =
-        await this._bookingService.cancelBookingByTechnician(
-          technicianId,
-          bookingId,
-          cancellationReason
-        );
-      console.log(
-        "response from the booking service after technician is cancelling the booking:",
-        serviceResponse
-      );
-
-      if (serviceResponse.success) {
-        try {
-          const booking = serviceResponse.data?.booking;
-          const userId =
-            booking?.userId?._id?.toString() || booking?.userId?.toString();
-
-          if (userId) {
-            const userNotification =
-              await this._notificationService.createNotification({
-                recipientId: userId,
-                recipientType: "user",
-                title: "Booking Cancelled by Technician",
-                message: `Your booking #${bookingId
-                  .slice(-8)
-                  .toUpperCase()} has been cancelled by the technician. You will receive a full refund. Reason: ${cancellationReason}`,
-                type: "booking_cancelled",
-              });
-
-            const userSocketData: ISocketNotificationData = {
-              id: userNotification._id.toString(),
-              title: userNotification.title,
-              message: userNotification.message,
-              type: userNotification.type,
-              createdAt: userNotification.createdAt!,
-              recipientId: userNotification.recipientId.toString(),
-              recipientType: userNotification.recipientType,
-              isRead: false,
-            };
-
-            req.io
-              ?.to(`user_${userId}`)
-              .emit("new_notification", userSocketData);
-            console.log(
-              `Technician cancellation notification sent to user ${userId}`
-            );
-          }
-
-          const technicianNotification =
-            await this._notificationService.createNotification({
-              recipientId: technicianId,
-              recipientType: "technician",
-              title: "Booking Cancelled Successfully",
-              message: `You have successfully cancelled booking #${bookingId
-                .slice(-8)
-                .toUpperCase()}.`,
-              type: "booking_cancelled",
-            });
-
-          const technicianSocketData: ISocketNotificationData = {
-            id: technicianNotification._id.toString(),
-            title: technicianNotification.title,
-            message: technicianNotification.message,
-            type: technicianNotification.type,
-            createdAt: technicianNotification.createdAt!,
-            recipientId: technicianNotification.recipientId.toString(),
-            recipientType: technicianNotification.recipientType,
-            isRead: false,
-          };
-
-          req.io
-            ?.to(`technician_${technicianId}`)
-            .emit("new_notification", technicianSocketData);
-          console.log(
-            `Cancellation confirmation notification sent to technician ${technicianId}`
-          );
-        } catch (notificationError) {
-          console.log(
-            "Failed to send technician cancellation notifications:",
-            notificationError
-          );
-        }
-
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        const statusCode = serviceResponse.message?.includes("not found")
-          ? HTTP_STATUS.NOT_FOUND
-          : HTTP_STATUS.BAD_REQUEST;
-        res
-          .status(statusCode)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to cancel booking"
-            )
-          );
-      }
-    } catch (error) {
-      console.log(
-        "error occurred while technician is cancelling the booking:",
-        error
-      );
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async getReviews(req: AuthenticatedRequest, res: Response): Promise<void> {
-    try {
-      const technicianId = req.user?.id;
-      console.log(
-        "technicianId in the technician controller fetching the reviews:",
-        technicianId
-      );
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("technician not authenticated"));
-        return;
-      }
-
-      const serviceResponse = await this._technicianService.getReviews(
-        technicianId
-      );
-      console.log(
-        "response from the service fetching the technician reviews:",
-        serviceResponse
-      );
-
-      if (serviceResponse.success) {
-        res.status(HTTP_STATUS.OK).json(
-          createSuccessResponse(
-            {
-              reviews: serviceResponse.reviews,
-              averageRating: serviceResponse.averageRating,
-              totalReviews: serviceResponse.totalReviews,
-            },
-            serviceResponse.message
-          )
-        );
-      } else {
-        const statusCode = serviceResponse.message?.includes("not found")
-          ? HTTP_STATUS.NOT_FOUND
-          : HTTP_STATUS.BAD_REQUEST;
-        res
-          .status(statusCode)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to fetch reviews"
-            )
-          );
-      }
-    } catch (error) {
-      console.log(
-        "error occurred while fetching the technician reviews:",
-        error
-      );
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async getRating(req: Request, res: Response): Promise<void> {
-    try {
-      console.log(
-        "entered the function which fetched the booking rating for a specified booking in technician controller"
-      );
-      const { bookingId } = req.params;
-      console.log("bookingId in the technician controller:", bookingId);
-
-      const serviceResponse = await this._bookingService.getRating(bookingId);
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        const statusCode = serviceResponse.message?.includes("not found")
-          ? HTTP_STATUS.NOT_FOUND
-          : HTTP_STATUS.BAD_REQUEST;
-        res
-          .status(statusCode)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to fetch rating"
-            )
-          );
-      }
-    } catch (error) {
-      console.log(
-        "error occurred while fetching the rating for a booking:",
-        error
-      );
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async getMySubscription(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
-    try {
-      console.log("Controller: Getting technician subscription");
-
-      const technicianId = req.user?.id;
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("Technician ID is required"));
-        return;
-      }
-
-      const serviceResponse =
-        await this._technicianService.getTechnicianActiveSubscriptionPlan(
-          technicianId
-        );
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        res
-          .status(HTTP_STATUS.NOT_FOUND)
-          .json(createErrorResponse(serviceResponse.message));
-      }
-    } catch (error) {
-      console.error("Error in getMySubscription controller:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async getSubscriptionHistory(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
-    try {
-      console.log("fetching the subscription history for the technicians");
-      const technicianId = req.user?.id;
-
-      const page = parseInt(req.query.page as string) || undefined;
-      const limit = parseInt(req.query.limit as string) || undefined;
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("Technician ID is required"));
-        return;
-      }
-
-      const serviceResponse =
-        await this._subscriptionPlanService.getSubscriptionHistory({
-          page,
-          limit,
-          technicianId,
-        });
-      console.log(
-        "serviceResponse from the subscription service",
-        serviceResponse
-      );
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        res
-          .status(HTTP_STATUS.NOT_FOUND)
-          .json(createErrorResponse(serviceResponse.message));
-      }
-    } catch (error) {
-      console.log(
-        "error occured while fetching the subscription history for technician:",
-        error
-      );
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async getAllSubscriptionPlans(req: Request, res: Response): Promise<void> {
-    try {
-      console.log(
-        "entered to the technician controller that fetches the subscription plans"
-      );
-
-      const serviceResponse =
-        await this._subscriptionPlanService.getAllSubscriptionPlans({
-          page: undefined,
-          limit: undefined,
-          search: undefined,
-          filterStatus: "active",
-        });
-
-      console.log(
-        "serviceResponse from getting all subscription plans:",
-        serviceResponse
-      );
-
-      if (serviceResponse.success && serviceResponse.data) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(
-              serviceResponse.data.subscriptionPlans,
-              serviceResponse.message
-            )
-          );
-      } else {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to fetch subscription plans"
-            )
-          );
-      }
-    } catch (error) {
-      console.log("error occurred while fetching subscription plans:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async purchaseSubscriptionPlan(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
-    try {
-      console.log(
-        "entered to the technician controller that purchases the subsciption plan"
-      );
-      const technicianId = req.user?.id;
-      const { planId } = req.body;
-      console.log(
-        "technicianId in the purchase subscription plan controller:",
-        technicianId
-      );
-      console.log(
-        "planId in the purchase subscription plan technician controller:",
-        planId
-      );
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("Technician ID is required"));
-        return;
-      }
-      const serviceResponse =
-        await this._subscriptionPlanService.purchaseSubscriptionPlan(
-          technicianId,
-          planId
-        );
-
-      console.log(
-        "service response in the purchase subscription plan controller:",
-        serviceResponse
-      );
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(
-              serviceResponse.data,
-              serviceResponse.message || "Checkout session created successfully"
-            )
-          );
-      } else {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to create checkout session"
-            )
-          );
-      }
-    } catch (error) {
-      console.log(
-        "error occured while purchasing the subscription plan:",
-        error
-      );
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async verifyStripeSession(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
-    try {
-      const sessionId = req.params.sessionId as string;
-      const technicianId = req.user?.id;
-      console.log(
-        "technicianId in the stripe verify function in technician controller:",
-        technicianId
-      );
-      console.log(
-        "sessionId in the stripe verify function technician controller:",
-        sessionId
-      );
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("Technician not authenticated"));
-        return;
-      }
-
-      const serviceResponse =
-        await this._subscriptionPlanService.verifyStripeSession(
-          technicianId,
-          sessionId
-        );
-
-      console.log(
-        "result from the verifying stripe session in technician controller:",
-        serviceResponse
-      );
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        const statusCode = serviceResponse.message?.includes("not found")
-          ? HTTP_STATUS.NOT_FOUND
-          : serviceResponse.message?.includes("not completed")
-          ? HTTP_STATUS.NOT_COMPLETED
-          : HTTP_STATUS.BAD_REQUEST;
-        res
-          .status(statusCode)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to verify payment"
-            )
-          );
-      }
-    } catch (error) {
-      console.log("error occurred while verifying the stripe session:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async getAllUnReadNotifications(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
-    try {
-      console.log(
-        "enetring the technician controller function that fetches the all notifications:"
-      );
-      const technicianId = req.user?.id;
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("technician not authenticated"));
-        return;
-      }
-
-      const notifications =
-        await this._notificationService.getUnReadNotificationsByUser(
-          technicianId,
-          "technician"
-        );
-
-      res
-        .status(HTTP_STATUS.OK)
-        .json(
-          createSuccessResponse(
-            notifications,
-            "Notifications fetched successfully"
-          )
-        );
-    } catch (error) {
-      console.log("error occured while fetching the notifications:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async markNotificationRead(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
-    try {
-      const technicianId = req.user?.id;
-      const { notificationId } = req.params;
-
-      console.log(
-        "notificationId in the technician controller:",
-        notificationId
-      );
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("technician not authenticated"));
-        return;
-      }
-
-      const updatedNotification =
-        await this._notificationService.markNotificationAsRead(notificationId);
-
-      if (updatedNotification) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(
-              updatedNotification,
-              "Notification marked as read"
-            )
-          );
-      } else {
-        res
-          .status(HTTP_STATUS.NOT_FOUND)
-          .json(createErrorResponse("Notification not found"));
-      }
-    } catch (error) {
-      console.log(
-        "error occured while marking all notifications as read:",
-        error
-      );
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
 
   async getDashboardStats(
     req: AuthenticatedRequest,
@@ -1960,6 +668,223 @@ export class TechnicianController implements ITechnicianController {
         "error occurred while fetching the technician booking status:",
         error
       );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal server error"));
+    }
+  }
+
+  async getAllApplicants(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("function fetching all the applicants");
+      const page = req.query.page
+        ? parseInt(req.query.page as string)
+        : undefined;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
+
+      const serviceResponse = await this._technicianService.getAllApplicants({
+        page,
+        limit,
+      });
+
+      console.log(
+        "result from the fetching all applicants from admin controller:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch applicants"
+            )
+          );
+      }
+    } catch (error) {
+      console.error(
+        "Error in fetching all applicants in admin controller:",
+        error
+      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Error fetching applicants"));
+    }
+  }
+
+  async verifyApplicant(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("Entered verify applicant function in admin controller");
+      const applicantId = req.params.applicantId;
+      console.log(
+        "Applicant ID from verify applicant controller:",
+        applicantId
+      );
+
+      const serviceResponse = await this._technicianService.verifyTechnician(
+        applicantId
+      );
+      console.log("Response from verifying the applicant:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(createSuccessResponse(serviceResponse.message));
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to verify applicant"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("Error occurred while verifying the applicant:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async rejectApplicant(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("Entered reject applicant function in admin controller");
+      const applicantId = req.params.applicantId;
+      const { reason } = req.body;
+
+      console.log(
+        "Applicant ID from reject applicant controller:",
+        applicantId
+      );
+      console.log("Rejection reason:", reason);
+
+      const serviceResponse = await this._technicianService.rejectTechnician(
+        applicantId,
+        reason
+      );
+      console.log("Response from rejecting the applicant:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(createSuccessResponse(serviceResponse.message));
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to reject applicant"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("Error occurred while rejecting the applicant:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getAllTechnicians(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("fetching all the technicians from the admin controller");
+      const page = req.query.page
+        ? parseInt(req.query.page as string)
+        : undefined;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
+      const search = req.query.search
+        ? (req.query.search as string)
+        : undefined;
+      const status = req.query.status
+        ? (req.query.status as string)
+        : undefined;
+      const designation = req.query.designation
+        ? (req.query.designation as string)
+        : undefined;
+
+      const serviceResponse = await this._technicianService.getAllTechnicians({
+        page,
+        limit,
+        search,
+        status,
+        designation,
+      });
+
+      console.log(
+        "result from the fetching all technicians from admin controller:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch technicians"
+            )
+          );
+      }
+    } catch (error) {
+      console.error(
+        "Error in getting all technician from admin controller:",
+        error
+      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Error fetching technicians"));
+    }
+  }
+
+  async toggleTechnicianStatus(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const serviceResponse =
+        await this._technicianService.toggleTechnicianStatus(id);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to toggle technician status"
+            )
+          );
+      }
+    } catch (error) {
+      console.error("Error in toggleTechnicianStatus controller:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal server error"));
