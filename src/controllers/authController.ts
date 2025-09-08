@@ -1,4 +1,3 @@
-import { IAuthController } from "../interfaces/Icontrollers/IauthController";
 import { inject, injectable } from "tsyringe";
 import { IAuthService } from "../interfaces/Iservices/IauthService";
 import { Request, Response } from "express";
@@ -9,7 +8,7 @@ import {
 } from "../utils/responseHelper";
 
 @injectable()
-export class AuthController implements IAuthController {
+export class AuthController {
   constructor(@inject("IAuthService") private _authService: IAuthService) {}
 
   async newAccessToken(req: Request, res: Response): Promise<void> {

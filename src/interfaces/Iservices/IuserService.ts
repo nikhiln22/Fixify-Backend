@@ -1,5 +1,4 @@
 import {
-  AddMoneyResponse,
   EditProfileResponse,
   ForgotPasswordRequest,
   ForgotPasswordResponse,
@@ -17,8 +16,6 @@ import {
   VerifyOtpResponse,
 } from "../DTO/IServices/IuserService";
 import { IUser } from "../../interfaces/Models/Iuser";
-import { IWallet } from "../Models/Iwallet";
-import { IWalletTransaction } from "../Models/IwalletTransaction";
 
 export interface IUserService {
   userSignUp(data: SignupUserData): Promise<SignUpUserResponse>;
@@ -53,41 +50,5 @@ export interface IUserService {
     userId: string,
     updateData: UserProfileUpdateData
   ): Promise<EditProfileResponse>;
-  addMoney(userId: string, amount: number): Promise<AddMoneyResponse>;
-  verifyWalletStripeSession(
-    sessionId: string,
-    userId: string
-  ): Promise<{
-    success: boolean;
-    message: string;
-    data?: {
-      wallet: IWallet | null;
-      transaction: IWalletTransaction | null;
-    };
-  }>;
-  getWalletBalance(userId: string): Promise<{
-    success: boolean;
-    message: string;
-    data?: { balance: number };
-  }>;
-  getAllWalletTransactions(options: {
-    page?: number;
-    limit?: number;
-    userId: string;
-  }): Promise<{
-    success: boolean;
-    message: string;
-    data?: {
-      transactions: IWalletTransaction[];
-      pagination: {
-        total: number;
-        page: number;
-        pages: number;
-        limit: number;
-        hasNextPage: boolean;
-        hasPrevPage: boolean;
-      };
-    };
-  }>;
   countActiveUsers(): Promise<number>;
 }

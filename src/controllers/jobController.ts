@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { injectable, inject } from "tsyringe";
 import { IJobsService } from "../interfaces/Iservices/IjobsService";
-import { IJobController } from "../interfaces/Icontrollers/IjobController";
 import { HTTP_STATUS } from "../utils/httpStatus";
 import {
   createErrorResponse,
@@ -9,7 +8,7 @@ import {
 } from "../utils/responseHelper";
 
 @injectable()
-export class JobController implements IJobController {
+export class JobController {
   constructor(
     @inject("IJobsService")
     private _jobService: IJobsService

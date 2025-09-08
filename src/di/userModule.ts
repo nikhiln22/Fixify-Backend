@@ -40,8 +40,6 @@ import { IChatService } from "../interfaces/Iservices/IchatService";
 import { IChatRepository } from "../interfaces/Irepositories/IchatRepository";
 import { ChatService } from "../services/chatService";
 import { ChatRepository } from "../repositories/chatRepository";
-import { IUserController } from "../interfaces/Icontrollers/IuserController";
-import { UserController } from "../controllers/userController";
 import { IOfferService } from "../interfaces/Iservices/IofferService";
 import { OfferService } from "../services/offerService";
 import { ICouponService } from "../interfaces/Iservices/IcouponService";
@@ -54,8 +52,12 @@ import { INotificationService } from "../interfaces/Iservices/InotificationServi
 import { NotificationService } from "../services/notificationService";
 import { INotificationRepository } from "../interfaces/Irepositories/InotificationRepository";
 import { NotificationRepository } from "../repositories/notificationRepository";
+import { ICategoryService } from "../interfaces/Iservices/IcategoryService";
+import { CategoryService } from "../services/categoryService";
+import { IWalletService } from "../interfaces/Iservices/IwalletService";
+import { WalletService } from "../services/walletService";
 
-container.registerSingleton<IUserController>("IUserController",UserController);
+
 container.registerSingleton<IUserService>("IUserService",UserService);
 container.registerSingleton<IUserRepository>("IUserRepository", UserRepository);
 container.registerSingleton<IPasswordHasher>("IPasswordHasher", PasswordHasher);
@@ -69,6 +71,7 @@ container.registerSingleton<IAddressRepository>("IAddressRepository",AddressRepo
 container.registerSingleton<IAddressService>("IAddressService",AddressService);
 container.registerSingleton<ITimeSlotService>("ITimeSlotService",TimeSlotService);
 container.registerSingleton<ITechnicianService>("ITechnicianService",TechnicianService);
+container.registerSingleton<ICategoryService>("ICategoryService",CategoryService);
 container.registerSingleton<IBookingService>("IBookingService",BookingService);
 container.registerSingleton<IBookingRepository>("IBookingRepository",BookingRepository);
 container.registerSingleton<IWalletRepository>("IWalletRepository",WalletRepository);
@@ -82,3 +85,4 @@ container.registerSingleton<IOfferRepository>("IOfferRepository",OfferRepository
 container.registerSingleton<ICouponRepository>("ICouponRepository",CouponRepository);
 container.registerSingleton<INotificationService>("INotificationService",NotificationService);
 container.registerSingleton<INotificationRepository>("INotificationRepository",NotificationRepository);
+container.registerSingleton<IWalletService>("IWalletService",WalletService);

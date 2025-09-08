@@ -44,7 +44,6 @@ export class WalletCreditService implements IWalletCreditService {
       }
       const amount = payment.technicianShare;
       const shortPaymentId = payment._id.toString().slice(-8).toUpperCase();
-      
 
       await this._walletRepository.updateWalletBalanceWithTransaction(
         technicianId,

@@ -9,8 +9,7 @@ const walletSchema: Schema<IWallet> = new Schema(
     },
     ownerType: {
       type: String,
-      enum: ["user", "technician"],
-      required: true
+      required: true,
     },
     balance: {
       type: Number,
@@ -19,7 +18,6 @@ const walletSchema: Schema<IWallet> = new Schema(
   },
   { timestamps: true }
 );
-
 
 const wallet = mongoose.model<IWallet>("wallet", walletSchema);
 

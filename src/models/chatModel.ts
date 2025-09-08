@@ -24,7 +24,6 @@ const chatSchema: Schema<IChat> = new Schema(
     },
     senderType: {
       type: String,
-      enum: ["user", "technician"],
       required: true,
     },
   },

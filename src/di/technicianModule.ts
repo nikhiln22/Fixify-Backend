@@ -34,8 +34,6 @@ import { IWalletTransactionRepository } from "../interfaces/Irepositories/Iwalle
 import { WalletTransactionRepository } from "../repositories/walletTransactionRepository";
 import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
 import { RatingRepository } from "../repositories/ratingRepository";
-import { ITechnicianController } from "../interfaces/Icontrollers/ItechnicianController";
-import { TechnicianController } from "../controllers/technicianController";
 import { ISubscriptionExpiryService } from "../interfaces/Iservices/IsubscriptionExpiryService";
 import { SubscriptionExpiryService } from "../services/subscriptionExpiryService";
 import { IWalletCreditService } from "../interfaces/Iservices/IwalletCreditService";
@@ -48,7 +46,6 @@ import { INotificationRepository } from "../interfaces/Irepositories/Inotificati
 import { NotificationRepository } from "../repositories/notificationRepository";
 
 
-container.registerSingleton<ITechnicianController>("ITechnicianController",TechnicianController)
 container.registerSingleton<ITechnicianService>("ITechnicianService", TechnicianService);
 container.registerSingleton<ITechnicianRepository>("ITechnicianRepository", TechnicianRepository);
 container.registerSingleton<IJobDesignationRepository>("IJobDesignationRepository", JobDesignationRepository);

@@ -1,4 +1,3 @@
-import { IServiceController } from "../interfaces/Icontrollers/IserviceController";
 import { HTTP_STATUS } from "../utils/httpStatus";
 import { injectable, inject } from "tsyringe";
 import { Request, Response } from "express";
@@ -7,12 +6,14 @@ import {
   createErrorResponse,
   createSuccessResponse,
 } from "../utils/responseHelper";
+import { IBookingService } from "../interfaces/Iservices/IbookingService";
 
 @injectable()
-export class ServiceController implements IServiceController {
+export class ServiceController {
   constructor(
     @inject("IServiceService")
-    private _serviceService: IServiceService
+    private _serviceService: IServiceService,
+    @inject("IBookingService") private _bookingService: IBookingService
   ) {}
 
   async addService(req: Request, res: Response): Promise<void> {
@@ -211,103 +212,59 @@ export class ServiceController implements IServiceController {
     }
   }
 
-  async addCategory(req: Request, res: Response): Promise<void> {
+  async getServiceDetails(req: Request, res: Response): Promise<void> {
     try {
-      console.log("entering to the admin adding the category");
-      const name = req.body.name;
+      console.log("fetching the service details for the user");
+      const serviceId = req.params.serviceId;
+      console.log("serviceId in the user controller:", serviceId);
 
-      if (!req.file) {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(createErrorResponse("Image file is required"));
-        return;
-      }
-
-      const serviceResponse = await this._serviceService.addCategory(
-        name,
-        req.file.path
+      const serviceResponse = await this._serviceService.getServiceDetails(
+        serviceId
       );
+      console.log("response in the user controller:", serviceResponse);
 
       if (serviceResponse.success) {
         res
-          .status(HTTP_STATUS.CREATED)
+          .status(HTTP_STATUS.OK)
           .json(
             createSuccessResponse(serviceResponse.data, serviceResponse.message)
           );
       } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
         res
-          .status(HTTP_STATUS.BAD_REQUEST)
+          .status(statusCode)
           .json(
             createErrorResponse(
-              serviceResponse.message || "Failed to add category"
+              serviceResponse.message || "Failed to fetch service details"
             )
           );
       }
     } catch (error) {
-      console.log("error occurred while adding the category:", error);
+      console.log(
+        "error occurred while fetching the service details for the user:",
+        error
+      );
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(
-          createErrorResponse("An error occurred while adding the category")
-        );
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 
-  async getAllCategory(req: Request, res: Response): Promise<void> {
+  async getMostBookedServices(req: Request, res: Response): Promise<void> {
     try {
-      console.log("entering to the function fetching all the categories");
+      console.log(
+        "fetching the most booked services for the user in user controller"
+      );
+      const limit = parseInt(req.query.limit as string) || undefined;
+      const days = parseInt(req.query.days as string) || undefined;
 
-      const page = req.query.page
-        ? parseInt(req.query.page as string)
-        : undefined;
-      const limit = req.query.limit
-        ? parseInt(req.query.limit as string)
-        : undefined;
-      const search = req.query.search
-        ? (req.query.search as string)
-        : undefined;
-      const status = req.query.status
-        ? (req.query.status as string)
-        : undefined;
-
-      const serviceResponse = await this._serviceService.getAllCategories({
-        page,
+      const serviceResponse = await this._bookingService.getMostBookedServices(
         limit,
-        search,
-        status,
-      });
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to fetch categories"
-            )
-          );
-      }
-    } catch (error) {
-      console.error("Error in getAllCategory controller:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Error fetching categories data"));
-    }
-  }
-
-  async toggleCategoryStatus(req: Request, res: Response): Promise<void> {
-    try {
-      console.log("entering to the toggle category status");
-      const categoryId = req.params.categoryId;
-
-      const serviceResponse = await this._serviceService.toggleCategoryStatus(
-        categoryId
+        days
       );
+      console.log("response from getMostBookedServices:", serviceResponse);
 
       if (serviceResponse.success) {
         res
@@ -316,83 +273,19 @@ export class ServiceController implements IServiceController {
             createSuccessResponse(serviceResponse.data, serviceResponse.message)
           );
       } else {
-        const statusCode = serviceResponse.message?.includes("not found")
-          ? HTTP_STATUS.NOT_FOUND
-          : HTTP_STATUS.BAD_REQUEST;
         res
-          .status(statusCode)
+          .status(HTTP_STATUS.BAD_REQUEST)
           .json(
             createErrorResponse(
-              serviceResponse.message || "Failed to toggle category status"
+              serviceResponse.message || "Failed to fetch most booked services"
             )
           );
       }
     } catch (error) {
-      console.error("Error occurred while toggling category status:", error);
+      console.log("error occurred while fetching most booked services:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(
-          createErrorResponse(
-            "An error occurred while toggling category status"
-          )
-        );
-    }
-  }
-
-  async editCategory(req: Request, res: Response): Promise<void> {
-    try {
-      console.log("editing the category from the controller");
-      const categoryId = req.params.categoryId;
-
-      if (!categoryId) {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(createErrorResponse("Category ID is required"));
-        return;
-      }
-
-      const { name } = req.body;
-
-      const updateData: { name?: string; image?: string } = {};
-
-      if (name !== undefined) updateData.name = name;
-      if (req.file) updateData.image = req.file.path;
-
-      if (Object.keys(updateData).length === 0) {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(createErrorResponse("No update data provided"));
-        return;
-      }
-
-      const serviceResponse = await this._serviceService.updateCategory(
-        categoryId,
-        updateData
-      );
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        const statusCode = serviceResponse.message?.includes("not found")
-          ? HTTP_STATUS.NOT_FOUND
-          : HTTP_STATUS.BAD_REQUEST;
-        res
-          .status(statusCode)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to update category"
-            )
-          );
-      }
-    } catch (error) {
-      console.error("Error occurred while editing category:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("An error occurred while editing category"));
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 }

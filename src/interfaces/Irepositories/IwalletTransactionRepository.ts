@@ -12,7 +12,7 @@ export interface IWalletTransactionRepository {
     page?: number;
     limit?: number;
     ownerId: string;
-    ownerType: "user" | "technician";
+    ownerType: string;
   }): Promise<{
     data: IWalletTransaction[];
     total: number;
