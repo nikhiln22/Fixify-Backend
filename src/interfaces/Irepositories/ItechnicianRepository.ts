@@ -12,7 +12,7 @@ export interface ITechnicianRepository {
   createTechnician(technicianData: CreateTechnician): Promise<ITechnician>;
   findByEmail(email: string): Promise<ITechnician | null>;
   updateTechnicianExpiry(email: string, newExpiresAt: Date): Promise<void>;
-  updateTechnicianEmailVerification(email: string): Promise<void>;
+  updateTechnicianVerification(email: string): Promise<void>;
   getTechnicianById(id: string): Promise<ITechnician | null>;
   updatePassword(email: string, hashedPassword: string): Promise<void>;
   updateTechnicianQualification(

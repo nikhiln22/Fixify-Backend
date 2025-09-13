@@ -21,7 +21,7 @@ export class SubscriptionPlanRoutes {
 
     this.router.post(
       "/",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.ADMIN),
+      this.authMiddleware.authenticate(Roles.ADMIN),
       subscriptionPlanController.addSubscriptionPlan.bind(
         subscriptionPlanController
       )
@@ -29,26 +29,31 @@ export class SubscriptionPlanRoutes {
 
     this.router.get(
       "/",
-      this.authMiddleware.authenticateAndCheckStatus(
-        Roles.ADMIN,
-        Roles.TECHNICIAN
-      ),
+      this.authMiddleware.authenticate(Roles.ADMIN, Roles.TECHNICIAN),
       subscriptionPlanController.getAllSubscriptionPlans.bind(
+        subscriptionPlanController
+      )
+    );
+
+    this.router.get(
+      "/active",
+      this.authMiddleware.authenticate(Roles.ADMIN, Roles.TECHNICIAN),
+      subscriptionPlanController.getTechnicianActiveSubcriptionPlan.bind(
         subscriptionPlanController
       )
     );
 
     this.router.put(
       "/:subscriptionPlanId",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.ADMIN),
+      this.authMiddleware.authenticate(Roles.ADMIN),
       subscriptionPlanController.updateSubscriptionPlan.bind(
         subscriptionPlanController
       )
     );
 
     this.router.patch(
-      "/:id/block",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.ADMIN),
+      "/:subscriptionPlanId/block",
+      this.authMiddleware.authenticate(Roles.ADMIN),
       subscriptionPlanController.blockSubscriptionPlan.bind(
         subscriptionPlanController
       )
@@ -56,18 +61,15 @@ export class SubscriptionPlanRoutes {
 
     this.router.get(
       "/history",
-      this.authMiddleware.authenticateAndCheckStatus(
-        Roles.ADMIN,
-        Roles.TECHNICIAN
-      ),
-      subscriptionPlanController.getSubscriptionHistory.bind(
+      this.authMiddleware.authenticate(Roles.ADMIN, Roles.TECHNICIAN),
+      subscriptionPlanController.getSubscriptionhistory.bind(
         subscriptionPlanController
       )
     );
 
     this.router.post(
       "/purchase",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
       subscriptionPlanController.purchaseSubscriptionPlan.bind(
         subscriptionPlanController
       )
@@ -75,7 +77,7 @@ export class SubscriptionPlanRoutes {
 
     this.router.post(
       "/:sessionId/verify-payment",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
       subscriptionPlanController.verifyStripeSession.bind(
         subscriptionPlanController
       )

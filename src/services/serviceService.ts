@@ -10,15 +10,12 @@ import {
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
 import { IServiceRepository } from "../interfaces/Irepositories/IserviceRepository";
 import { IService } from "../interfaces/Models/Iservice";
-import { ICategoryRepository } from "../interfaces/Irepositories/IcategoryRepository";
 
 @injectable()
 export class ServiceServices implements IServiceService {
   constructor(
     @inject("IServiceRepository")
     private _serviceRepository: IServiceRepository,
-    @inject("ICategoryRepository")
-    private _categoryRepository: ICategoryRepository,
     @inject("IFileUploader") private fileUploader: IFileUploader
   ) {}
 
@@ -38,13 +35,10 @@ export class ServiceServices implements IServiceService {
 
       let imageUrl = "";
 
-      if (data.imageFile) {
-        const uploadResult = await this.fileUploader.uploadFile(
-          data.imageFile,
-          {
-            folder: "fixify/services",
-          }
-        );
+      if (data.image) {
+        const uploadResult = await this.fileUploader.uploadFile(data.image, {
+          folder: "fixify/services",
+        });
 
         if (!uploadResult) {
           return {
@@ -56,28 +50,36 @@ export class ServiceServices implements IServiceService {
         imageUrl = uploadResult;
       }
 
-      const serviceData = {
+      const serviceData: ServiceData = {
         name: data.name,
-        price: data.price,
-        imageFile: imageUrl,
+        image: imageUrl,
         description: data.description,
-        category: data.categoryId,
-        designation: data.designationId,
+        categoryId: data.categoryId,
+        designationId: data.designationId,
+        serviceType: data.serviceType,
       };
+
+      if (data.serviceType === "fixed") {
+        serviceData.price = data.price;
+        serviceData.estimatedTime = data.estimatedTime;
+      } else if (data.serviceType === "hourly") {
+        serviceData.hourlyRate = data.hourlyRate;
+        serviceData.maxHours = data.maxHours;
+      }
 
       const newService = await this._serviceRepository.addService(serviceData);
       console.log("response from the services adding service:", newService);
 
       return {
         success: true,
-        message: "service added successfully",
+        message: "Service added successfully",
         data: newService,
       };
     } catch (error) {
       console.log("error occurred while adding the service", error);
       return {
         success: false,
-        message: "something went wrong while adding the service",
+        message: "Something went wrong while adding the service",
       };
     }
   }
@@ -88,6 +90,7 @@ export class ServiceServices implements IServiceService {
     search?: string;
     categoryId?: string;
     status?: string;
+    serviceType?: string;
   }): Promise<{
     success: boolean;
     message: string;
@@ -115,6 +118,7 @@ export class ServiceServices implements IServiceService {
         search: options.search,
         categoryId: options.categoryId,
         status: options.status,
+        serviceType: options.serviceType,
       });
 
       console.log("result from the servicemanagement service:", result);

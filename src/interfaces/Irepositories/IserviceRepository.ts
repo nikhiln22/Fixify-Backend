@@ -3,11 +3,15 @@ import { IService } from "../Models/Iservice";
 export interface IServiceRepository {
   addService(serviceData: {
     name: string;
-    price: number;
-    imageFile: string;
+    image: string;
     description: string;
-    category: string;
-    designation: string;
+    categoryId: string;
+    designationId: string;
+    serviceType: "fixed" | "hourly";
+    price?: number;
+    estimatedTime?: number;
+    hourlyRate?: number;
+    maxHours?: number;
   }): Promise<IService>;
 
   findServiceByName(name: string): Promise<IService | null>;
@@ -18,6 +22,7 @@ export interface IServiceRepository {
     search?: string;
     categoryId?: string;
     status?: string;
+    serviceType?: string;
   }): Promise<{
     data: IService[];
     total: number;

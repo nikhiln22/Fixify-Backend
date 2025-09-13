@@ -22,39 +22,39 @@ export class ServiceRoutes {
 
     this.router.get(
       "/",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      this.authMiddleware.authenticate(Roles.USER, Roles.ADMIN),
       serviceController.getAllServices.bind(serviceController)
     );
 
     this.router.get(
       "/most-booked",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      this.authMiddleware.authenticate(Roles.USER),
       serviceController.getMostBookedServices.bind(serviceController)
     );
 
     this.router.get(
       "/:serviceId",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      this.authMiddleware.authenticate(Roles.USER),
       serviceController.getServiceDetails.bind(serviceController)
     );
 
     this.router.post(
       "/",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.ADMIN),
+      this.authMiddleware.authenticate(Roles.ADMIN),
       this.localUpload.upload.single("image"),
       serviceController.addService.bind(serviceController)
     );
 
     this.router.put(
       "/:serviceId",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.ADMIN),
+      this.authMiddleware.authenticate(Roles.ADMIN),
       this.localUpload.upload.single("image"),
       serviceController.editService.bind(serviceController)
     );
 
     this.router.patch(
       "/:serviceId/status",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.ADMIN),
+      this.authMiddleware.authenticate(Roles.ADMIN),
       serviceController.toggleServiceStatus.bind(serviceController)
     );
   }

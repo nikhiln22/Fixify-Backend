@@ -23,12 +23,9 @@ const technicianSchema: Schema<ITechnician> = new Schema(
       type: String,
       enum: ["Pending", "Active", "Blocked"],
     },
-    email_verified: {
-      type: Boolean,
-      default: false,
-    },
     is_verified: {
       type: Boolean,
+      default: false,
     },
     expiresAt: {
       type: Date,
@@ -38,18 +35,9 @@ const technicianSchema: Schema<ITechnician> = new Schema(
     },
     Designation: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "jobDesignation",
+      ref: "designation",
     },
     About: {
-      type: String,
-    },
-    longitude: {
-      type: Number,
-    },
-    latitude: {
-      type: Number,
-    },
-    address: {
       type: String,
     },
     image: {
@@ -65,8 +53,6 @@ const technicianSchema: Schema<ITechnician> = new Schema(
 );
 
 technicianSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 900 });
-
-technicianSchema.index({ longitude: 1, latitude: 1 });
 
 const technician = mongoose.model<ITechnician>("technician", technicianSchema);
 

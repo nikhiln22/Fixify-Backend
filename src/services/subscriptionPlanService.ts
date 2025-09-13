@@ -307,8 +307,8 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
     };
   }> {
     try {
-      const page = options.page || 1;
-      const limit = options.limit || 5;
+      const page = options.page;
+      const limit = options.limit;
 
       const result =
         await this._subscriptionPlanHistoryRepository.getSubscriptionPlansHistory(
@@ -649,6 +649,130 @@ export class SubscriptionPlanService implements ISubscriptionPlanService {
       return {
         success: false,
         message: "Failed to verify the stripe session",
+      };
+    }
+  }
+
+  async getTechnicianActiveSubscriptionPlan(technicianId: string): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      currentSubscription: {
+        planName: string;
+        status: string;
+        commissionRate: number;
+        walletCreditDelay: number;
+        profileBoost: boolean;
+        durationInMonths: number;
+        expiresAt?: string;
+        amount: number;
+      };
+      upcomingSubscription?: {
+        planName: string;
+        commissionRate: number;
+        walletCreditDelay: number;
+        profileBoost: boolean;
+        durationInMonths: number;
+        amount: number;
+        activatesOn?: string;
+      } | null;
+    };
+  }> {
+    try {
+      console.log("Service: Getting technician active subscription plan");
+
+      const technician = await this._technicianRepository.getTechnicianById(
+        technicianId
+      );
+
+      if (!technician) {
+        return {
+          success: false,
+          message: "Technician not found",
+        };
+      }
+
+      const activeSubscription =
+        await this._subscriptionPlanHistoryRepository.findActiveSubscriptionByTechnicianId(
+          technicianId
+        );
+
+      console.log(
+        "fetched active subscription plan in the technician service:",
+        activeSubscription
+      );
+
+      if (!activeSubscription) {
+        return {
+          success: false,
+          message: "No active subscription found",
+        };
+      }
+
+      const subscriptionPlan =
+        await this._subscriptionPlanRepository.findSubscriptionPlanById(
+          activeSubscription.subscriptionPlanId.toString()
+        );
+
+      if (!subscriptionPlan) {
+        return {
+          success: false,
+          message: "Subscription plan not found",
+        };
+      }
+
+      let status = "Active";
+      if (activeSubscription.expiryDate) {
+        const isStillActive =
+          new Date() <= new Date(activeSubscription.expiryDate);
+        status = isStillActive ? "Active" : "Expired";
+      }
+
+      let upcomingSubscription = null;
+      if (
+        activeSubscription.hasNextUpgrade &&
+        activeSubscription.nextUpgrade?.planId
+      ) {
+        const upcomingPlan = activeSubscription.nextUpgrade
+          .planId as ISubscriptionPlan;
+
+        upcomingSubscription = {
+          planName: upcomingPlan.planName,
+          commissionRate: upcomingPlan.commissionRate,
+          walletCreditDelay: upcomingPlan.WalletCreditDelay,
+          profileBoost: upcomingPlan.profileBoost,
+          durationInMonths: upcomingPlan.durationInMonths || 0,
+          amount: activeSubscription.nextUpgrade.amount,
+          activatesOn: activeSubscription.expiryDate
+            ? activeSubscription.expiryDate.toISOString()
+            : undefined,
+        };
+      }
+
+      return {
+        success: true,
+        message: "Active subscription plan fetched successfully",
+        data: {
+          currentSubscription: {
+            planName: subscriptionPlan.planName,
+            status: status,
+            commissionRate: subscriptionPlan.commissionRate,
+            walletCreditDelay: subscriptionPlan.WalletCreditDelay,
+            profileBoost: subscriptionPlan.profileBoost,
+            durationInMonths: subscriptionPlan.durationInMonths || 0,
+            expiresAt: activeSubscription.expiryDate
+              ? activeSubscription.expiryDate.toISOString()
+              : undefined,
+            amount: activeSubscription.amount,
+          },
+          upcomingSubscription: upcomingSubscription,
+        },
+      };
+    } catch (error) {
+      console.log("Error in service getting subscription plan:", error);
+      return {
+        success: false,
+        message: "Error occurred while fetching subscription plan",
       };
     }
   }

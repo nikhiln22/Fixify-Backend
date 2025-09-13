@@ -1,22 +1,22 @@
 import { injectable, inject } from "tsyringe";
-import { IJobsService } from "../interfaces/Iservices/IjobsService";
-import { IJobDesignationRepository } from "../interfaces/Irepositories/IjobDesignationRepository";
+import { IDesignationService } from "../interfaces/Iservices/IdesignationService";
+import { IDesignationRepository } from "../interfaces/Irepositories/IdesignationRepository";
 import {
   DesignationResponse,
   ToggleDesignationResponse,
-} from "../interfaces/DTO/IServices/IjobService";
-import { IJobDesignation } from "../interfaces/Models/IjobDesignation";
+} from "../interfaces/DTO/IServices/IdesignationService";
+import { IDesignation } from "../interfaces/Models/Idesignation";
 
 @injectable()
-export class JobService implements IJobsService {
+export class DesignationService implements IDesignationService {
   constructor(
     @inject("IJobDesignationRepository")
-    private _designationRepository: IJobDesignationRepository
+    private _designationRepository: IDesignationRepository
   ) {}
 
   async addDesignation(designation: string): Promise<DesignationResponse> {
     try {
-      const existing = await this._designationRepository.findByName(
+      const existing = await this._designationRepository.findDesignationByName(
         designation
       );
       if (existing) {
@@ -48,7 +48,9 @@ export class JobService implements IJobsService {
     id: string
   ): Promise<ToggleDesignationResponse> {
     try {
-      const designation = await this._designationRepository.findById(id);
+      const designation = await this._designationRepository.findDesignationById(
+        id
+      );
       console.log(
         "desigantion from the block designation service:",
         designation
@@ -98,7 +100,7 @@ export class JobService implements IJobsService {
     success: boolean;
     message: string;
     data?: {
-      designations: IJobDesignation[];
+      designations: IDesignation[];
       pagination: {
         total: number;
         page: number;

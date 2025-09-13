@@ -19,9 +19,7 @@ export class AdminService implements IAdminService {
 
   async adminLogin(data: LoginData): Promise<LoginResponse> {
     try {
-      console.log(
-        "entered into the adminLogin function in the adminAuthService"
-      );
+      console.log("entered into the adminLogin function in the admin Service");
       console.log("data in adminLogin service:", data);
 
       const { email, password } = data;

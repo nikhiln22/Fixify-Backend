@@ -3,15 +3,11 @@ import { ITechnicianService } from "../interfaces/Iservices/ItechnicianService";
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
-import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
-import { IBookingService } from "../interfaces/Iservices/IbookingService";
 import {
   createSuccessResponse,
   createErrorResponse,
 } from "../utils/responseHelper";
 import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
-import { ICouponService } from "../interfaces/Iservices/IcouponService";
-import { IOfferService } from "../interfaces/Iservices/IofferService";
 import config from "../config/env";
 
 @injectable()
@@ -19,11 +15,7 @@ export class UserController {
   constructor(
     @inject("IUserService") private _userService: IUserService,
     @inject("ITechnicianService")
-    private _technicianService: ITechnicianService,
-    @inject("ITimeSlotService") private _timeSlotService: ITimeSlotService,
-    @inject("IBookingService") private _bookingService: IBookingService,
-    @inject("ICouponService") private _couponService: ICouponService,
-    @inject("IOfferService") private _offerService: IOfferService
+    private _technicianService: ITechnicianService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {
@@ -35,14 +27,11 @@ export class UserController {
       console.log("response in register:", serviceResponse);
 
       if (serviceResponse.success) {
-        res.status(HTTP_STATUS.CREATED).json(
-          createSuccessResponse(
-            {
-              email: serviceResponse.email,
-            },
-            serviceResponse.message
-          )
-        );
+        res
+          .status(HTTP_STATUS.CREATED)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
       } else {
         res
           .status(HTTP_STATUS.BAD_REQUEST)
@@ -103,6 +92,7 @@ export class UserController {
     try {
       console.log("entering into the resend otp functionality");
       const { email } = req.body;
+      console.log("email in the resend otp in the controller:", email);
       const serviceResponse = await this._userService.resendOtp(email);
       console.log("response from the resendotp controller:", serviceResponse);
 
@@ -265,7 +255,6 @@ export class UserController {
         .json(createErrorResponse("Internal server error"));
     }
   }
-
   async getProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("Entering user profile fetch");
@@ -419,9 +408,9 @@ export class UserController {
 
   async toggleUserStatus(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const { userId } = req.params;
 
-      const serviceResponse = await this._userService.toggleUserStatus(id);
+      const serviceResponse = await this._userService.toggleUserStatus(userId);
 
       if (serviceResponse.success) {
         res
@@ -514,11 +503,9 @@ export class UserController {
     }
   }
 
-  async logout(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async logout(req: Request, res: Response): Promise<void> {
     try {
       console.log("entering the logout function from the user auth controller");
-      const role = req.user?.role;
-      console.log("role in the user auth controller:", role);
       res.clearCookie("refresh_token", {
         httpOnly: true,
         secure: true,

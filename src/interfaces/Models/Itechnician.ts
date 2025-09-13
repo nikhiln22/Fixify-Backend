@@ -6,17 +6,13 @@ export interface ITechnician extends Document {
   email: string;
   password: string;
   phone: number;
+  is_verified: boolean;
   status?: string;
-  is_verified?: boolean;
   yearsOfExperience?: number;
   Designation?: Types.ObjectId;
   About?: string;
   image?: string;
   certificates?: string[];
-  longitude?: number;
-  latitude?: number;
-  address?: string;
-  email_verified?: boolean;
   expiresAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;

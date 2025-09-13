@@ -33,11 +33,9 @@ export class App {
             "https://fixify.homes",
             "https://www.fixify.homes",
           ];
-          console.log("CORS checking origin::", origin);
           if (!origin || allowedOrigins.includes(origin)) {
             callback(null, origin);
           } else {
-            console.log("CORS blocked origin::", origin);
             callback(new Error("Not allowed by CORS"));
           }
         },

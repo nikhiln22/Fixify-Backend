@@ -122,4 +122,29 @@ export interface ISubscriptionPlanService {
       newHistoryEntry: ISubscriptionPlanHistory;
     };
   }>;
+  getTechnicianActiveSubscriptionPlan(technicianId: string): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      currentSubscription: {
+        planName: string;
+        status: string;
+        commissionRate: number;
+        walletCreditDelay: number;
+        profileBoost: boolean;
+        durationInMonths: number;
+        expiresAt?: string;
+        amount: number;
+      };
+      upcomingSubscription?: {
+        planName: string;
+        commissionRate: number;
+        walletCreditDelay: number;
+        profileBoost: boolean;
+        durationInMonths: number;
+        amount: number;
+        activatesOn?: string;
+      } | null;
+    };
+  }>;
 }

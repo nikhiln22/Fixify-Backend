@@ -21,69 +21,92 @@ export class TechnicianRoutes {
     const technicianController = container.resolve(TechnicianController);
 
     this.router.post(
-      "/login",
-      technicianController.login.bind(technicianController)
-    );
-
-    this.router.post(
       "/register",
       technicianController.register.bind(technicianController)
     );
 
     this.router.post(
-      "/verifyOtp",
+      "/login",
+      technicianController.login.bind(technicianController)
+    );
+
+    this.router.post(
+      "/verify-otp",
       technicianController.verifyOtp.bind(technicianController)
     );
 
     this.router.post(
-      "/resendotp",
+      "/resend-otp",
       technicianController.resendOtp.bind(technicianController)
     );
 
     this.router.post(
-      "/forgotpassword",
+      "/forgot-password",
       technicianController.forgotPassword.bind(technicianController)
     );
 
     this.router.post(
-      "/resetpassword",
+      "/reset-password",
       technicianController.resetPassword.bind(technicianController)
+    );
+
+    this.router.get(
+      "/logout",
+      technicianController.logout.bind(technicianController)
     );
 
     this.router.patch(
       "/qualifications",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      this.authMiddleware.authenticateBasic(Roles.TECHNICIAN),
       this.localUpload.technicianQualificationUpload,
       technicianController.submitQualifications.bind(technicianController)
     );
 
     this.router.get(
-      "/logout",
-      this.authMiddleware.authenticate(Roles.TECHNICIAN),
-      technicianController.logout.bind(technicianController)
-    );
-
-    this.router.get(
-      "/technicianprofile",
-      this.authMiddleware.authenticateAndCheckBlocked(Roles.TECHNICIAN),
+      "/me",
+      this.authMiddleware.authenticateBasic(Roles.TECHNICIAN),
       technicianController.getProfile.bind(technicianController)
     );
 
     this.router.get(
+      "/reviews",
+      this.authMiddleware.authenticateBasic(Roles.TECHNICIAN),
+      technicianController.getReviews.bind(technicianController)
+    );
+
+    this.router.get(
+      "/",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      technicianController.getAllTechnicians.bind(technicianController)
+    );
+
+    this.router.get(
+      "/:technicianId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      technicianController.getTechnicianDetails.bind(technicianController)
+    );
+
+    this.router.patch(
+      "/:technicianId/block",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      technicianController.toggleTechnicianStatus.bind(technicianController)
+    );
+
+    this.router.get(
       "/dashboardstats",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
       technicianController.getDashboardStats.bind(technicianController)
     );
 
     this.router.get(
       "/technicianearnings",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
       technicianController.getTechnicianEarnings.bind(technicianController)
     );
 
     this.router.get(
       "/servicecategoryrevenue",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
       technicianController.getTechnicianServiceCategoriesRevenue.bind(
         technicianController
       )
@@ -91,7 +114,7 @@ export class TechnicianRoutes {
 
     this.router.get(
       "/bookingstatusdistribution",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.TECHNICIAN),
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
       technicianController.getTechnicianBookingStatusDistribution.bind(
         technicianController
       )

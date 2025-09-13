@@ -16,21 +16,29 @@ export class ServiceRepository
 
   async addService(serviceData: {
     name: string;
-    price: number;
-    imageFile: string;
+    image: string;
     description: string;
-    category: string;
-    designation: string;
+    categoryId: string;
+    designationId: string;
+    serviceType: "fixed" | "hourly";
+    price?: number;
+    estimatedTime?: number;
+    hourlyRate?: number;
+    maxHours?: number;
   }): Promise<IService> {
     try {
       console.log("entered into the service adding function in the repository");
       const newService = await this.create({
         name: serviceData.name,
-        image: serviceData.imageFile,
+        image: serviceData.image,
         price: serviceData.price,
         description: serviceData.description,
-        category: new Types.ObjectId(serviceData.category),
-        designation: new Types.ObjectId(serviceData.designation),
+        category: new Types.ObjectId(serviceData.categoryId),
+        designation: new Types.ObjectId(serviceData.designationId),
+        serviceType: serviceData.serviceType,
+        estimatedTime: serviceData.estimatedTime,
+        hourlyRate: serviceData.hourlyRate,
+        maxHours: serviceData.maxHours,
       });
 
       const populatedService = await this.model.populate(newService, {
@@ -61,6 +69,7 @@ export class ServiceRepository
     search?: string;
     categoryId?: string;
     status?: string;
+    serviceType?: string;
   }): Promise<{
     data: IService[];
     total: number;
@@ -91,6 +100,14 @@ export class ServiceRepository
           filter.status = "Active";
         } else if (options.status === "blocked") {
           filter.status = "Blocked";
+        }
+      }
+
+      if (options.serviceType) {
+        if (options.serviceType === "hourly") {
+          filter.serviceType = "hourly";
+        } else if (options.serviceType === "fixed") {
+          filter.serviceType = "fixed";
         }
       }
 

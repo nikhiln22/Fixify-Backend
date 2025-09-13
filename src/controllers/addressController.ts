@@ -7,30 +7,45 @@ import {
 } from "../utils/responseHelper";
 import { inject, injectable } from "tsyringe";
 import { IAddressService } from "../interfaces/Iservices/IaddressService";
+import { Roles } from "../config/roles";
 
 @injectable()
 export class AddressController {
   constructor(
     @inject("IAddressService") private _addressService: IAddressService
   ) {}
+
   async getAddress(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      console.log("entering to the controller for fetching the user address");
+      console.log("entering to the controller for fetching the address");
       const userId = req.user?.id;
+      const role = req.user?.role as Roles;
       console.log("userId from the address fetching controller:", userId);
+      console.log("role from the address fetching controller:", role);
 
-      if (!userId) {
+      if (!userId || !role) {
         res
           .status(HTTP_STATUS.UNAUTHORIZED)
           .json(createErrorResponse("Unauthorized access"));
         return;
       }
 
-      const serviceResponse = await this._addressService.getUserAddresses(
-        userId
+      const ownerModel = role.toLowerCase() as "user" | "technician";
+
+      if (!["user", "technician"].includes(ownerModel)) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("Invalid user role"));
+        return;
+      }
+
+      const serviceResponse = await this._addressService.getOwnerAddresses(
+        userId,
+        ownerModel
       );
+
       console.log(
-        "response from the user controller fetching the user address:",
+        "response from the address controller fetching the addresses:",
         serviceResponse
       );
 
@@ -50,7 +65,7 @@ export class AddressController {
           );
       }
     } catch (error) {
-      console.log("error occurred while fetching the user address:", error);
+      console.log("error occurred while fetching the addresses:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal Server Error"));
@@ -59,13 +74,26 @@ export class AddressController {
 
   async addAddress(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      console.log("entering to the function adding the user address");
+      console.log("entering to the function adding the address");
       const userId = req.user?.id;
+      const role = req.user?.role as Roles;
 
-      if (!userId) {
+      console.log("userId from the add address controller:", userId);
+      console.log("role from the add address controller:", role);
+
+      if (!userId || !role) {
         res
           .status(HTTP_STATUS.UNAUTHORIZED)
           .json(createErrorResponse("Unauthorized access"));
+        return;
+      }
+
+      const ownerModel = role.toLowerCase() as "user" | "technician";
+
+      if (!["user", "technician"].includes(ownerModel)) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("Invalid user role"));
         return;
       }
 
@@ -74,6 +102,7 @@ export class AddressController {
 
       const serviceResponse = await this._addressService.addAddress(
         userId,
+        ownerModel,
         addressData
       );
 
@@ -104,25 +133,39 @@ export class AddressController {
 
   async deleteAddress(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      console.log("deleting the already existing address of the user");
+      console.log("deleting the already existing address");
       const userId = req.user?.id;
+      const role = req.user?.role as Roles;
       const addressId = req.params.addressId;
+
       console.log("userId from the address deleting controller:", userId);
+      console.log("role from the address deleting controller:", role);
       console.log("addressId from the address deleting controller:", addressId);
 
-      if (!userId || !addressId) {
+      if (!userId || !role || !addressId) {
         res
           .status(HTTP_STATUS.UNAUTHORIZED)
           .json(createErrorResponse("Unauthorized access"));
         return;
       }
 
+      const ownerModel = role.toLowerCase() as "user" | "technician";
+
+      if (!["user", "technician"].includes(ownerModel)) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("Invalid user role"));
+        return;
+      }
+
       const serviceResponse = await this._addressService.deleteAddress(
         addressId,
-        userId
+        userId,
+        ownerModel
       );
+
       console.log(
-        "response from the user controller deleting the user address:",
+        "response from the address controller deleting the address:",
         serviceResponse
       );
 

@@ -4,15 +4,15 @@ import {
   ForgotPasswordResponse,
   LoginData,
   LoginResponse,
-  SignUpUserResponse,
   ResendOtpResponse,
   ResetPasswordData,
   ResetPasswordResponse,
   SignupUserData,
+  SignUpUserResponse,
   ToggleUserStatusResponse,
   UserProfileResponse,
-  VerifyOtpData,
   UserProfileUpdateData,
+  VerifyOtpData,
   VerifyOtpResponse,
 } from "../DTO/IServices/IuserService";
 import { IUser } from "../../interfaces/Models/Iuser";
@@ -44,7 +44,7 @@ export interface IUserService {
       };
     };
   }>;
-  toggleUserStatus(id: string): Promise<ToggleUserStatusResponse>;
+  toggleUserStatus(userId: string): Promise<ToggleUserStatusResponse>;
   getUserProfile(technicianId: string): Promise<UserProfileResponse>;
   editProfile(
     userId: string,

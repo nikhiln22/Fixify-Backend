@@ -18,9 +18,24 @@ export class TimeSlotRoutes {
     const timeSlotController = container.resolve(TimeSlotController);
 
     this.router.get(
-      "/:technicianId",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      "/",
+      this.authMiddleware.authenticate(
+        Roles.TECHNICIAN,
+        Roles.USER
+      ),
       timeSlotController.getTimeSlots.bind(timeSlotController)
+    );
+
+    this.router.post(
+      "/",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      timeSlotController.addTimeSlots.bind(timeSlotController)
+    );
+
+    this.router.patch(
+      "/:slotId/block",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      timeSlotController.blockTimeSlot.bind(timeSlotController)
     );
   }
 

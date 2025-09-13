@@ -44,12 +44,6 @@ export class AdminRoutes {
     );
 
     this.router.get(
-      "/technicianreviews",
-      this.authMiddleware.authenticate(Roles.ADMIN),
-      adminController.getTechnicianReviews.bind(adminController)
-    );
-
-    this.router.get(
       "/logout",
       this.authMiddleware.authenticate(Roles.ADMIN),
       adminController.logout.bind(adminController)

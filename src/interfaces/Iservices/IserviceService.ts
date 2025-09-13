@@ -15,6 +15,7 @@ export interface IServiceService {
     search?: string;
     categoryId?: string;
     status?: string;
+    serviceType?: string;
   }): Promise<{
     success: boolean;
     message: string;

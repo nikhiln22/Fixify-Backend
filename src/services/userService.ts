@@ -1,50 +1,49 @@
-import { Roles } from "../config/roles";
 import {
-  OtpPurpose,
-  OTP_EXPIRY_SECONDS,
-  OTP_PREFIX,
-} from "../config/otpConfig";
-import {
-  ForgotPasswordRequest,
-  ForgotPasswordResponse,
-  LoginData,
-  LoginResponse,
-  ResendOtpResponse,
-  ResetPasswordData,
-  ResetPasswordResponse,
-  SignupUserData,
-  VerifyOtpData,
-  VerifyOtpResponse,
   ToggleUserStatusResponse,
   UserProfileResponse,
   EditProfileResponse,
   UserProfileUpdateData,
+  SignupUserData,
   SignUpUserResponse,
+  VerifyOtpData,
+  VerifyOtpResponse,
+  ResendOtpResponse,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
+  ResetPasswordData,
+  ResetPasswordResponse,
+  LoginData,
+  LoginResponse,
 } from "../interfaces/DTO/IServices/IuserService";
 import { IUserRepository } from "../interfaces/Irepositories/IuserRepository";
 import { IUserService } from "../interfaces/Iservices/IuserService";
-import { IEmailService } from "../interfaces/Iemail/Iemail";
-import { IJwtService } from "../interfaces/Ijwt/Ijwt";
-import { IOTPService } from "../interfaces/Iotp/IOTP";
-import { IPasswordHasher } from "../interfaces/IpasswordHasher/IpasswordHasher";
-import { IRedisService } from "../interfaces/Iredis/Iredis";
-import { OtpVerificationResult } from "../interfaces/Iotp/IOTP";
 import { inject, injectable } from "tsyringe";
 import { IUser } from "../interfaces/Models/Iuser";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
+import {
+  OTP_EXPIRY_SECONDS,
+  OTP_PREFIX,
+  OtpPurpose,
+} from "../config/otpConfig";
+import { IOTPService, OtpVerificationResult } from "../interfaces/Iotp/IOTP";
+import { IRedisService } from "../interfaces/Iredis/Iredis";
+import { IEmailService } from "../interfaces/Iemail/Iemail";
+import { IPasswordHasher } from "../interfaces/IpasswordHasher/IpasswordHasher";
 import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
+import { IJwtService } from "../interfaces/Ijwt/Ijwt";
+import { Roles } from "../config/roles";
 
 @injectable()
 export class UserService implements IUserService {
   constructor(
     @inject("IUserRepository") private _userRepository: IUserRepository,
-    @inject("IEmailService") private _emailService: IEmailService,
-    @inject("IOTPService") private _otpService: IOTPService,
-    @inject("IPasswordHasher") private _passwordService: IPasswordHasher,
-    @inject("IJwtService") private _jwtService: IJwtService,
-    @inject("IRedisService") private _redisService: IRedisService,
     @inject("IFileUploader") private _fileUploader: IFileUploader,
-    @inject("IWalletRepository") private _walletRepository: IWalletRepository
+    @inject("IOTPService") private _otpService: IOTPService,
+    @inject("IRedisService") private _redisService: IRedisService,
+    @inject("IEmailService") private _emailService: IEmailService,
+    @inject("IPasswordHasher") private _passwordService: IPasswordHasher,
+    @inject("IWalletRepository") private _walletRepository: IWalletRepository,
+    @inject("IJwtService") private _jwtService: IJwtService
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -137,7 +136,9 @@ export class UserService implements IUserService {
           return {
             message: "Otp sent to complete registration",
             success: true,
-            email,
+            data: {
+              email: email,
+            },
           };
         }
       }
@@ -147,7 +148,7 @@ export class UserService implements IUserService {
 
       console.log("Generated otp for new user registration:", otp);
 
-      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+      const expiresAt = new Date(Date.now() + UserService.USER_EXPIRY_MS);
       const userData = {
         ...data,
         password: hashedPassword,
@@ -160,8 +161,10 @@ export class UserService implements IUserService {
 
       return {
         message: "User created successfully,OTP sent",
-        email,
         success: true,
+        data: {
+          email: email,
+        },
       };
     } catch (error) {
       console.log("Error during user signup:", error);
@@ -539,9 +542,9 @@ export class UserService implements IUserService {
     }
   }
 
-  async toggleUserStatus(id: string): Promise<ToggleUserStatusResponse> {
+  async toggleUserStatus(userId: string): Promise<ToggleUserStatusResponse> {
     try {
-      const user = await this._userRepository.findById(id);
+      const user = await this._userRepository.findById(userId);
       console.log("User fetched from repository:", user);
 
       if (!user) {
@@ -552,7 +555,7 @@ export class UserService implements IUserService {
       }
 
       const newStatus = user.status === "Active" ? "Blocked" : "Active";
-      const response = await this._userRepository.blockUser(id, newStatus);
+      const response = await this._userRepository.blockUser(userId, newStatus);
       console.log(
         "Response after toggling user status from the user repository:",
         response

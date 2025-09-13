@@ -6,10 +6,14 @@ import {
   createSuccessResponse,
   createErrorResponse,
 } from "../utils/responseHelper";
+import { IJwtService } from "../interfaces/Ijwt/Ijwt";
 
 @injectable()
 export class AuthController {
-  constructor(@inject("IAuthService") private _authService: IAuthService) {}
+  constructor(
+    @inject("IAuthService") private _authService: IAuthService,
+    @inject("IJwtService") private _jwtService: IJwtService
+  ) {}
 
   async newAccessToken(req: Request, res: Response): Promise<void> {
     try {
@@ -30,6 +34,14 @@ export class AuthController {
       }
 
       const result = await this._authService.newAccessToken(refreshToken);
+
+      const payload = await this._jwtService.verifyRefreshToken(refreshToken);
+
+      if(!payload){
+        return
+          res.status(HTTP_STATUS.FORBIDDEN).json()
+        
+      }
 
       if (result.success) {
         const successResponse = createSuccessResponse(
@@ -53,4 +65,5 @@ export class AuthController {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(errorResponse);
     }
   }
+
 }

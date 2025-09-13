@@ -61,9 +61,9 @@ export interface ICouponService {
     data?: Partial<ICoupon>[];
   }>;
   applyCoupon(
-    userId: string,
     couponId: string,
-    serviceId: string
+    serviceId: string,
+    hoursWorked?: number
   ): Promise<{
     success: boolean;
     message: string;
@@ -71,6 +71,7 @@ export interface ICouponService {
       couponCode: string;
       discountAmount: number;
       finalAmount: number;
+      couponId: string;
     };
   }>;
 }

@@ -19,37 +19,37 @@ export class OfferRoutes {
 
     this.router.get(
       "/",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      this.authMiddleware.authenticate(Roles.USER),
       offerController.getUserOffers.bind(offerController)
     );
 
     this.router.get(
       "/admin",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.ADMIN),
+      this.authMiddleware.authenticate(Roles.ADMIN),
       offerController.getAllOffers.bind(offerController)
     );
 
     this.router.post(
       "/",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.ADMIN),
+      this.authMiddleware.authenticate(Roles.ADMIN),
       offerController.addOffer.bind(offerController)
     );
 
     this.router.put(
       "/:offerId",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.ADMIN),
+      this.authMiddleware.authenticate(Roles.ADMIN),
       offerController.updateOffer.bind(offerController)
     );
 
     this.router.patch(
       "/:id/block",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.ADMIN),
+      this.authMiddleware.authenticate(Roles.ADMIN),
       offerController.blockOffer.bind(offerController)
     );
 
     this.router.post(
       "/apply-best",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      this.authMiddleware.authenticate(Roles.USER),
       offerController.applyBestOffer.bind(offerController)
     );
   }

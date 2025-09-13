@@ -7,7 +7,6 @@ export interface IUserRepository {
   updateUserVerification(email: string): Promise<void>;
   findByEmail(email: string): Promise<IUser | null>;
   updatePassword(email: string, hashedPassword: string): Promise<void>;
-
   getAllUsers(options: {
     page?: number;
     limit?: number;
@@ -20,7 +19,7 @@ export interface IUserRepository {
     limit: number;
     pages: number;
   }>;
-  blockUser(id: string, newStatus: "Active" | "Blocked"): Promise<IUser>;
+  blockUser(userId: string, newStatus: "Active" | "Blocked"): Promise<IUser>;
   findById(id: string): Promise<IUser | null>;
   editProfile(
     userId: string,

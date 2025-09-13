@@ -1,9 +1,10 @@
 import { Document, Types } from "mongoose";
 
-export interface IUserAddress extends Document {
+export interface IAddress extends Document {
   _id: string;
-  userId: Types.ObjectId;
-  addressType: "Home" | "Work";
+  ownerId: Types.ObjectId;
+  ownerModel: "user" | "technician";
+  addressType?: "Home" | "Work";
   fullAddress: string;
   houseNumber?: string;
   longitude: number;

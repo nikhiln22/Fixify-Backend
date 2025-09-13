@@ -23,7 +23,7 @@ export class ServiceController {
       console.log("data:", data);
       console.log("req.file:", req.file);
 
-      data.imageFile = req.file?.path;
+      data.image = req.file?.path;
 
       const serviceResponse = await this._serviceService.addService(data);
       console.log("result from the addservice function:", serviceResponse);
@@ -72,6 +72,9 @@ export class ServiceController {
       const status = req.query.status
         ? (req.query.status as string)
         : undefined;
+      const serviceType = req.query.serviceType
+        ? (req.query.serviceType as string)
+        : undefined;
 
       const serviceResponse = await this._serviceService.getAllServices({
         page,
@@ -79,6 +82,7 @@ export class ServiceController {
         search,
         categoryId,
         status,
+        serviceType
       });
 
       console.log(

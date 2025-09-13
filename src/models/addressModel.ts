@@ -1,17 +1,21 @@
 import mongoose, { Schema } from "mongoose";
-import { IUserAddress } from "../interfaces/Models/Iaddress";
+import { IAddress } from "../interfaces/Models/Iaddress";
 
-const userAddressSchema: Schema<IUserAddress> = new Schema(
+const addressSchema: Schema<IAddress> = new Schema(
   {
-    userId: {
+    ownerId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      required: true,
+      refPath: "ownerModel",
+    },
+    ownerModel: {
+      type: String,
+      enum: ["user", "technician"],
       required: true,
     },
     addressType: {
       type: String,
       enum: ["Home", "Work"],
-      default: "Home",
     },
     fullAddress: {
       type: String,
@@ -35,12 +39,8 @@ const userAddressSchema: Schema<IUserAddress> = new Schema(
   { timestamps: true }
 );
 
-userAddressSchema.index({ userId: 1 });
-userAddressSchema.index({ longitude: 1, latitude: 1 });
+addressSchema.index({ longitude: 1, latitude: 1 });
 
-const userAddress = mongoose.model<IUserAddress>(
-  "UserAddress",
-  userAddressSchema
-);
+const address = mongoose.model<IAddress>("address", addressSchema);
 
-export default userAddress;
+export default address;

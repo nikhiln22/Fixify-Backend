@@ -9,7 +9,6 @@ const serviceSchema: Schema<IService> = new Schema(
     },
     price: {
       type: Number,
-      required: true,
     },
     description: {
       type: String,
@@ -23,13 +22,27 @@ const serviceSchema: Schema<IService> = new Schema(
     },
     designation: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "jobDesignation",
+      ref: "designation",
       required: true,
     },
     status: {
       type: String,
       enum: ["Active", "Blocked"],
       default: "Active",
+    },
+    serviceType: {
+      type: String,
+      enum: ["fixed", "hourly"],
+      required: true,
+    },
+    estimatedTime: {
+      type: Number,
+    },
+    hourlyRate: {
+      type: Number,
+    },
+    maxHours: {
+      type: Number,
     },
   },
   { timestamps: true }

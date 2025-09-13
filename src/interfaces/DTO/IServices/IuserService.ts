@@ -9,9 +9,11 @@ export interface SignupUserData {
 }
 
 export interface SignUpUserResponse {
-  email?: string;
   success: boolean;
-  message?: string;
+  message: string;
+  data?: {
+    email: string;
+  };
 }
 
 export interface ResendOtpResponse {

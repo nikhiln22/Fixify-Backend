@@ -2,8 +2,6 @@ import { ITechnicianService } from "../interfaces/Iservices/ItechnicianService";
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../utils/httpStatus";
 import { inject, injectable } from "tsyringe";
-import { IBookingService } from "../interfaces/Iservices/IbookingService";
-import { ISubscriptionPlanService } from "../interfaces/Iservices/IsubscriptionPlanService";
 import {
   createErrorResponse,
   createSuccessResponse,
@@ -15,10 +13,7 @@ import config from "../config/env";
 export class TechnicianController {
   constructor(
     @inject("ITechnicianService")
-    private _technicianService: ITechnicianService,
-    @inject("IBookingService") private _bookingService: IBookingService,
-    @inject("ISubscriptionPlanService")
-    private _subscriptionPlanService: ISubscriptionPlanService
+    private _technicianService: ITechnicianService
   ) {}
 
   async register(req: Request, res: Response): Promise<void> {
@@ -35,14 +30,11 @@ export class TechnicianController {
       console.log("response in technician register:", serviceResponse);
 
       if (serviceResponse.success) {
-        res.status(HTTP_STATUS.CREATED).json(
-          createSuccessResponse(
-            {
-              email: serviceResponse.email,
-            },
-            serviceResponse.message
-          )
-        );
+        res
+          .status(HTTP_STATUS.CREATED)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
       } else {
         res
           .status(HTTP_STATUS.BAD_REQUEST)
@@ -406,6 +398,46 @@ export class TechnicianController {
     }
   }
 
+  async getTechnicianDetails(req: Request, res: Response): Promise<void> {
+    try {
+      const technicianId = req.params.technicianId;
+      console.log(
+        "technicianID in the getTechnician Details function:",
+        technicianId
+      );
+
+      const serviceResponse =
+        await this._technicianService.getTechnicianDetails(technicianId);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(
+              serviceResponse.technician,
+              serviceResponse.message
+            )
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch profile"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("Error fetching technician profile:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
   // async editProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
   //   try {
   //     console.log(
@@ -674,132 +706,6 @@ export class TechnicianController {
     }
   }
 
-  async getAllApplicants(req: Request, res: Response): Promise<void> {
-    try {
-      console.log("function fetching all the applicants");
-      const page = req.query.page
-        ? parseInt(req.query.page as string)
-        : undefined;
-      const limit = req.query.limit
-        ? parseInt(req.query.limit as string)
-        : undefined;
-
-      const serviceResponse = await this._technicianService.getAllApplicants({
-        page,
-        limit,
-      });
-
-      console.log(
-        "result from the fetching all applicants from admin controller:",
-        serviceResponse
-      );
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to fetch applicants"
-            )
-          );
-      }
-    } catch (error) {
-      console.error(
-        "Error in fetching all applicants in admin controller:",
-        error
-      );
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Error fetching applicants"));
-    }
-  }
-
-  async verifyApplicant(req: Request, res: Response): Promise<void> {
-    try {
-      console.log("Entered verify applicant function in admin controller");
-      const applicantId = req.params.applicantId;
-      console.log(
-        "Applicant ID from verify applicant controller:",
-        applicantId
-      );
-
-      const serviceResponse = await this._technicianService.verifyTechnician(
-        applicantId
-      );
-      console.log("Response from verifying the applicant:", serviceResponse);
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(createSuccessResponse(serviceResponse.message));
-      } else {
-        const statusCode = serviceResponse.message?.includes("not found")
-          ? HTTP_STATUS.NOT_FOUND
-          : HTTP_STATUS.BAD_REQUEST;
-        res
-          .status(statusCode)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to verify applicant"
-            )
-          );
-      }
-    } catch (error) {
-      console.log("Error occurred while verifying the applicant:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async rejectApplicant(req: Request, res: Response): Promise<void> {
-    try {
-      console.log("Entered reject applicant function in admin controller");
-      const applicantId = req.params.applicantId;
-      const { reason } = req.body;
-
-      console.log(
-        "Applicant ID from reject applicant controller:",
-        applicantId
-      );
-      console.log("Rejection reason:", reason);
-
-      const serviceResponse = await this._technicianService.rejectTechnician(
-        applicantId,
-        reason
-      );
-      console.log("Response from rejecting the applicant:", serviceResponse);
-
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(createSuccessResponse(serviceResponse.message));
-      } else {
-        const statusCode = serviceResponse.message?.includes("not found")
-          ? HTTP_STATUS.NOT_FOUND
-          : HTTP_STATUS.BAD_REQUEST;
-        res
-          .status(statusCode)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to reject applicant"
-            )
-          );
-      }
-    } catch (error) {
-      console.log("Error occurred while rejecting the applicant:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
   async getAllTechnicians(req: Request, res: Response): Promise<void> {
     try {
       console.log("fetching all the technicians from the admin controller");
@@ -860,10 +766,10 @@ export class TechnicianController {
 
   async toggleTechnicianStatus(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const { technicianId } = req.params;
 
       const serviceResponse =
-        await this._technicianService.toggleTechnicianStatus(id);
+        await this._technicianService.toggleTechnicianStatus(technicianId);
 
       if (serviceResponse.success) {
         res
@@ -888,6 +794,63 @@ export class TechnicianController {
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal server error"));
+    }
+  }
+
+  async getReviews(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const technicianId = req.user?.id;
+      console.log(
+        "technicianId in the technician controller fetching the reviews:",
+        technicianId
+      );
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("technician not authenticated"));
+        return;
+      }
+
+      const serviceResponse = await this._technicianService.getReviews(
+        technicianId
+      );
+      console.log(
+        "response from the service fetching the technician reviews:",
+        serviceResponse
+      );
+
+      if (serviceResponse.success) {
+        res.status(HTTP_STATUS.OK).json(
+          createSuccessResponse(
+            {
+              reviews: serviceResponse.reviews,
+              averageRating: serviceResponse.averageRating,
+              totalReviews: serviceResponse.totalReviews,
+            },
+            serviceResponse.message
+          )
+        );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch reviews"
+            )
+          );
+      }
+    } catch (error) {
+      console.log(
+        "error occurred while fetching the technician reviews:",
+        error
+      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
     }
   }
 

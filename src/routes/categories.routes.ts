@@ -22,27 +22,27 @@ export class CategoryRoutes {
 
     this.router.get(
       "/",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER,Roles.ADMIN),
+      this.authMiddleware.authenticate(Roles.USER,Roles.ADMIN),
       categoryController.getAllCategory.bind(categoryController)
     );
 
     this.router.post(
       "/",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.ADMIN),
+      this.authMiddleware.authenticate(Roles.ADMIN),
       this.localUpload.upload.single("image"),
       categoryController.addCategory.bind(categoryController)
     );
 
     this.router.put(
       "/:categoryId",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.ADMIN),
+      this.authMiddleware.authenticate(Roles.ADMIN),
       this.localUpload.upload.single("image"),
       categoryController.editCategory.bind(categoryController)
     );
 
     this.router.patch(
       "/:categoryId/status",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.ADMIN),
+      this.authMiddleware.authenticate(Roles.ADMIN),
       categoryController.toggleCategoryStatus.bind(categoryController)
     );
   }

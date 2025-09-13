@@ -5,16 +5,12 @@ import { IUserService } from "../interfaces/Iservices/IuserService";
 import { IAdminService } from "../interfaces/Iservices/IadminService";
 import { ITechnicianService } from "../interfaces/Iservices/ItechnicianService";
 import { IBookingService } from "../interfaces/Iservices/IbookingService";
-import { IOfferService } from "../interfaces/Iservices/IofferService";
-import { ICouponService } from "../interfaces/Iservices/IcouponService";
-import { ISubscriptionPlanService } from "../interfaces/Iservices/IsubscriptionPlanService";
 import {
   createErrorResponse,
   createSuccessResponse,
 } from "../utils/responseHelper";
 import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
 import config from "../config/env";
-import { INotificationService } from "../interfaces/Iservices/InotificationService";
 
 @injectable()
 export class AdminController {
@@ -25,13 +21,7 @@ export class AdminController {
     private _adminService: IAdminService,
     @inject("ITechnicianService")
     private _technicianService: ITechnicianService,
-    @inject("IBookingService") private _bookingService: IBookingService,
-    @inject("IOfferService") private _offerService: IOfferService,
-    @inject("ICouponService") private _couponService: ICouponService,
-    @inject("ISubscriptionPlanService")
-    private _subscriptionPlanService: ISubscriptionPlanService,
-    @inject("INotificationService")
-    private _notificationService: INotificationService
+    @inject("IBookingService") private _bookingService: IBookingService
   ) {}
 
   async login(req: Request, res: Response): Promise<void> {
@@ -214,60 +204,6 @@ export class AdminController {
             createErrorResponse(
               serviceResponse.message ||
                 "Failed to fetch service category performance"
-            )
-          );
-      }
-    } catch (error) {
-      console.log("error in getServiceCategoryPerformance controller:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal server error"));
-    }
-  }
-
-  async getTechnicianReviews(req: Request, res: Response): Promise<void> {
-    try {
-      console.log(
-        "entering to the admin controller that fetches the technician reviews"
-      );
-      const { technicianId } = req.query;
-      console.log(
-        "technicianId in the get technician reviews function in admin controller:",
-        technicianId
-      );
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            createErrorResponse(
-              "technicianId is required and must be a valid string"
-            )
-          );
-        return;
-      }
-
-      const serviceResponse = await this._technicianService.getReviews(
-        technicianId.toString()
-      );
-      if (serviceResponse.success) {
-        res.status(HTTP_STATUS.OK).json(
-          createSuccessResponse(
-            {
-              reviews: serviceResponse.reviews,
-              averageRating: serviceResponse.averageRating,
-              totalReviews: serviceResponse.totalReviews,
-            },
-            serviceResponse.message
-          )
-        );
-      } else {
-        res
-          .status(HTTP_STATUS.BAD_REQUEST)
-          .json(
-            createErrorResponse(
-              serviceResponse.message ||
-                "Failed to fetch the technician reviews"
             )
           );
       }
