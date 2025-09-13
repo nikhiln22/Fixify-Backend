@@ -1,4 +1,3 @@
-// routes/ChatRoutes.ts
 import express, { Router } from "express";
 import { container } from "../di/container";
 import { AuthMiddleware } from "../middlewares/AuthMiddleware";
@@ -20,7 +19,7 @@ export class ChatRoutes {
 
     this.router.get(
       "/:bookingId/history",
-      this.authMiddleware.authenticateAndCheckStatus(
+      this.authMiddleware.authenticate(
         Roles.USER,
         Roles.TECHNICIAN
       ),
@@ -29,7 +28,7 @@ export class ChatRoutes {
 
     this.router.post(
       "/:bookingId/send",
-      this.authMiddleware.authenticateAndCheckStatus(
+      this.authMiddleware.authenticate(
         Roles.USER,
         Roles.TECHNICIAN
       ),

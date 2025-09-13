@@ -115,7 +115,6 @@ export class CouponService implements ICouponService {
         };
       }
 
-  
       const newStatus = coupon.status === "Active" ? "Blocked" : "Active";
       const response = await this._couponRepository.blockCoupon(id, newStatus);
       console.log(
@@ -229,9 +228,37 @@ export class CouponService implements ICouponService {
         };
       }
 
+      let priceForCoupon: number;
+
+      if (service.serviceType === "fixed") {
+        if (!service.price) {
+          return {
+            success: false,
+            message: "Fixed service price not available",
+          };
+        }
+        priceForCoupon = service.price;
+      } else if (service.serviceType === "hourly") {
+        if (!service.hourlyRate) {
+          return {
+            success: false,
+            message: "Hourly rate not available",
+          };
+        }
+        priceForCoupon = service.hourlyRate;
+      } else {
+        return {
+          success: false,
+          message: "Invalid service type",
+        };
+      }
+
+      console.log("Price used for coupon eligibility:", priceForCoupon);
+      console.log("Service type:", service.serviceType);
+
       const eligibleCoupons = await this._couponRepository.getEligibleCoupons(
         userId,
-        service?.price
+        priceForCoupon
       );
 
       console.log("eligible coupons from repository:", eligibleCoupons);
@@ -260,9 +287,9 @@ export class CouponService implements ICouponService {
   }
 
   async applyCoupon(
-    userId: string,
     couponId: string,
-    serviceId: string
+    serviceId: string,
+    hoursWorked?: number
   ): Promise<{
     success: boolean;
     message: string;
@@ -274,43 +301,51 @@ export class CouponService implements ICouponService {
     };
   }> {
     try {
-      console.log(
-        "entered the function in the coupon service that applies the coupon"
-      );
-      console.log(
-        "userId:",
-        userId,
-        "couponId:",
+      console.log("entered applyCoupon with:", {
         couponId,
-        "serviceId:",
-        serviceId
-      );
+        serviceId,
+        hoursWorked,
+      });
 
       const service = await this._serviceRepository.findServiceById(serviceId);
-
-      console.log("fetched service in the apply coupon method:", service);
-
       if (!service) {
-        return {
-          success: false,
-          message: "Service not found",
-        };
+        return { success: false, message: "Service not found" };
       }
 
       const coupon = await this._couponRepository.findCouponById(couponId);
-
-      console.log("fetched coupon in the apply coupon method:", coupon);
-
       if (!coupon) {
-        return {
-          success: false,
-          message: "Coupon not found",
-        };
+        return { success: false, message: "Coupon not found" };
+      }
+
+      let originalAmount = 0;
+
+      if (service.serviceType === "fixed") {
+        if (!service.price) {
+          return {
+            success: false,
+            message: "Price not defined for fixed service",
+          };
+        }
+        originalAmount = service.price;
+      } else if (service.serviceType === "hourly") {
+        if (!service.hourlyRate) {
+          return {
+            success: false,
+            message: "Hourly rate not defined for hourly service",
+          };
+        }
+        if (!hoursWorked || hoursWorked <= 0) {
+          return {
+            success: false,
+            message: "Hours worked must be provided for hourly services",
+          };
+        }
+        originalAmount = service.hourlyRate * hoursWorked;
       }
 
       let discountAmount = 0;
       if (coupon.discount_type === "percentage") {
-        discountAmount = (service.price * coupon.discount_value) / 100;
+        discountAmount = (originalAmount * coupon.discount_value) / 100;
         if (coupon.max_discount && discountAmount > coupon.max_discount) {
           discountAmount = coupon.max_discount;
         }
@@ -318,11 +353,11 @@ export class CouponService implements ICouponService {
         discountAmount = coupon.discount_value;
       }
 
-      const finalAmount = service.price - discountAmount;
+      const finalAmount = Math.max(originalAmount - discountAmount, 0);
 
       console.log("Coupon applied successfully:", {
         couponCode: coupon.code,
-        originalAmount: service.price,
+        originalAmount,
         discountAmount,
         finalAmount,
       });
@@ -333,8 +368,8 @@ export class CouponService implements ICouponService {
         data: {
           couponId: coupon._id.toString(),
           couponCode: coupon.code,
-          discountAmount: discountAmount,
-          finalAmount: finalAmount,
+          discountAmount,
+          finalAmount,
         },
       };
     } catch (error) {

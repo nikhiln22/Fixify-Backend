@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { injectable, inject } from "tsyringe";
-import { IJobsService } from "../interfaces/Iservices/IjobsService";
+import { IDesignationService } from "../interfaces/Iservices/IdesignationService";
 import { HTTP_STATUS } from "../utils/httpStatus";
 import {
   createErrorResponse,
@@ -8,17 +8,17 @@ import {
 } from "../utils/responseHelper";
 
 @injectable()
-export class JobController {
+export class DesignationController {
   constructor(
-    @inject("IJobsService")
-    private _jobService: IJobsService
+    @inject("IDesignationService")
+    private _designationService: IDesignationService
   ) {}
 
   async addDesignation(req: Request, res: Response): Promise<void> {
     try {
       const { designation } = req.body;
 
-      const serviceResponse = await this._jobService.addDesignation(
+      const serviceResponse = await this._designationService.addDesignation(
         designation
       );
       console.log("result in the adddesignation controller:", serviceResponse);
@@ -51,9 +51,8 @@ export class JobController {
       const { id } = req.params;
       console.log("id from the toggle designation control:", id);
 
-      const serviceResponse = await this._jobService.toggleDesignationStatus(
-        id
-      );
+      const serviceResponse =
+        await this._designationService.toggleDesignationStatus(id);
 
       if (serviceResponse.success) {
         res
@@ -97,12 +96,14 @@ export class JobController {
         ? (req.query.status as string)
         : undefined;
 
-      const serviceResponse = await this._jobService.getAllDesignations({
-        page,
-        limit,
-        search,
-        status,
-      });
+      const serviceResponse = await this._designationService.getAllDesignations(
+        {
+          page,
+          limit,
+          search,
+          status,
+        }
+      );
 
       console.log(
         "result from the fetching all designations controller:",

@@ -1,6 +1,6 @@
 import { Document } from "mongoose";
 
-export interface IJobDesignation extends Document {
+export interface IDesignation extends Document {
   _id: string;
   designation: string;
   status: string;

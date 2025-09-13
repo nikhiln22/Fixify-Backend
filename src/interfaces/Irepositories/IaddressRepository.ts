@@ -1,8 +1,15 @@
-import { IUserAddress } from "../Models/Iaddress";
+import { IAddress } from "../Models/Iaddress";
 
 export interface IAddressRepository {
-  addAddress(addressData: IUserAddress): Promise<IUserAddress>;
-  getUserAddresses(userId: string): Promise<IUserAddress[]>;
-  deleteAddress(addressId: string): Promise<IUserAddress | null>;
-  findById(id: string): Promise<IUserAddress | null>;
+  addAddress(addressData: IAddress): Promise<IAddress>;
+  getOwnerAddresses(
+    ownerId: string,
+    ownerModel: "user" | "technician"
+  ): Promise<IAddress[]>;
+  deleteAddress(addressId: string): Promise<IAddress | null>;
+  findByOwnerAndId(
+    addressId: string,
+    ownerId: string,
+    ownerModel: "user" | "technician"
+  ): Promise<IAddress | null>;
 }

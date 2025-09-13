@@ -94,10 +94,10 @@ export class SubscriptionPlanController {
         return;
       }
 
-      if (durationInMonths < 1) {
+      if (durationInMonths < 0) {
         res
           .status(HTTP_STATUS.BAD_REQUEST)
-          .json(createErrorResponse("durationInMonths must be at least 1"));
+          .json(createErrorResponse("durationInMonths cannot be negative"));
         return;
       }
 
@@ -360,11 +360,16 @@ export class SubscriptionPlanController {
       console.log(
         "entering to the block subscription plan function in the admin controller"
       );
-      const { id } = req.params;
-      console.log("subscriptionPlanId in the block Subscription plan:", id);
+      const { subscriptionPlanId } = req.params;
+      console.log(
+        "subscriptionPlanId in the block Subscription plan:",
+        subscriptionPlanId
+      );
 
       const serviceResponse =
-        await this._subscriptionPlanService.blockSubscriptionPlan(id);
+        await this._subscriptionPlanService.blockSubscriptionPlan(
+          subscriptionPlanId
+        );
       console.log("response from the block coupon function:", serviceResponse);
 
       if (serviceResponse.success) {
@@ -393,13 +398,28 @@ export class SubscriptionPlanController {
     }
   }
 
-  async getSubscriptionhistory(req: Request, res: Response): Promise<void> {
+  async getSubscriptionhistory(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       console.log("fetching the technician subscription history for the admin");
-      const page = parseInt(req.query.page as string) || undefined;
-      const limit = parseInt(req.query.limit as string) || undefined;
-      const search = (req.query.search as string) || undefined;
-      const filterStatus = (req.query.filterStatus as string) || undefined;
+      const page = req.query.page
+        ? parseInt(req.query.page as string)
+        : undefined;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
+      const search = req.query.search
+        ? (req.query.search as string)
+        : undefined;
+      const filterStatus = req.query.filterStatus
+        ? (req.query.filterStatus as string)
+        : undefined;
+
+      const role = req.user?.role;
+
+      const technicianId = role === "technician" ? req.user?.id : undefined;
 
       const serviceResponse =
         await this._subscriptionPlanService.getSubscriptionHistory({
@@ -407,6 +427,7 @@ export class SubscriptionPlanController {
           limit,
           search,
           filterStatus,
+          technicianId,
         });
 
       console.log(
@@ -432,56 +453,6 @@ export class SubscriptionPlanController {
       }
     } catch (error) {
       console.log("error occurred while fetching subscription history:", error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
-    }
-  }
-
-  async getSubscriptionHistory(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
-    try {
-      console.log("fetching the subscription history for the technicians");
-      const technicianId = req.user?.id;
-
-      const page = parseInt(req.query.page as string) || undefined;
-      const limit = parseInt(req.query.limit as string) || undefined;
-
-      if (!technicianId) {
-        res
-          .status(HTTP_STATUS.UNAUTHORIZED)
-          .json(createErrorResponse("Technician ID is required"));
-        return;
-      }
-
-      const serviceResponse =
-        await this._subscriptionPlanService.getSubscriptionHistory({
-          page,
-          limit,
-          technicianId,
-        });
-      console.log(
-        "serviceResponse from the subscription service",
-        serviceResponse
-      );
-      if (serviceResponse.success) {
-        res
-          .status(HTTP_STATUS.OK)
-          .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
-          );
-      } else {
-        res
-          .status(HTTP_STATUS.NOT_FOUND)
-          .json(createErrorResponse(serviceResponse.message));
-      }
-    } catch (error) {
-      console.log(
-        "error occured while fetching the subscription history for technician:",
-        error
-      );
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal Server Error"));
@@ -608,6 +579,62 @@ export class SubscriptionPlanController {
       }
     } catch (error) {
       console.log("error occurred while verifying the stripe session:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getTechnicianActiveSubcriptionPlan(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log(
+        "entered to the subscription plan controller that fetches the active subscription plan"
+      );
+      const technicianId = req.user?.id;
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Technician not authenticated"));
+        return;
+      }
+
+      const serverResponse =
+        await this._subscriptionPlanService.getTechnicianActiveSubscriptionPlan(
+          technicianId
+        );
+
+      console.log(
+        "result from getting active subscription plan in technician controller:",
+        serverResponse
+      );
+
+      if (serverResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serverResponse.data, serverResponse.message)
+          );
+      } else {
+        const statusCode = serverResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serverResponse.message || "Failed to get active subscription plan"
+            )
+          );
+      }
+    } catch (error) {
+      console.log(
+        "error occurred while getting active subscription plan:",
+        error
+      );
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal Server Error"));

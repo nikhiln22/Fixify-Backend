@@ -1,4 +1,6 @@
 import { ITechnician } from "../../../interfaces/Models/Itechnician";
+import { IAddress } from "../../Models/Iaddress";
+import { IRating } from "../../Models/Irating";
 import { ITimeSlot } from "../../Models/ItimeSlot";
 
 export interface SignupTechnicianData {
@@ -8,10 +10,12 @@ export interface SignupTechnicianData {
   phone: number;
 }
 
-export interface signupResponse {
+export interface signupTechnicianResponse {
   success: boolean;
   message: string;
-  email?: string;
+  data?: {
+    email: string;
+  };
 }
 
 export interface LoginData {
@@ -26,14 +30,7 @@ export interface LoginResponse {
   refresh_token?: string;
   data?: Pick<
     ITechnician,
-    | "_id"
-    | "username"
-    | "email"
-    | "phone"
-    | "image"
-    | "is_verified"
-    | "status"
-    | "email_verified"
+    "_id" | "username" | "email" | "phone" | "image" | "is_verified" | "status"
   >;
 }
 
@@ -113,8 +110,6 @@ export interface TechnicianQualificationUpdateResponse {
     | "About"
     | "image"
     | "certificates"
-    | "address"
-    | "email_verified"
     | "is_verified"
   >;
   adminId?: string;
@@ -128,16 +123,30 @@ export interface TechnicianProfileResponse {
     email?: string;
     phone?: number;
     is_verified?: boolean;
-    email_verified?: boolean;
     status?: string;
     yearsOfExperience?: number;
     Designation?: {
       designation: string;
     };
-    address?: string;
     About?: string;
     image?: string;
     certificates?: string[];
+    addresses?: IAddress[];
+    currentSubscription?: {
+      planName: string;
+      status: string;
+      commissionRate: number;
+      walletCreditDelay: number;
+      profileBoost: boolean;
+      durationInMonths: number;
+      expiresAt?: string;
+      amount: number;
+    };
+    walletBalance?: number;
+    reviews?: IRating[];
+    rating?: IRating[];
+    averageRating?: number;
+    totalReviews?: number;
   };
 }
 
@@ -160,11 +169,7 @@ export interface TechnicianQualificationSaveData {
   experience: string;
   designation: string;
   about: string;
-  address: string;
-  latitude: number;
-  longitude: number;
   status: string;
-  is_verified: boolean;
   profilePhoto?: string;
   certificates?: string[];
 }

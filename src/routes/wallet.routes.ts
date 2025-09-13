@@ -1,4 +1,3 @@
-// routes/WalletRoutes.ts
 import express, { Router } from "express";
 import { container } from "../di/container";
 import { AuthMiddleware } from "../middlewares/AuthMiddleware";
@@ -18,31 +17,27 @@ export class WalletRoutes {
   private setupRoutes() {
     const walletController = container.resolve(WalletController);
 
-    // GET /api/wallet/balance - Get wallet balance
     this.router.get(
       "/balance",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      this.authMiddleware.authenticate(Roles.USER, Roles.TECHNICIAN),
       walletController.getWalletBalance.bind(walletController)
     );
 
-    // GET /api/wallet/transactions - Get wallet transactions
     this.router.get(
       "/transactions",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      this.authMiddleware.authenticate(Roles.USER, Roles.TECHNICIAN),
       walletController.getWalletTransactions.bind(walletController)
     );
 
-    // POST /api/wallet/add-money - Add money to wallet
     this.router.post(
       "/add-money",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      this.authMiddleware.authenticate(Roles.USER),
       walletController.addMoney.bind(walletController)
     );
 
-    // POST /api/wallet/:sessionId/verify-payment - Verify wallet stripe payment
     this.router.post(
       "/:sessionId/verify-payment",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      this.authMiddleware.authenticate(Roles.USER),
       walletController.verifyWalletStripeSession.bind(walletController)
     );
   }

@@ -1,19 +1,23 @@
-import { IUserAddress } from "../Models/Iaddress";
+import { IAddress } from "../Models/Iaddress";
 
 export interface IAddressService {
   addAddress(
-    userId: string,
-    addressData: Partial<IUserAddress>
+    ownerId: string,
+    ownerModel: "user" | "technician",
+    addressData: Partial<IAddress>
   ): Promise<{
     success: boolean;
     message: string;
-    data?: IUserAddress;
+    data?: IAddress;
   }>;
 
-  getUserAddresses(userId: string): Promise<{
+  getOwnerAddresses(
+    userId: string,
+    ownerModel: "user" | "technician"
+  ): Promise<{
     success: boolean;
     message: string;
-    data?: IUserAddress[];
+    data?: IAddress[];
   }>;
 
   //   updateAddress(
@@ -29,7 +33,8 @@ export interface IAddressService {
 
   deleteAddress(
     addressId: string,
-    userId: string
+    ownerId: string,
+    ownerModel: "user" | "technician"
   ): Promise<{
     success: boolean;
     message: string;

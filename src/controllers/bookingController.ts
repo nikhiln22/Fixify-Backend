@@ -600,7 +600,7 @@ export class BookingController {
     }
   }
 
-  async generateCompletionOtp(
+  async generateBookingCompletionOtp(
     req: AuthenticatedRequest,
     res: Response
   ): Promise<void> {
@@ -649,7 +649,7 @@ export class BookingController {
     }
   }
 
-  async verifyCompletionOtp(
+  async verifyBookingCompletionOtp(
     req: AuthenticatedRequest,
     res: Response
   ): Promise<void> {

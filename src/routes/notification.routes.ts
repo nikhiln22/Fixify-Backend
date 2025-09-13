@@ -1,4 +1,3 @@
-// routes/NotificationRoutes.ts
 import express, { Router } from "express";
 import { container } from "../di/container";
 import { AuthMiddleware } from "../middlewares/AuthMiddleware";
@@ -20,7 +19,7 @@ export class NotificationRoutes {
 
     this.router.get(
       "/unread",
-      this.authMiddleware.authenticateAndCheckStatus(
+      this.authMiddleware.authenticate(
         Roles.USER,
         Roles.TECHNICIAN,
         Roles.ADMIN
@@ -32,7 +31,7 @@ export class NotificationRoutes {
 
     this.router.patch(
       "/:notificationId/read",
-      this.authMiddleware.authenticateAndCheckStatus(
+      this.authMiddleware.authenticate(
         Roles.USER,
         Roles.TECHNICIAN,
         Roles.ADMIN

@@ -12,16 +12,16 @@ import {
   ToggleTechnicianStatusResponse,
   VerifyOtpData,
   TechnicianQualificationUpdateResponse,
-  signupResponse,
-  RejectTechnicianResponse,
+  signupTechnicianResponse,
 } from "../DTO/IServices/ItechnicianService";
 import { VerifyOtpResponse } from "../DTO/IServices/IuserService";
 import { IRating } from "../Models/Irating";
 import { ITechnician } from "../Models/Itechnician";
-import { IWalletTransaction } from "../Models/IwalletTransaction";
 
 export interface ITechnicianService {
-  technicianSignUp(data: SignupTechnicianData): Promise<signupResponse>;
+  technicianSignUp(
+    data: SignupTechnicianData
+  ): Promise<signupTechnicianResponse>;
   verifyOtp(data: VerifyOtpData): Promise<VerifyOtpResponse>;
   resendOtp(data: string): Promise<ResendOtpResponse>;
   forgotPassword(data: ForgotPasswordRequest): Promise<ForgotPasswordResponse>;
@@ -40,28 +40,6 @@ export interface ITechnicianService {
       certificates?: Express.Multer.File[];
     }
   ): Promise<TechnicianQualificationUpdateResponse>;
-  getAllApplicants(options: { page?: number; limit?: number }): Promise<{
-    success: boolean;
-    message: string;
-    data?: {
-      applicants: ITechnician[];
-      pagination: {
-        total: number;
-        page: number;
-        pages: number;
-        limit: number;
-        hasNextPage: boolean;
-        hasPrevPage: boolean;
-      };
-    };
-  }>;
-  verifyTechnician(
-    technicianId: string
-  ): Promise<{ success: boolean; message: string }>;
-  rejectTechnician(
-    technicianId: string,
-    reason?: string
-  ): Promise<RejectTechnicianResponse>;
   getTechnicianProfile(
     technicianId: string
   ): Promise<TechnicianProfileResponse>;
@@ -101,33 +79,13 @@ export interface ITechnicianService {
     data?: INearbyTechnicianResponse[];
   }>;
 
-  toggleTechnicianStatus(id: string): Promise<ToggleTechnicianStatusResponse>;
+  toggleTechnicianStatus(
+    technicianId: string
+  ): Promise<ToggleTechnicianStatusResponse>;
 
-  getWalletBalance(technicianId: string): Promise<{
-    success: boolean;
-    message: string;
-    data?: { balance: number };
-  }>;
-
-  getAllWalletTransactions(options: {
-    page?: number;
-    limit?: number;
-    technicianId: string;
-  }): Promise<{
-    success: boolean;
-    message: string;
-    data?: {
-      transactions: IWalletTransaction[];
-      pagination: {
-        total: number;
-        page: number;
-        pages: number;
-        limit: number;
-        hasNextPage: boolean;
-        hasPrevPage: boolean;
-      };
-    };
-  }>;
+  getTechnicianDetails(
+    technicianId: string
+  ): Promise<TechnicianProfileResponse>;
 
   getReviews(techncianId: string): Promise<{
     success: boolean;
@@ -135,32 +93,6 @@ export interface ITechnicianService {
     reviews?: IRating[];
     averageRating?: number;
     totalReviews?: number;
-  }>;
-
-  getTechnicianActiveSubscriptionPlan(technicianId: string): Promise<{
-    success: boolean;
-    message: string;
-    data?: {
-      currentSubscription: {
-        planName: string;
-        status: string;
-        commissionRate: number;
-        walletCreditDelay: number;
-        profileBoost: boolean;
-        durationInMonths: number;
-        expiresAt?: string;
-        amount: number;
-      };
-      upcomingSubscription?: {
-        planName: string;
-        commissionRate: number;
-        walletCreditDelay: number;
-        profileBoost: boolean;
-        durationInMonths: number;
-        amount: number;
-        activatesOn?: string;
-      } | null;
-    };
   }>;
   countActiveTechnicians(): Promise<number>;
   getDashboardStats(technicianId: string): Promise<{

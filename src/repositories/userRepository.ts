@@ -63,6 +63,7 @@ export class UserRepository
     }
   }
 
+
   async findByEmail(email: string): Promise<IUser | null> {
     try {
       const userData = await this.findOne({ email });
@@ -73,6 +74,7 @@ export class UserRepository
       throw new Error("An error occurred while retrieving the user");
     }
   }
+
 
   async updatePassword(email: string, hashedPassword: string): Promise<void> {
     try {
@@ -159,17 +161,20 @@ export class UserRepository
     }
   }
 
-  async blockUser(id: string, newStatus: "Active" | "Blocked"): Promise<IUser> {
+  async blockUser(
+    userId: string,
+    newStatus: "Active" | "Blocked"
+  ): Promise<IUser> {
     try {
-      console.log(`Attempting to update user ${id} status to ${newStatus}`);
+      console.log(`Attempting to update user ${userId} status to ${newStatus}`);
 
       const updatedUser = await this.updateOne(
-        { _id: id },
+        { _id: userId },
         { status: newStatus }
       );
 
       if (!updatedUser) {
-        console.log(`User with ID ${id} not found`);
+        console.log(`User with ID ${userId} not found`);
         throw new Error("User not found");
       }
 

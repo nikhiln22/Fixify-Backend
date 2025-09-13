@@ -27,11 +27,7 @@ export interface TechnicianQualification {
   experience: string;
   designation: string;
   about: string;
-  latitude: number;
-  longitude: number;
-  address: string;
   status: string;
-  is_verified: boolean;
   profilePhoto?: string;
   certificates?: string[];
 }
@@ -41,12 +37,7 @@ export interface UpdateTechnicianQualificationResponse {
   message: string;
   technician?: Pick<
     ITechnician,
-    | "yearsOfExperience"
-    | "Designation"
-    | "About"
-    | "image"
-    | "certificates"
-    | "address"
+    "yearsOfExperience" | "Designation" | "About" | "image" | "certificates" | "is_verified"
   >;
 }
 

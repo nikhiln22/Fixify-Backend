@@ -3,12 +3,15 @@ import { ICategory } from "../../Models/Icategory";
 
 export interface ServiceData {
   name: string;
-  price: number;
   description: string;
   categoryId: string;
   designationId: string;
-  imageFile?: string;
-  serviceId?: string;
+  serviceType: "fixed" | "hourly";
+  image: string;
+  price?: number;
+  estimatedTime?: number;
+  hourlyRate?: number;
+  maxHours?: number;
 }
 
 export interface AddServiceResponse {

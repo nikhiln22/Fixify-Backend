@@ -1,7 +1,7 @@
 import { IAddressService } from "../interfaces/Iservices/IaddressService";
 import { inject, injectable } from "tsyringe";
 import { IAddressRepository } from "../interfaces/Irepositories/IaddressRepository";
-import { IUserAddress } from "../interfaces/Models/Iaddress";
+import { IAddress } from "../interfaces/Models/Iaddress";
 import { Types } from "mongoose";
 
 @injectable()
@@ -11,16 +11,18 @@ export class AddressService implements IAddressService {
   ) {}
 
   async addAddress(
-    userId: string,
-    addressData: Partial<IUserAddress>
+    ownerId: string,
+    ownerModel: "user" | "technician",
+    addressData: Partial<IAddress>
   ): Promise<{
     success: boolean;
     message: string;
-    data?: IUserAddress;
+    data?: IAddress;
   }> {
     try {
       console.log("entering to the address service adding the new address");
-      console.log("userId from the address service:", userId);
+      console.log("ownerId from the address service:", ownerId);
+      console.log("ownerModel from the address service:", ownerModel);
 
       if (
         !addressData.fullAddress ||
@@ -29,18 +31,29 @@ export class AddressService implements IAddressService {
       ) {
         return {
           success: false,
-          message: "Full address,longitude and latitude are required",
+          message: "Full address, longitude and latitude are required",
         };
       }
 
-      const newAddressData = {
-        userId: new Types.ObjectId(userId),
-        addressType: addressData.addressType || "Home",
+      const newAddressData: Partial<IAddress> = {
+        ownerId: new Types.ObjectId(ownerId),
+        ownerModel: ownerModel,
         fullAddress: addressData.fullAddress,
         longitude: addressData.longitude,
         latitude: addressData.latitude,
-        landmark: addressData.landmark,
       };
+
+      if (addressData.addressType) {
+        newAddressData.addressType = addressData.addressType;
+      }
+
+      if (addressData.landmark) {
+        newAddressData.landmark = addressData.landmark;
+      }
+
+      if (addressData.houseNumber) {
+        newAddressData.houseNumber = addressData.houseNumber;
+      }
 
       console.log(
         "newAddressData for adding the address from the address service:",
@@ -48,7 +61,7 @@ export class AddressService implements IAddressService {
       );
 
       const savedAddress = await this._addressRepository.addAddress(
-        newAddressData as IUserAddress
+        newAddressData as IAddress
       );
 
       return {
@@ -57,7 +70,7 @@ export class AddressService implements IAddressService {
         data: savedAddress,
       };
     } catch (error) {
-      console.log("error occured while adding the new Address:", error);
+      console.log("error occurred while adding the new Address:", error);
       return {
         success: false,
         message: "Internal Server Error",
@@ -65,36 +78,42 @@ export class AddressService implements IAddressService {
     }
   }
 
-  async getUserAddresses(userId: string): Promise<{
+  async getOwnerAddresses(
+    ownerId: string,
+    ownerModel: "user" | "technician"
+  ): Promise<{
     success: boolean;
     message: string;
-    data?: IUserAddress[];
+    data?: IAddress[];
   }> {
     try {
-      console.log("entering to the user address fetchning service");
-      console.log("userId from the user address fetching service:", userId);
-      if (!userId) {
+      console.log("entering to the address fetching service");
+      console.log("ownerId from the address fetching service:", ownerId);
+      console.log("ownerModel from the address fetching service:", ownerModel);
+
+      if (!ownerId) {
         return {
           success: false,
-          message: "Invalid User Id",
+          message: "Invalid Owner Id",
         };
       }
 
-      const userAddresses = await this._addressRepository.getUserAddresses(
-        userId
+      const ownerAddresses = await this._addressRepository.getOwnerAddresses(
+        ownerId,
+        ownerModel
       );
 
       console.log(
-        "user address from the address repository in the address service:",
-        userAddresses
+        "owner addresses from the address repository in the address service:",
+        ownerAddresses
       );
       return {
         success: true,
-        message: "User addresses retrieved successfully",
-        data: userAddresses,
+        message: "Owner addresses retrieved successfully",
+        data: ownerAddresses,
       };
     } catch (error) {
-      console.log("Error occurred while fetching user addresses:", error);
+      console.log("Error occurred while fetching owner addresses:", error);
       return {
         success: false,
         message: "Internal Server Error",
@@ -104,21 +123,27 @@ export class AddressService implements IAddressService {
 
   async deleteAddress(
     addressId: string,
-    userId: string
+    ownerId: string,
+    ownerModel: "user" | "technician"
   ): Promise<{ success: boolean; message: string }> {
     try {
-      console.log("deleting the user address from the address service");
-      console.log("userId from the address service:", userId);
+      console.log("deleting the address from the address service");
+      console.log("ownerId from the address service:", ownerId);
       console.log("addressId from the address service:", addressId);
+      console.log("ownerModel from the address service:", ownerModel);
 
-      if (!addressId || !userId) {
+      if (!addressId || !ownerId) {
         return {
           success: false,
-          message: "Address ID and User ID are required",
+          message: "Address ID and Owner ID are required",
         };
       }
 
-      const existingAddress = await this._addressRepository.findById(addressId);
+      const existingAddress = await this._addressRepository.findByOwnerAndId(
+        addressId,
+        ownerId,
+        ownerModel
+      );
 
       console.log("existingAddress in address service:", existingAddress);
 
@@ -129,10 +154,13 @@ export class AddressService implements IAddressService {
         };
       }
 
-      if (existingAddress.userId.toString() !== userId) {
+      if (
+        existingAddress.ownerId.toString() !== ownerId ||
+        existingAddress.ownerModel !== ownerModel
+      ) {
         return {
           success: false,
-          message: "Unauthorized: Address does not belong to this user",
+          message: "Unauthorized: Address does not belong to this owner",
         };
       }
 

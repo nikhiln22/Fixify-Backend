@@ -45,7 +45,6 @@ export class TechnicianRepository
       console.log(
         "entering to the technician repository that updates the expiry time"
       );
-      console.log("email in the technicianexpiryupdate function:", email);
       console.log(
         "newExpiresAt in the technician expiry update function:",
         newExpiresAt
@@ -70,15 +69,14 @@ export class TechnicianRepository
     }
   }
 
-  async updateTechnicianEmailVerification(email: string): Promise<void> {
+  async updateTechnicianVerification(email: string): Promise<void> {
     try {
       console.log(
-        "entered inside the update technician email verification function in technician repository"
+        "entered to the repository function that updates the technician data:"
       );
-      await this.updateOne(
-        { email: email },
-        { email_verified: true, $unset: { expiresAt: "" } }
-      );
+      console.log("email in the update technician verification:", email);
+
+      await this.updateOne({ email: email }, { $unset: { expiresAt: "" } });
     } catch (error) {
       console.log(
         "error occurred while updating technician verification:",
@@ -124,13 +122,9 @@ export class TechnicianRepository
             yearsOfExperience: qualificationData.experience,
             Designation: qualificationData.designation,
             About: qualificationData.about,
-            latitude: qualificationData.latitude,
-            longitude: qualificationData.longitude,
-            address: qualificationData.address,
             image: qualificationData.profilePhoto,
             certificates: qualificationData.certificates,
             status: qualificationData.status,
-            is_verified: qualificationData.is_verified,
           },
         }
       );
@@ -140,9 +134,9 @@ export class TechnicianRepository
           yearsOfExperience: updatedTechnician.yearsOfExperience,
           Designation: updatedTechnician.Designation,
           About: updatedTechnician.About,
-          address: updatedTechnician.address,
           image: updatedTechnician.image,
           certificates: updatedTechnician.certificates,
+          is_verified: updatedTechnician.is_verified,
         };
         return {
           success: true,
@@ -178,7 +172,7 @@ export class TechnicianRepository
       });
 
       console.log("Found technician data:", technicianData);
-      
+
       return technicianData;
     } catch (error) {
       console.log("Error occurred while fetching the technician by ID:", error);
@@ -314,7 +308,6 @@ export class TechnicianRepository
 
       const filter: FilterQuery<ITechnician> = {
         is_verified: true,
-        email_verified: true,
       };
 
       if (options.search) {
@@ -418,10 +411,32 @@ export class TechnicianRepository
             Designation: new Types.ObjectId(designationId),
             is_verified: true,
             status: "Active",
-            latitude: { $exists: true, $ne: null },
-            longitude: { $exists: true, $ne: null },
           },
         },
+
+        {
+          $lookup: {
+            from: "addresses",
+            let: { technicianId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$ownerId", "$$technicianId"] },
+                      { $eq: ["$ownerModel", "technician"] },
+                      { $ne: ["$latitude", null] },
+                      { $ne: ["$longitude", null] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: "address",
+          },
+        },
+
+        { $unwind: "$address" },
 
         {
           $lookup: {
@@ -498,15 +513,15 @@ export class TechnicianRepository
             image: 1,
             yearsOfExperience: 1,
             averageRating: 1,
-            latitude: 1,
-            longitude: 1,
             isProfileBoosted: 1,
+            "address.latitude": 1,
+            "address.longitude": 1,
           },
         },
       ]);
 
       console.log(
-        `Found ${nearbyTechniciansWithRatings.length} technicians with designation and location data`
+        `Found ${nearbyTechniciansWithRatings.length} technicians with designation and address`
       );
 
       if (nearbyTechniciansWithRatings.length === 0) {
@@ -518,8 +533,8 @@ export class TechnicianRepository
           const distance = this.calculateDistance(
             userLatitude,
             userLongitude,
-            technician.latitude!,
-            technician.longitude!
+            technician.address.latitude,
+            technician.address.longitude
           );
 
           return {
@@ -550,7 +565,7 @@ export class TechnicianRepository
       }));
 
       console.log(
-        `Found ${cleanedTechnicians.length} technicians within ${radius}km, sorted by profile boost, rating, and distance`,
+        `Found ${cleanedTechnicians.length} technicians within ${radius}km`,
         cleanedTechnicians
       );
 

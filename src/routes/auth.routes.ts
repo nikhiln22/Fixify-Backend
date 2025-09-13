@@ -4,6 +4,7 @@ import { container } from "tsyringe";
 
 export class AuthRoutes {
   private router: Router;
+
   constructor() {
     this.router = express.Router();
     this.setupRoutes();
@@ -13,7 +14,7 @@ export class AuthRoutes {
     const authController = container.resolve(AuthController);
 
     this.router.get(
-      "/refreshtoken",
+      "/refresh-token",
       authController.newAccessToken.bind(authController)
     );
   }

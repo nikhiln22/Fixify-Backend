@@ -1,9 +1,9 @@
-import { IJobDesignation } from "../../Models/IjobDesignation";
+import { IDesignation } from "../../Models/Idesignation";
 
 export interface DesignationResponse {
   success: boolean;
   message: string;
-  data?: IJobDesignation | null;
+  data?: IDesignation | null;
 }
 
 export interface ToggleDesignationResponse {

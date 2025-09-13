@@ -19,19 +19,23 @@ export class AddressRoutes {
 
     this.router.get(
       "/",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      this.authMiddleware.authenticateBasic(
+        Roles.USER,
+        Roles.TECHNICIAN,
+        Roles.ADMIN
+      ),
       addressController.getAddress.bind(addressController)
     );
 
     this.router.post(
       "/",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      this.authMiddleware.authenticate(Roles.USER, Roles.TECHNICIAN),
       addressController.addAddress.bind(addressController)
     );
 
     this.router.delete(
       "/:addressId",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      this.authMiddleware.authenticate(Roles.USER),
       addressController.deleteAddress.bind(addressController)
     );
   }

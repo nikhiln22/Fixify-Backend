@@ -30,8 +30,8 @@ export class SubscriptionPlanHistoryRepository
     try {
       console.log("Fetching subscription plan history with options:", options);
 
-      const page = options.page || 1;
-      const limit = options.limit || 6;
+      const page = options.page;
+      const limit = options.limit;
 
       const filter: FilterQuery<ISubscriptionPlanHistory> = {};
 
@@ -51,33 +51,56 @@ export class SubscriptionPlanHistoryRepository
         }
       }
 
-      const result = (await this.find(filter, {
-        pagination: { page, limit },
-        sort: { createdAt: -1 },
-        populate: [
-          {
-            path: "subscriptionPlanId",
-            select: "planName createdAt durationInMonths commissionRate",
-          },
-          {
-            path: "technicianId",
-            select: "username",
-          },
-        ],
-      })) as { data: ISubscriptionPlanHistory[]; total: number };
+      if (page !== undefined && limit !== undefined) {
+        const result = (await this.find(filter, {
+          pagination: { page, limit },
+          sort: { createdAt: -1 },
+          populate: [
+            {
+              path: "subscriptionPlanId",
+              select: "planName createdAt durationInMonths commissionRate",
+            },
+            {
+              path: "technicianId",
+              select: "username",
+            },
+          ],
+        })) as { data: ISubscriptionPlanHistory[]; total: number };
 
-      console.log(
-        "Data fetched from subscription plans history repository:",
-        result
-      );
+        console.log(
+          "Data fetched from subscription plans history repository:",
+          result
+        );
 
-      return {
-        data: result.data,
-        total: result.total,
-        page,
-        limit,
-        pages: Math.ceil(result.total / limit),
-      };
+        return {
+          data: result.data,
+          total: result.total,
+          page,
+          limit,
+          pages: Math.ceil(result.total / limit),
+        };
+      } else {
+        const allSubscriptionHistories = (await this.find(filter, {
+          sort: { createdAt: -1 },
+          populate: [
+            {
+              path: "subscriptionPlanId",
+              select: "planName createdAt durationInMonths commissionRate",
+            },
+            {
+              path: "technicianId",
+              select: "username",
+            },
+          ],
+        })) as ISubscriptionPlanHistory[];
+        return {
+          data: allSubscriptionHistories,
+          total: allSubscriptionHistories.length,
+          page: 1,
+          limit: allSubscriptionHistories.length,
+          pages: 1,
+        };
+      }
     } catch (error) {
       console.log(
         "Error occurred while fetching subscription plans history:",

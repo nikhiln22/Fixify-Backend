@@ -19,37 +19,37 @@ export class CouponRoutes {
 
     this.router.get(
       "/eligible",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      this.authMiddleware.authenticate(Roles.USER),
       couponController.getEligibleCoupons.bind(couponController)
     );
 
     this.router.patch(
       "/apply",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.USER),
+      this.authMiddleware.authenticate(Roles.USER),
       couponController.applyCoupon.bind(couponController)
     );
 
     this.router.get(
       "/admin",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.ADMIN),
+      this.authMiddleware.authenticate(Roles.ADMIN),
       couponController.getAllCoupons.bind(couponController)
     );
 
     this.router.post(
       "/",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.ADMIN),
+      this.authMiddleware.authenticate(Roles.ADMIN),
       couponController.addCoupon.bind(couponController)
     );
 
     this.router.put(
       "/:couponId",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.ADMIN),
+      this.authMiddleware.authenticate(Roles.ADMIN),
       couponController.updateCoupon.bind(couponController)
     );
 
     this.router.patch(
       "/:id/block",
-      this.authMiddleware.authenticateAndCheckStatus(Roles.ADMIN),
+      this.authMiddleware.authenticate(Roles.ADMIN),
       couponController.blockCoupon.bind(couponController)
     );
   }
