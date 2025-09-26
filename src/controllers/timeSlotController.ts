@@ -14,12 +14,11 @@ export class TimeSlotController {
     @inject("ITimeSlotService") private _timeSlotService: ITimeSlotService
   ) {}
 
-  async getTimeSlots(req: Request, res: Response): Promise<void> {
+  async getAvailableTimeSlots(req: Request, res: Response): Promise<void> {
     try {
-      console.log("finding the time slots for the user");
+      console.log("fetching the available time slots for booking for user");
       const technicianId = req.params.technicianId;
-      const includePast = req.query.includePast === "true";
-      console.log("technicianId in the user controller:", technicianId);
+      const includePast = false;
 
       const userFilters = {
         isAvailable: true,
@@ -31,9 +30,51 @@ export class TimeSlotController {
         includePast,
         userFilters
       );
-      console.log(
-        "response from the get time slots user controller:",
-        serviceResponse
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch available time slots"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("Error fetching available time slots:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getMyTimeSlots(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log("fetching the released for the technician");
+      const technicianId = req.user?.id;
+      const includePast = req.query.includePast === "true";
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Unauthorized access"));
+        return;
+      }
+
+      const technicianFilters = {};
+
+      const serviceResponse = await this._timeSlotService.getTimeSlots(
+        technicianId,
+        includePast,
+        technicianFilters
       );
 
       if (serviceResponse.success) {
@@ -52,10 +93,7 @@ export class TimeSlotController {
           );
       }
     } catch (error) {
-      console.log(
-        "error occurred while fetching the time slots for the user",
-        error
-      );
+      console.log("Error fetching technician time slots:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal Server Error"));

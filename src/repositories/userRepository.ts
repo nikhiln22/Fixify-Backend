@@ -28,42 +28,6 @@ export class UserRepository
     }
   }
 
-  async updateUserExpiry(email: string, newExpiresAt: Date): Promise<void> {
-    try {
-      console.log(
-        "entering to the user repository that updates the expiry time"
-      );
-      console.log("email in the userexpiryupdate function:", email);
-      console.log(
-        "newExpiresAt in the user expiry update function:",
-        newExpiresAt
-      );
-
-      await this.updateOne({ email: email }, { expiresAt: newExpiresAt });
-    } catch (error) {
-      console.log("error occured while updating the user expiry time:", error);
-      throw error;
-    }
-  }
-
-  async updateUserVerification(email: string): Promise<void> {
-    try {
-      console.log(
-        "entered to the repository function that updates the user data:"
-      );
-      console.log("email in the update user verification:", email);
-
-      await this.updateOne(
-        { email: email },
-        { is_verified: true, status: "Active", $unset: { expiresAt: "" } }
-      );
-    } catch (error) {
-      console.log("error occurred while updating user verification:", error);
-      throw new Error("An error occurred while updating user verification");
-    }
-  }
-
-
   async findByEmail(email: string): Promise<IUser | null> {
     try {
       const userData = await this.findOne({ email });
@@ -74,7 +38,6 @@ export class UserRepository
       throw new Error("An error occurred while retrieving the user");
     }
   }
-
 
   async updatePassword(email: string, hashedPassword: string): Promise<void> {
     try {

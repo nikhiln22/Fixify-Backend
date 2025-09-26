@@ -77,15 +77,19 @@ export class AdminController {
       console.log(
         "entered to the admin controller function that fetches dashboard stats"
       );
-      const activeUsers = await this._userService.countActiveUsers();
-      console.log("total Active users:", activeUsers);
-      const activeTechnicians =
-        await this._technicianService.countActiveTechnicians();
-      console.log("activeTechnicians:", activeTechnicians);
-      const totalBookingsCount = await this._bookingService.totalBookings();
-      console.log("totalBookingsCount:", totalBookingsCount);
 
-      const totalRevenue = await this._bookingService.getTotalRevenue();
+      const [activeUsers, activeTechnicians, totalBookingsCount, totalRevenue] =
+        await Promise.all([
+          this._userService.countActiveUsers(),
+          this._technicianService.countActiveTechnicians(),
+          this._bookingService.totalBookings(),
+          this._bookingService.getTotalRevenue(),
+        ]);
+
+      console.log("total Active users:", activeUsers);
+      console.log("activeTechnicians:", activeTechnicians);
+      console.log("totalBookingsCount:", totalBookingsCount);
+      console.log("totalRevenue:", totalRevenue);
 
       const dashboardStats = {
         totalRevenue: totalRevenue,
@@ -217,11 +221,7 @@ export class AdminController {
 
   async logout(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      console.log(
-        "entering the logout function from the admin auth controller"
-      );
-      const role = req.user?.role;
-      console.log("role in the admin auth controller:", role);
+      console.log("entering the logout function from the admin controller");
 
       res.clearCookie("refresh_token", {
         httpOnly: true,

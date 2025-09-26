@@ -19,11 +19,8 @@ export class TimeSlotRoutes {
 
     this.router.get(
       "/",
-      this.authMiddleware.authenticate(
-        Roles.TECHNICIAN,
-        Roles.USER
-      ),
-      timeSlotController.getTimeSlots.bind(timeSlotController)
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      timeSlotController.getMyTimeSlots.bind(timeSlotController)
     );
 
     this.router.post(
@@ -36,6 +33,12 @@ export class TimeSlotRoutes {
       "/:slotId/block",
       this.authMiddleware.authenticate(Roles.TECHNICIAN),
       timeSlotController.blockTimeSlot.bind(timeSlotController)
+    );
+
+    this.router.get(
+      "/available/:technicianId",
+      this.authMiddleware.authenticate(Roles.USER),
+      timeSlotController.getAvailableTimeSlots.bind(timeSlotController)
     );
   }
 

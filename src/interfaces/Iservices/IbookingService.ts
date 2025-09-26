@@ -109,27 +109,6 @@ export interface IBookingService {
     message: string;
     data?: IService[];
   }>;
-
-  applyBestOffer(
-    userId: string,
-    serviceId: string,
-    totalAmount: number
-  ): Promise<{
-    success: boolean;
-    message: string;
-    data?: {
-      offerId: string;
-      offerApplied: boolean;
-      offerName: string;
-      discountAmount: number;
-      finalAmount: number;
-      discountValue: number;
-      maxDiscount?: number;
-      discountType: string;
-      offerType: string;
-      minBookingAmount?: number;
-    };
-  }>;
   totalBookings(): Promise<number>;
   getTotalRevenue(): Promise<number>;
   getBookingStatusDistribution(): Promise<{

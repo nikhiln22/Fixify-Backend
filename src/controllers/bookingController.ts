@@ -151,6 +151,16 @@ export class BookingController {
       const userId = req.user?.id;
       const sessionId = req.params.sessionId as string;
 
+      console.log(
+        "userId in the verify stripe session in the booking controller:",
+        userId
+      );
+
+      console.log(
+        "sessionId in the verify stripe session in the booking controller:",
+        sessionId
+      );
+
       if (!userId) {
         res
           .status(HTTP_STATUS.UNAUTHORIZED)

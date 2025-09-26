@@ -13,11 +13,13 @@ export interface IPayment extends Document {
   fixifyShare?: number;
   technicianShare?: number;
   paymentMethod: "Online" | "Wallet";
-  paymentStatus: "Paid" | "Refunded";
+  paymentStatus: "Partial Paid" | "Paid" | "Refunded";
   technicianPaid?: boolean;
   technicianPaidAt?: Date;
   refundStatus: "Not Refunded" | "Refunded";
   refundAmount?: number;
   refundDate?: Date;
   creditReleaseDate?: Date;
+  advanceAmount?: number;
+  extraCharges?: number;
 }

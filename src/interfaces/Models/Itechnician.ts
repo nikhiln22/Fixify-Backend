@@ -13,7 +13,7 @@ export interface ITechnician extends Document {
   About?: string;
   image?: string;
   certificates?: string[];
-  expiresAt?: Date;
+  availabilityStatus?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

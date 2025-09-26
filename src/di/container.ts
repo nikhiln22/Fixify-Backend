@@ -98,6 +98,10 @@ import { IOTPService } from "../interfaces/Iotp/IOTP";
 import { IRedisService } from "../interfaces/Iredis/Iredis";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
 import { ICronService } from "../interfaces/Icron/Icron";
+import { IPartService } from "../interfaces/Iservices/IpartService";
+import { PartsService } from "../services/partService";
+import { IPartsRepository } from "../interfaces/Irepositories/IpartRepository";
+import { PartsRepository } from "../repositories/partsRepository";
 
 container.registerSingleton<IPasswordHasher>("IPasswordHasher", PasswordHasher);
 container.registerSingleton<IJwtService>("IJwtService", JWTService);
@@ -151,5 +155,7 @@ container.registerSingleton<IWalletCreditService>("IWalletCreditService", Wallet
 container.registerSingleton<IApplicantService>("IApplicantService", ApplicantService);
 container.registerSingleton<IServiceService>("IServiceService", ServiceServices);
 container.registerSingleton<ISubscriptionPlanService>("ISubscriptionPlanService", SubscriptionPlanService);
+container.registerSingleton<IPartService>("IPartService",PartsService);
+container.registerSingleton<IPartsRepository>("IPartsRepository",PartsRepository);
 
 export { container };

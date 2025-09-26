@@ -49,7 +49,7 @@ export class BookingRoutes {
       bookingController.cancelBooking.bind(bookingController)
     );
 
-    this.router.post(
+    this.router.get(
       "/:sessionId/verify-payment",
       this.authMiddleware.authenticate(Roles.USER),
       bookingController.verifyStripeSession.bind(bookingController)

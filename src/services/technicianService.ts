@@ -1,9 +1,5 @@
 import { Roles } from "../config/roles";
-import {
-  OtpPurpose,
-  OTP_EXPIRY_SECONDS,
-  OTP_PREFIX,
-} from "../config/otpConfig";
+import { OtpPurpose, OTP_PREFIX } from "../config/otpConfig";
 import {
   ForgotPasswordRequest,
   ForgotPasswordResponse,
@@ -35,7 +31,10 @@ import { ITechnician } from "../interfaces/Models/Itechnician";
 import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
 import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
 import { IRating } from "../interfaces/Models/Irating";
-import { INearbyTechnicianResponse } from "../interfaces/DTO/IRepository/ItechnicianRepository";
+import {
+  CreateTechnician,
+  INearbyTechnicianResponse,
+} from "../interfaces/DTO/IRepository/ItechnicianRepository";
 import { IBookingRepository } from "../interfaces/Irepositories/IbookingRespository";
 import { IPaymentRepository } from "../interfaces/Irepositories/IpaymentRepository";
 import { VerifyOtpResponse } from "../interfaces/DTO/IServices/IuserService";
@@ -45,6 +44,7 @@ import { IAddressService } from "../interfaces/Iservices/IaddressService";
 import { IAddress } from "../interfaces/Models/Iaddress";
 import { IWalletService } from "../interfaces/Iservices/IwalletService";
 import { ISubscriptionPlanService } from "../interfaces/Iservices/IsubscriptionPlanService";
+import config from "../config/env";
 
 @injectable()
 export class TechnicianService implements ITechnicianService {
@@ -76,8 +76,6 @@ export class TechnicianService implements ITechnicianService {
     return `${OTP_PREFIX}${purpose}:${email}`;
   }
 
-  private static readonly TECHNICIAN_EXPIRY_MS = 15 * 60 * 1000;
-
   private async generateAndSendOtp(
     email: string,
     purpose: OtpPurpose
@@ -89,7 +87,7 @@ export class TechnicianService implements ITechnicianService {
 
     console.log("generated RedisKey:", redisKey);
 
-    await this._redisService.set(redisKey, otp, OTP_EXPIRY_SECONDS);
+    await this._redisService.set(redisKey, otp, config.OTP_EXPIRY_SECONDS);
 
     if (purpose === OtpPurpose.PASSWORD_RESET) {
       await this._emailService.sendPasswordResetEmail(email, otp);
@@ -136,44 +134,42 @@ export class TechnicianService implements ITechnicianService {
         "entering to the techniciansignup function in the technician service"
       );
       console.log("data:", data);
+
       const { email, password } = data;
 
       const existingTechnician = await this._technicianRepository.findByEmail(
         email
       );
-
       if (existingTechnician) {
-        if (existingTechnician.is_verified) {
-          return {
-            message: "Technician already exists, Please login",
-            success: false,
-          };
-        } else {
-          console.log("user exists but not verified, resending otp");
+        return {
+          message: "Technician already exists, Please login",
+          success: false,
+        };
+      }
 
-          const otp = await this.generateAndSendOtp(
-            email,
-            OtpPurpose.REGISTRATION
-          );
-          console.log("generated the otp for the unverified technicians:", otp);
+      const pendingTechnician = await this._redisService.getObject(
+        `pending_technician:${email}`
+      );
+      if (pendingTechnician) {
+        console.log("technician has pending signup, resending otp");
 
-          const newExpiresAt = new Date(
-            Date.now() + TechnicianService.TECHNICIAN_EXPIRY_MS
-          );
+        const otp = await this.generateAndSendOtp(
+          email,
+          OtpPurpose.REGISTRATION
+        );
+        console.log("generated new otp for pending technician:", otp);
 
-          await this._technicianRepository.updateTechnicianExpiry(
-            email,
-            newExpiresAt
-          );
+        await this._redisService.setObject(
+          `pending_technician:${email}`,
+          pendingTechnician,
+          config.OTP_EXPIRY_SECONDS
+        );
 
-          return {
-            message: "Otp sent to complete registration",
-            success: true,
-            data: {
-              email: email,
-            },
-          };
-        }
+        return {
+          message: "OTP sent to complete registration",
+          success: true,
+          data: { email },
+        };
       }
 
       const hashedPassword = await this._passwordService.hash(password);
@@ -181,31 +177,26 @@ export class TechnicianService implements ITechnicianService {
 
       console.log("Generated otp for new technician registration:", otp);
 
-      const expiresAt = new Date(
-        Date.now() + TechnicianService.TECHNICIAN_EXPIRY_MS
-      );
-
       const technicianData = {
         ...data,
         password: hashedPassword,
-        expiresAt,
       };
 
-      const newTechnician = await this._technicianRepository.createTechnician(
-        technicianData
+      await this._redisService.setObject(
+        `pending_technician:${email}`,
+        technicianData,
+        config.OTP_EXPIRY_SECONDS
       );
-      console.log("New technician created:", newTechnician);
+      console.log("pending technician data stored in redis");
 
       return {
         message: "Registration successful!",
         success: true,
-        data: {
-          email: newTechnician.email,
-        },
+        data: { email },
       };
     } catch (error) {
       console.log("Error during technician signup:", error);
-      throw new Error("An error occured during the technician signup");
+      throw new Error("An error occurred during the technician signup");
     }
   }
 
@@ -220,17 +211,20 @@ export class TechnicianService implements ITechnicianService {
       console.log("purpose:", purpose);
 
       if (OtpPurpose.REGISTRATION === purpose) {
-        const technician = await this._technicianRepository.findByEmail(email);
+        const pendingTechnician =
+          await this._redisService.getObject<CreateTechnician>(
+            `pending_technician:${email}`
+          );
 
         console.log(
-          "technician found for registration verification:",
-          technician
+          "pending technician found for registration verification:",
+          pendingTechnician
         );
 
-        if (!technician) {
+        if (!pendingTechnician) {
           return {
             success: false,
-            message: "Technician not found or registration expired",
+            message: "Registration expired or not found. Please signup again",
           };
         }
 
@@ -247,20 +241,28 @@ export class TechnicianService implements ITechnicianService {
           };
         }
 
-        await this._technicianRepository.updateTechnicianVerification(email);
+        const technicianData = {
+          ...pendingTechnician,
+          is_verified: false,
+        };
 
-        const redisKey = this.getOtpRedisKey(email, OtpPurpose.REGISTRATION);
-        await this._redisService.delete(redisKey);
+        const newTechnician = await this._technicianRepository.createTechnician(
+          technicianData
+        );
+        console.log("new technician created in MongoDB:", newTechnician);
+
+        const otpRedisKey = this.getOtpRedisKey(email, OtpPurpose.REGISTRATION);
+        await this._redisService.delete(otpRedisKey);
+        await this._redisService.delete(`pending_technician:${email}`);
 
         return {
           message: "Email verified successfully! Please login to continue",
           success: true,
         };
       } else if (OtpPurpose.PASSWORD_RESET === purpose) {
-        console.log("password resetting in the technican Service");
+        console.log("password resetting in the technician Service");
 
         const technician = await this._technicianRepository.findByEmail(email);
-
         console.log("technician found for password reset:", technician);
 
         if (!technician) {
@@ -297,7 +299,7 @@ export class TechnicianService implements ITechnicianService {
       console.log("Error during OTP verification:", error);
       return {
         success: false,
-        message: "An error occured during the otp verification",
+        message: "An error occurred during the otp verification",
       };
     }
   }
@@ -307,44 +309,61 @@ export class TechnicianService implements ITechnicianService {
       console.log("entering resendotp function in the technician service");
 
       const technician = await this._technicianRepository.findByEmail(data);
-      console.log(
-        "technician in the resendOtp in the technician service:",
-        technician
-      );
 
-      if (!technician) {
-        return {
-          success: false,
-          message: "Technician not found",
-        };
+      if (technician) {
+        console.log("technician found in MongoDB:", technician);
+
+        if (!technician.is_verified) {
+          return {
+            success: false,
+            message:
+              "Your account is pending admin approval. Cannot reset password at this time.",
+          };
+        } else {
+          const newOtp = await this.generateAndSendOtp(
+            data,
+            OtpPurpose.PASSWORD_RESET
+          );
+          console.log("generated new OTP for password reset:", newOtp);
+
+          return {
+            success: true,
+            message: "OTP sent successfully for password reset",
+            email: data,
+          };
+        }
       }
 
-      let purpose: OtpPurpose;
-      let message: string;
+      const pendingTechnician =
+        await this._redisService.getObject<CreateTechnician>(
+          `pending_technician:${data}`
+        );
 
-      if (!technician.is_verified) {
+      if (pendingTechnician) {
+        console.log("pending technician found in Redis:", pendingTechnician);
+
+        const newOtp = await this.generateAndSendOtp(
+          data,
+          OtpPurpose.REGISTRATION
+        );
+        console.log("generated new OTP for registration:", newOtp);
+
+        await this._redisService.setObject(
+          `pending_technician:${data}`,
+          pendingTechnician,
+          config.OTP_EXPIRY_SECONDS
+        );
+
         return {
-          success: false,
-          message:
-            "Your account is pending admin approval. Cannot reset password at this time.",
-        };
-      } else if (technician.is_verified) {
-        purpose = OtpPurpose.PASSWORD_RESET;
-        message = "OTP sent successfully for password reset";
-      } else {
-        return {
-          success: false,
-          message: "Invalid account state",
+          success: true,
+          message: "OTP sent successfully for registration",
+          email: data,
         };
       }
-
-      const newOtp = await this.generateAndSendOtp(data, purpose);
-      console.log("generated new Otp:", newOtp);
 
       return {
-        success: true,
-        message,
-        email: data,
+        success: false,
+        message: "Technician not found. Please signup first",
       };
     } catch (error) {
       console.log("error occurred while resending the otp", error);

@@ -23,16 +23,14 @@ import { IEmailService } from "../interfaces/Iemail/Iemail";
 import { ITimeSlot } from "../interfaces/Models/ItimeSlot";
 import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
 import { IRating } from "../interfaces/Models/Irating";
-import { ITechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
 import { IServiceRepository } from "../interfaces/Irepositories/IserviceRepository";
 import { IService } from "../interfaces/Models/Iservice";
-import { IOffer } from "../interfaces/Models/Ioffers";
-import { IOfferRepository } from "../interfaces/Irepositories/IofferRepository";
 import { ICouponRepository } from "../interfaces/Irepositories/IcouponRepository";
-import { INotificationService } from "../interfaces/Iservices/InotificationService";
 import { ISubscriptionPlanHistoryRepository } from "../interfaces/Irepositories/IsubscriptionPlanHistoryRepository";
 import { ISubscriptionPlanRepository } from "../interfaces/Irepositories/IsubscriptionPlanRepository";
 import { IBookingDetails } from "../interfaces/DTO/IServices/IbookingService";
+import { CreatePaymentData } from "../interfaces/DTO/IRepository/IpayementRepository";
+import { PaymentMethod } from "../config/paymentMethod";
 
 @injectable()
 export class BookingService implements IBookingService {
@@ -47,14 +45,9 @@ export class BookingService implements IBookingService {
     @inject("IRedisService") private _redisService: IRedisService,
     @inject("IEmailService") private _emailService: IEmailService,
     @inject("IRatingRepository") private _ratingRepository: IRatingRepository,
-    @inject("ITechnicianRepository")
-    private _technicianRepository: ITechnicianRepository,
     @inject("IServiceRepository")
     private _serviceRepository: IServiceRepository,
-    @inject("IOfferRepository") private _offerRepository: IOfferRepository,
     @inject("ICouponRepository") private _couponRepository: ICouponRepository,
-    @inject("INotificationService")
-    private _notitificationService: INotificationService,
     @inject("ISubscriptionPlanHistoryRepository")
     private _subscriptionPlanHistoryRepository: ISubscriptionPlanHistoryRepository,
     @inject("ISubscriptionPlanRepository")
@@ -178,18 +171,43 @@ export class BookingService implements IBookingService {
         };
       }
 
-      if (!["Online", "Wallet"].includes(data.paymentMethod)) {
+      if (
+        !Object.values(PaymentMethod).includes(
+          data.paymentMethod as PaymentMethod
+        )
+      ) {
         return {
           success: false,
-          message: "Payment method must be either 'Online' or 'Wallet'",
+          message: `Payment method must be either '${PaymentMethod.ONLINE}' or '${PaymentMethod.WALLET}'`,
         };
       }
 
-      const slotBooking = await this._timeSlotService.updateSlotBookingStatus(
-        data.technicianId,
-        data.timeSlotId,
-        true
+      const service = await this._serviceRepository.findServiceById(
+        data.serviceId
       );
+
+      console.log("service details in the booking service function:", service);
+
+      if (!service) {
+        return {
+          success: false,
+          message: "Service not found",
+        };
+      }
+
+      if (!service.estimatedTime) {
+        return {
+          success: false,
+          message: "estimated time is not there for this service",
+        };
+      }
+
+      const slotBooking =
+        await this._timeSlotService.blockMultipleSlotsForService(
+          data.technicianId,
+          data.timeSlotId,
+          service.estimatedTime
+        );
 
       if (!slotBooking.success) {
         return {
@@ -198,7 +216,7 @@ export class BookingService implements IBookingService {
         };
       }
 
-      if (data.paymentMethod === "Wallet") {
+      if (data.paymentMethod === PaymentMethod.WALLET) {
         try {
           const userWallet = await this._walletRepository.getWalletByOwnerId(
             userId,
@@ -210,11 +228,12 @@ export class BookingService implements IBookingService {
           );
 
           if (!userWallet) {
-            await this._timeSlotService.updateSlotBookingStatus(
-              data.technicianId,
-              data.timeSlotId,
-              false
-            );
+            if (slotBooking.blockedSlots) {
+              await this._timeSlotService.unblockMultipleSlots(
+                data.technicianId,
+                slotBooking.blockedSlots
+              );
+            }
             return {
               success: false,
               message: "Wallet not found for the user",
@@ -222,11 +241,12 @@ export class BookingService implements IBookingService {
           }
 
           if (userWallet.balance < data.bookingAmount) {
-            await this._timeSlotService.updateSlotBookingStatus(
-              data.technicianId,
-              data.timeSlotId,
-              false
-            );
+            if (slotBooking.blockedSlots) {
+              await this._timeSlotService.unblockMultipleSlots(
+                data.technicianId,
+                slotBooking.blockedSlots
+              );
+            }
             return {
               success: false,
               message: "Insufficient wallet balance",
@@ -284,7 +304,7 @@ export class BookingService implements IBookingService {
             (data.bookingAmount - fixifyShare).toFixed(2)
           );
 
-          if (data.couponId) {
+          if (data.couponId && service.serviceType === "fixed") {
             const coupon = await this._couponRepository.findCouponById(
               data.couponId
             );
@@ -305,8 +325,18 @@ export class BookingService implements IBookingService {
           }
 
           const bookingData = {
-            ...data,
+            technicianId: data.technicianId,
+            serviceId: data.serviceId,
+            addressId: data.addressId,
+            timeSlotId: slotBooking.blockedSlots || [data.timeSlotId],
+            originalAmount: data.originalAmount,
+            bookingAmount: data.bookingAmount,
+            offerId: data.offerId,
+            couponId: data.couponId,
+            paymentMethod: data.paymentMethod,
             bookingStatus: "Booked" as const,
+            finalServiceAmount: data.finalServiceAmount,
+            actualDuration: data.actualDuration,
           };
 
           const newBooking = await this._bookingRepository.bookService(
@@ -316,21 +346,33 @@ export class BookingService implements IBookingService {
 
           console.log("Booking created successfully:", newBooking);
 
-          const newPayment = await this._paymentRepository.createPayment({
+          const paymentData: CreatePaymentData = {
             userId: userId,
             bookingId: newBooking._id.toString(),
             technicianId: data.technicianId,
             originalAmount: data.originalAmount,
             amountPaid: data.bookingAmount,
-            offerId: data.offerId,
-            couponId: data.couponId,
             fixifyShare: fixifyShare,
             technicianShare: technicianShare,
-            paymentMethod: "Wallet",
-            paymentStatus: "Paid",
+            paymentMethod: PaymentMethod.WALLET,
+            paymentStatus:
+              service.serviceType === "hourly" ? "Partial Paid" : "Paid",
             technicianPaid: false,
             refundStatus: "Not Refunded",
-          });
+          };
+
+          if (service.serviceType === "fixed") {
+            if (data.offerId) paymentData.offerId = data.offerId;
+            if (data.couponId) paymentData.couponId = data.couponId;
+          }
+
+          if (service.serviceType === "hourly") {
+            paymentData.advanceAmount = data.bookingAmount;
+          }
+
+          const newPayment = await this._paymentRepository.createPayment(
+            paymentData
+          );
 
           await this._bookingRepository.updateBooking(
             { _id: newBooking._id },
@@ -351,11 +393,12 @@ export class BookingService implements IBookingService {
         } catch (walletError) {
           console.error("Wallet payment failed:", walletError);
 
-          await this._timeSlotService.updateSlotBookingStatus(
-            data.technicianId,
-            data.timeSlotId,
-            false
-          );
+          if (slotBooking.blockedSlots) {
+            await this._timeSlotService.unblockMultipleSlots(
+              data.technicianId,
+              slotBooking.blockedSlots
+            );
+          }
 
           return {
             success: false,
@@ -365,8 +408,18 @@ export class BookingService implements IBookingService {
       }
 
       const bookingData = {
-        ...data,
+        technicianId: data.technicianId,
+        serviceId: data.serviceId,
+        addressId: data.addressId,
+        timeSlotId: slotBooking.blockedSlots || [data.timeSlotId],
+        originalAmount: data.originalAmount,
+        bookingAmount: data.bookingAmount,
+        offerId: data.offerId,
+        couponId: data.couponId,
+        paymentMethod: data.paymentMethod,
         bookingStatus: "Pending" as const,
+        finalServiceAmount: data.finalServiceAmount,
+        actualDuration: data.actualDuration,
       };
 
       const newBooking = await this._bookingRepository.bookService(
@@ -382,8 +435,6 @@ export class BookingService implements IBookingService {
           switch (config.NODE_ENV) {
             case "production":
               return config.CLIENT_URL || "https://www.fixify.homes";
-            case "staging":
-              return config.CLIENT_URL || "https://staging.fixify.homes";
             case "development":
             default:
               return config.CLIENT_URL || "http://localhost:5173";
@@ -434,11 +485,12 @@ export class BookingService implements IBookingService {
       } catch (paymentError) {
         console.error("Payment intent creation failed:", paymentError);
 
-        await this._timeSlotService.updateSlotBookingStatus(
-          data.technicianId,
-          data.timeSlotId,
-          false
-        );
+        if (slotBooking.blockedSlots) {
+          await this._timeSlotService.unblockMultipleSlots(
+            data.technicianId,
+            slotBooking.blockedSlots
+          );
+        }
 
         return {
           success: false,
@@ -1067,22 +1119,20 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const timeSlot = booking.timeSlotId as ITimeSlot;
+      const timeSlots = booking.timeSlotId as ITimeSlot[];
 
-      console.log(
-        "timeSlot extracted from the booking details in the user cancelling the booking:",
-        timeSlot
-      );
+      console.log("timeSlots extracted from booking:", timeSlots.length);
 
-      if (!timeSlot || !timeSlot.date || !timeSlot.startTime) {
+      if (!timeSlots || timeSlots.length === 0) {
         return {
           success: false,
           message: "Booking time slot information not found",
         };
       }
 
-      const dateStr = timeSlot.date;
-      const timeStr = timeSlot.startTime;
+      const firstTimeSlot = timeSlots[0];
+      const dateStr = firstTimeSlot.date;
+      const timeStr = firstTimeSlot.startTime;
 
       console.log("Raw date:", dateStr, "Raw time:", timeStr);
 
@@ -1189,15 +1239,15 @@ export class BookingService implements IBookingService {
       }
 
       try {
-        const timeSlot = booking.timeSlotId as ITimeSlot;
-        await this._timeSlotService.updateSlotBookingStatus(
+        const slotIds = timeSlots.map((slot) => slot._id.toString());
+
+        await this._timeSlotService.unblockMultipleSlots(
           booking.technicianId._id.toString(),
-          timeSlot._id.toString(),
-          false
+          slotIds
         );
-        console.log("Time slot freed up successfully");
+        console.log(`Successfully freed up ${slotIds.length} time slots`);
       } catch (slotError) {
-        console.error("Error freeing up time slot:", slotError);
+        console.error("Error freeing up time slots:", slotError);
       }
 
       console.log(
@@ -1270,16 +1320,24 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const timeSlot = booking.timeSlotId as ITimeSlot;
-      if (!timeSlot || !timeSlot.date || !timeSlot.startTime) {
+      const timeSlots = booking.timeSlotId as ITimeSlot[];
+      if (!timeSlots || timeSlots.length === 0) {
         return {
           success: false,
           message: "Booking time slot information not found",
         };
       }
 
-      const dateStr = timeSlot.date;
-      const timeStr = timeSlot.startTime;
+      const firstTimeSlot = timeSlots[0];
+      if (!firstTimeSlot || !firstTimeSlot.date || !firstTimeSlot.startTime) {
+        return {
+          success: false,
+          message: "Booking time slot information not found",
+        };
+      }
+
+      const dateStr = firstTimeSlot.date;
+      const timeStr = firstTimeSlot.startTime;
       const [day, month, year] = dateStr.split("-");
       const jsDateStr = `${month}/${day}/${year} ${timeStr}`;
       const scheduledDate = new Date(jsDateStr);
@@ -1376,14 +1434,12 @@ export class BookingService implements IBookingService {
       );
 
       try {
-        await this._timeSlotService.updateSlotBookingStatus(
-          technicianId,
-          timeSlot._id.toString(),
-          false
-        );
-        console.log("Time slot freed up successfully");
+        const slotIds = timeSlots.map((slot) => slot._id.toString());
+
+        await this._timeSlotService.unblockMultipleSlots(technicianId, slotIds);
+        console.log(`Successfully freed up ${slotIds.length} time slots`);
       } catch (slotError) {
-        console.error("Error freeing up time slot:", slotError);
+        console.error("Error freeing up time slots:", slotError);
       }
 
       console.log(
@@ -1597,200 +1653,6 @@ export class BookingService implements IBookingService {
     }
   }
 
-  async applyBestOffer(
-    userId: string,
-    serviceId: string,
-    totalAmount: number
-  ): Promise<{
-    success: boolean;
-    message: string;
-    data?: {
-      offerId: string;
-      offerApplied: boolean;
-      offerName: string;
-      discountAmount: number;
-      finalAmount: number;
-      discountValue: number;
-      maxDiscount?: number;
-      discountType: string;
-      offerType: string;
-      minBookingAmount?: number;
-    };
-  }> {
-    try {
-      console.log(
-        "entering to the apply best offer function in the booking servce:"
-      );
-      console.log(
-        "userId in the apply best offer in the booking service:",
-        userId
-      );
-      console.log(
-        "serviceId in the apply best offer in the booking service:",
-        serviceId
-      );
-      console.log(
-        "totalAmount in the apply best offer in the booking service:",
-        totalAmount
-      );
-
-      const service = await this._serviceRepository.findServiceById(serviceId);
-
-      console.log("service in the best offer apply function:", service);
-
-      if (!service) {
-        return {
-          success: false,
-          message: "Service not found",
-        };
-      }
-
-      const userBookingsCount = await this._bookingRepository.countUserBookings(
-        userId
-      );
-
-      console.log(
-        "user bookings count in the apply best offer method:",
-        userBookingsCount
-      );
-
-      const isFirstTimeUser = userBookingsCount === 0;
-
-      console.log("isFirstTimeUser:", isFirstTimeUser);
-
-      let bestOffer: IOffer | null = null;
-      let discountAmount = 0;
-
-      if (isFirstTimeUser) {
-        const firstTimeOffer = await this._offerRepository.getOfferByType(
-          "first_time_user"
-        );
-        console.log("firstTimeOffer:", firstTimeOffer);
-
-        if (
-          firstTimeOffer &&
-          this.isOfferEligible(firstTimeOffer, totalAmount)
-        ) {
-          bestOffer = firstTimeOffer;
-          discountAmount = this.calculateDiscount(firstTimeOffer, totalAmount);
-          console.log("Applied First Time Offer:", bestOffer.title);
-        }
-      }
-
-      if (!bestOffer) {
-        const categoryOffer =
-          await this._offerRepository.getOfferByServiceCategory(
-            service.category.toString()
-          );
-        console.log("categoryOffer:", categoryOffer);
-
-        if (categoryOffer && this.isOfferEligible(categoryOffer, totalAmount)) {
-          bestOffer = categoryOffer;
-          discountAmount = this.calculateDiscount(categoryOffer, totalAmount);
-          console.log("Applied Service Category Offer:", bestOffer.title);
-        }
-      }
-
-      if (!bestOffer) {
-        const globalOffer = await this._offerRepository.getOfferByType(
-          "global"
-        );
-        console.log("globalOffer:", globalOffer);
-
-        if (globalOffer && this.isOfferEligible(globalOffer, totalAmount)) {
-          bestOffer = globalOffer;
-          discountAmount = this.calculateDiscount(globalOffer, totalAmount);
-          console.log("Applied Global Offer:", bestOffer.title);
-        }
-      }
-
-      const finalAmount = totalAmount - discountAmount;
-
-      if (!bestOffer) {
-        return {
-          message: "No offers for this service",
-          success: false,
-        };
-      }
-
-      console.log("Offer application result:", {
-        offerApplied: !!bestOffer,
-        offerName: bestOffer?.title,
-        discountAmount,
-        finalAmount,
-      });
-
-      return {
-        success: true,
-        message: bestOffer
-          ? `${bestOffer.title} applied successfully`
-          : "No applicable offers found",
-        data: {
-          offerId: bestOffer._id,
-          offerApplied: !!bestOffer,
-          offerName: bestOffer.title,
-          discountAmount,
-          finalAmount,
-          discountValue: bestOffer.discount_value,
-          maxDiscount: bestOffer.max_discount,
-          discountType: bestOffer.discount_type,
-          offerType: bestOffer.offer_type,
-          minBookingAmount: bestOffer.min_booking_amount,
-        },
-      };
-    } catch (error) {
-      console.log("Error in applyBestOffer:", error);
-      return {
-        success: false,
-        message: "Failed to apply best offer",
-      };
-    }
-  }
-
-  private isOfferEligible(offer: IOffer, totalAmount: number): boolean {
-    try {
-      if (!offer.status) {
-        return false;
-      }
-
-      const now = new Date();
-
-      if (offer.valid_until && new Date(offer.valid_until) < now) {
-        return false;
-      }
-
-      if (offer.min_booking_amount && totalAmount < offer.min_booking_amount) {
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error("Error checking offer eligibility:", error);
-      return false;
-    }
-  }
-
-  private calculateDiscount(offer: IOffer, totalAmount: number): number {
-    try {
-      let discount = 0;
-
-      if (offer.discount_type === "percentage") {
-        discount = (totalAmount * offer.discount_value) / 100;
-
-        if (offer.max_discount && discount > offer.max_discount) {
-          discount = offer.max_discount;
-        }
-      } else if (offer.discount_type === "flat_amount") {
-        discount = offer.discount_value;
-      }
-
-      return Math.min(discount, totalAmount);
-    } catch (error) {
-      console.error("Error calculating discount:", error);
-      return 0;
-    }
-  }
-
   async totalBookings(): Promise<number> {
     try {
       console.log(
@@ -1811,11 +1673,7 @@ export class BookingService implements IBookingService {
         "entered into the total revenue function that fetches the total revenue in the booking service"
       );
       const totalRevenue = await this._paymentRepository.getTotalRevenue();
-      console.log(
-        "=== BOOKING SERVICE: PaymentRepository returned:",
-        totalRevenue,
-        "==="
-      );
+      console.log("BOOKING SERVICE: PaymentRepository returned:", totalRevenue);
       return totalRevenue;
     } catch (error) {
       console.log("error occurred while fetching the total revenue:", error);

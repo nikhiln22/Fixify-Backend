@@ -1,3 +1,4 @@
+import { PaymentMethod } from "../../../config/paymentMethod";
 import { IBooking } from "../../Models/Ibooking";
 import { IUser } from "../../Models/Iuser";
 
@@ -105,8 +106,15 @@ export interface CreateBookingRequest {
   bookingAmount: number;
   offerId?: string;
   couponId?: string;
-  paymentMethod: "Online" | "Wallet";
-  bookingStatus?: "Pending" | "Booked" | "Cancelled" | "Completed";
+  paymentMethod: PaymentMethod;
+  bookingStatus?:
+    | "Pending"
+    | "Booked"
+    | "In Progress"
+    | "Cancelled"
+    | "Completed";
+  finalServiceAmount?: number;
+  actualDuration?: number;
 }
 
 export interface BookServiceResponse {
