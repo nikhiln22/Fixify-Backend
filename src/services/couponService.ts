@@ -287,6 +287,7 @@ export class CouponService implements ICouponService {
   }
 
   async applyCoupon(
+    userId: string,
     couponId: string,
     serviceId: string,
     hoursWorked?: number
@@ -302,6 +303,7 @@ export class CouponService implements ICouponService {
   }> {
     try {
       console.log("entered applyCoupon with:", {
+        userId,
         couponId,
         serviceId,
         hoursWorked,
@@ -334,13 +336,30 @@ export class CouponService implements ICouponService {
             message: "Hourly rate not defined for hourly service",
           };
         }
+
         if (!hoursWorked || hoursWorked <= 0) {
           return {
             success: false,
             message: "Hours worked must be provided for hourly services",
           };
         }
+
         originalAmount = service.hourlyRate * hoursWorked;
+      } else {
+        return {
+          success: false,
+          message: "Invalid service type",
+        };
+      }
+
+      if (
+        coupon.min_booking_amount &&
+        originalAmount < coupon.min_booking_amount
+      ) {
+        return {
+          success: false,
+          message: `Minimum booking amount of ₹${coupon.min_booking_amount} required to use this coupon`,
+        };
       }
 
       let discountAmount = 0;
@@ -350,7 +369,12 @@ export class CouponService implements ICouponService {
           discountAmount = coupon.max_discount;
         }
       } else if (coupon.discount_type === "flat_amount") {
-        discountAmount = coupon.discount_value;
+        discountAmount = Math.min(coupon.discount_value, originalAmount);
+      } else {
+        return {
+          success: false,
+          message: "Invalid coupon discount type",
+        };
       }
 
       const finalAmount = Math.max(originalAmount - discountAmount, 0);
@@ -360,6 +384,8 @@ export class CouponService implements ICouponService {
         originalAmount,
         discountAmount,
         finalAmount,
+        serviceType: service.serviceType,
+        hoursWorked: hoursWorked || "N/A",
       });
 
       return {

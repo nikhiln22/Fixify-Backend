@@ -7,13 +7,11 @@ import {
   createSuccessResponse,
 } from "../utils/responseHelper";
 import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
-import { IBookingService } from "../interfaces/Iservices/IbookingService";
 
 @injectable()
 export class OfferController {
   constructor(
     @inject("IOfferService") private _offerService: IOfferService,
-    @inject("IBookingService") private _bookingService: IBookingService
   ) {}
 
   async addOffer(req: Request, res: Response): Promise<void> {
@@ -315,7 +313,7 @@ export class OfferController {
         return;
       }
 
-      const serviceResponse = await this._bookingService.applyBestOffer(
+      const serviceResponse = await this._offerService.applyBestOffer(
         userId,
         serviceId,
         totalAmount

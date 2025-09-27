@@ -20,14 +20,16 @@ const bookingSchema: Schema<IBooking> = new Schema(
     },
     addressId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "UserAddress",
+      ref: "address",
       required: true,
     },
-    timeSlotId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "timeSlot",
-      required: true,
-    },
+    timeSlotId: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "timeSlot",
+        required: true,
+      },
+    ],
     paymentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "payment",
@@ -36,10 +38,24 @@ const bookingSchema: Schema<IBooking> = new Schema(
       type: Number,
       required: true,
     },
+    actualDuration: {
+      type: Number,
+    },
     bookingStatus: {
       type: String,
-      enum: ["Pending", "Booked", "Cancelled", "Completed"],
+      enum: ["Pending", "Booked", "In Progress", "Cancelled", "Completed"],
       required: true,
+    },
+    hasReplacementParts: {
+      type: Boolean,
+      default: false,
+    },
+    replacementPartsApproved: {
+      type: Boolean,
+      default: false,
+    },
+    finalServiceAmount: {
+      type: Number,
     },
     cancellationReason: {
       type: String,

@@ -3,8 +3,6 @@ import { IUser } from "../Models/Iuser";
 
 export interface IUserRepository {
   createUser(userData: CreateUser): Promise<IUser>;
-  updateUserExpiry(email: string, newExpiresAt: Date): Promise<void>;
-  updateUserVerification(email: string): Promise<void>;
   findByEmail(email: string): Promise<IUser | null>;
   updatePassword(email: string, hashedPassword: string): Promise<void>;
   getAllUsers(options: {

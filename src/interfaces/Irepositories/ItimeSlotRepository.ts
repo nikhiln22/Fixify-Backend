@@ -31,4 +31,5 @@ export interface ITimeSlotRepository {
   ): Promise<ITimeSlot>;
   findSlotById(technicianId: string, slotId: string): Promise<ITimeSlot | null>;
   toggleSlotAvailability(slotId: string): Promise<ITimeSlot>;
+  getSlotsByDate(technicianId: string, date: string): Promise<ITimeSlot[]>;
 }

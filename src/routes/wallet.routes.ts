@@ -35,7 +35,7 @@ export class WalletRoutes {
       walletController.addMoney.bind(walletController)
     );
 
-    this.router.post(
+    this.router.get(
       "/:sessionId/verify-payment",
       this.authMiddleware.authenticate(Roles.USER),
       walletController.verifyWalletStripeSession.bind(walletController)

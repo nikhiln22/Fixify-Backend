@@ -46,7 +46,7 @@ export class TimeSlotService implements ITimeSlotService {
       }
 
       const generatedSlots: ITimeSlot[] = [];
-      const slotDuration = 60;
+      const slotDuration = 30;
 
       for (const slot of dateTimeSlots) {
         const { date, startTime, endTime } = slot;
@@ -338,6 +338,124 @@ export class TimeSlotService implements ITimeSlotService {
       return {
         success: false,
         message: "Failed to update slot booking status",
+      };
+    }
+  }
+
+  async blockMultipleSlotsForService(
+    technicianId: string,
+    startTimeSlotId: string,
+    serviceDurationMinutes: number
+  ): Promise<{
+    success: boolean;
+    message: string;
+    blockedSlots?: string[];
+  }> {
+    try {
+      const startSlot = await this._timeSlotRepository.findSlotById(
+        technicianId,
+        startTimeSlotId
+      );
+
+      if (!startSlot) {
+        return { success: false, message: "Starting time slot not found" };
+      }
+
+      const slotsNeeded = Math.ceil(serviceDurationMinutes / 30);
+
+      const allSlots = await this._timeSlotRepository.getSlotsByDate(
+        technicianId,
+        startSlot.date
+      );
+
+      const startIndex = allSlots.findIndex(
+        (slot) => slot._id.toString() === startTimeSlotId
+      );
+
+      if (startIndex === -1) {
+        return {
+          success: false,
+          message: "Could not find starting slot position",
+        };
+      }
+
+      const slotsToBlock = allSlots.slice(startIndex, startIndex + slotsNeeded);
+
+      if (slotsToBlock.length < slotsNeeded) {
+        return {
+          success: false,
+          message: "Not enough consecutive time slots available",
+        };
+      }
+
+      const alreadyBooked = slotsToBlock.find(
+        (slot) => slot.isBooked || !slot.isAvailable
+      );
+      if (alreadyBooked) {
+        return {
+          success: false,
+          message: "Some required time slots are not available",
+        };
+      }
+
+      const blockedSlotIds: string[] = [];
+      for (const slot of slotsToBlock) {
+        await this.updateSlotBookingStatus(
+          technicianId,
+          slot._id.toString(),
+          true
+        );
+        blockedSlotIds.push(slot._id.toString());
+      }
+
+      return {
+        success: true,
+        message: `Blocked ${blockedSlotIds.length} slots for service`,
+        blockedSlots: blockedSlotIds,
+      };
+    } catch (error) {
+      console.log(
+        "error occured while blocking the multiple time slots:",
+        error
+      );
+      return { success: false, message: "Failed to block time slots" };
+    }
+  }
+
+  async unblockMultipleSlots(
+    technicianId: string,
+    slotIds: string[]
+  ): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    try {
+      console.log(
+        `Unblocking ${slotIds.length} slots for technician ${technicianId}`
+      );
+
+      let unblockedCount = 0;
+      for (const slotId of slotIds) {
+        const result = await this.updateSlotBookingStatus(
+          technicianId,
+          slotId,
+          false
+        );
+
+        if (result.success) {
+          unblockedCount++;
+        }
+      }
+
+      return {
+        success: unblockedCount > 0,
+        message: `Successfully unblocked ${unblockedCount} out of ${slotIds.length} time slots`,
+      };
+    } catch (error) {
+      console.error("Error unblocking multiple slots:", error);
+      return {
+        success: false,
+        message: "Failed to unblock time slots",
       };
     }
   }

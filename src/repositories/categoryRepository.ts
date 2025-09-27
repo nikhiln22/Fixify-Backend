@@ -100,7 +100,7 @@ export class CategoryRepository
       throw new Error("An error occurred while retrieving the categories");
     }
   }
-  
+
   async findCategoryById(id: string): Promise<ICategory | null> {
     try {
       return await this.findById(id);

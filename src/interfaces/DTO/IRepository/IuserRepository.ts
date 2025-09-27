@@ -4,4 +4,5 @@ export interface CreateUser {
   phone: number;
   password: string;
   is_verified?: boolean;
+  status?: "Active" | "Blocked";
 }

@@ -20,11 +20,7 @@ import { IUserService } from "../interfaces/Iservices/IuserService";
 import { inject, injectable } from "tsyringe";
 import { IUser } from "../interfaces/Models/Iuser";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
-import {
-  OTP_EXPIRY_SECONDS,
-  OTP_PREFIX,
-  OtpPurpose,
-} from "../config/otpConfig";
+import { OTP_PREFIX, OtpPurpose } from "../config/otpConfig";
 import { IOTPService, OtpVerificationResult } from "../interfaces/Iotp/IOTP";
 import { IRedisService } from "../interfaces/Iredis/Iredis";
 import { IEmailService } from "../interfaces/Iemail/Iemail";
@@ -32,6 +28,8 @@ import { IPasswordHasher } from "../interfaces/IpasswordHasher/IpasswordHasher";
 import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
 import { IJwtService } from "../interfaces/Ijwt/Ijwt";
 import { Roles } from "../config/roles";
+import { CreateUser } from "../interfaces/DTO/IRepository/IuserRepository";
+import config from "../config/env";
 
 @injectable()
 export class UserService implements IUserService {
@@ -50,8 +48,6 @@ export class UserService implements IUserService {
     return `${OTP_PREFIX}${purpose}:${email}`;
   }
 
-  private static readonly USER_EXPIRY_MS = 15 * 60 * 1000;
-
   private async generateAndSendOtp(
     email: string,
     purpose: OtpPurpose
@@ -63,7 +59,7 @@ export class UserService implements IUserService {
 
     console.log("generated RedisKey:", redisKey);
 
-    await this._redisService.set(redisKey, otp, OTP_EXPIRY_SECONDS);
+    await this._redisService.set(redisKey, otp, config.OTP_EXPIRY_SECONDS);
 
     if (purpose === OtpPurpose.PASSWORD_RESET) {
       await this._emailService.sendPasswordResetEmail(email, otp);
@@ -108,39 +104,40 @@ export class UserService implements IUserService {
         "entering to the usersignup function in the userauth service"
       );
       console.log("data:", data);
+
       const { email, password } = data;
+
       const existingUser = await this._userRepository.findByEmail(email);
-
       if (existingUser) {
-        if (existingUser.is_verified) {
-          return {
-            message: "User already exists, please login",
-            success: false,
-          };
-        } else {
-          console.log("user exists but not verified, resending otp");
+        return {
+          message: "User already exists, please login",
+          success: false,
+        };
+      }
 
-          const otp = await this.generateAndSendOtp(
-            email,
-            OtpPurpose.REGISTRATION
-          );
+      const pendingUser = await this._redisService.getObject(
+        `pending_user:${email}`
+      );
+      if (pendingUser) {
+        console.log("user has pending signup, resending otp");
 
-          console.log("generated the otp for the unverified users:", otp);
+        const otp = await this.generateAndSendOtp(
+          email,
+          OtpPurpose.REGISTRATION
+        );
+        console.log("generated new otp for pending user:", otp);
 
-          const newExpiresAt = new Date(
-            Date.now() + UserService.USER_EXPIRY_MS
-          );
+        await this._redisService.setObject(
+          `pending_user:${email}`,
+          pendingUser,
+          config.OTP_EXPIRY_SECONDS
+        );
 
-          await this._userRepository.updateUserExpiry(email, newExpiresAt);
-
-          return {
-            message: "Otp sent to complete registration",
-            success: true,
-            data: {
-              email: email,
-            },
-          };
-        }
+        return {
+          message: "OTP sent to complete registration",
+          success: true,
+          data: { email },
+        };
       }
 
       const hashedPassword = await this._passwordService.hash(password);
@@ -148,27 +145,27 @@ export class UserService implements IUserService {
 
       console.log("Generated otp for new user registration:", otp);
 
-      const expiresAt = new Date(Date.now() + UserService.USER_EXPIRY_MS);
       const userData = {
         ...data,
         password: hashedPassword,
-        expiresAt,
       };
 
-      const newUser = await this._userRepository.createUser(userData);
+      await this._redisService.setObject(
+        `pending_user:${email}`,
+        userData,
+        config.OTP_EXPIRY_SECONDS
+      );
 
-      console.log("new user created:", newUser);
+      console.log("pending user data stored in redis");
 
       return {
-        message: "User created successfully,OTP sent",
+        message: "User created successfully, OTP sent",
         success: true,
-        data: {
-          email: email,
-        },
+        data: { email },
       };
     } catch (error) {
       console.log("Error during user signup:", error);
-      throw new Error("An error occured during the user signup");
+      throw new Error("An error occurred during the user signup");
     }
   }
 
@@ -179,19 +176,14 @@ export class UserService implements IUserService {
       const { otp, email, purpose } = data;
 
       if (OtpPurpose.REGISTRATION === purpose) {
-        const user = await this._userRepository.findByEmail(email);
+        const pendingUser = await this._redisService.getObject<CreateUser>(
+          `pending_user:${email}`
+        );
 
-        if (!user) {
+        if (!pendingUser) {
           return {
             success: false,
-            message: "user not found or the registration expired",
-          };
-        }
-
-        if (user.is_verified) {
-          return {
-            success: false,
-            message: "User already verified, please login",
+            message: "Registration expired or not found. Please signup again",
           };
         }
 
@@ -208,16 +200,19 @@ export class UserService implements IUserService {
           };
         }
 
-        await this._userRepository.updateUserVerification(email);
+        const userData = { ...pendingUser, status: "Active" as const };
+
+        const newUser = await this._userRepository.createUser(userData);
 
         const newWallet = await this._walletRepository.createWallet(
-          user._id.toString(),
-          "user"
+          newUser._id.toString(),
+          Roles.USER
         );
         console.log("newly created wallet:", newWallet);
 
-        const redisKey = this.getOtpRedisKey(email, OtpPurpose.REGISTRATION);
-        await this._redisService.delete(redisKey);
+        const otpRedisKey = this.getOtpRedisKey(email, OtpPurpose.REGISTRATION);
+        await this._redisService.delete(otpRedisKey);
+        await this._redisService.delete(`pending_user:${email}`);
 
         return {
           message: "Email verified successfully! Please login to continue",
@@ -232,13 +227,6 @@ export class UserService implements IUserService {
           return {
             success: false,
             message: "User not found with this email",
-          };
-        }
-
-        if (!user.is_verified) {
-          return {
-            success: false,
-            message: "Please verify your email first",
           };
         }
 
@@ -259,7 +247,7 @@ export class UserService implements IUserService {
       console.log("Error during OTP verification:", error);
       return {
         success: false,
-        message: "An error occured during the otp verification",
+        message: "An error occurred during the otp verification",
       };
     }
   }
@@ -269,36 +257,48 @@ export class UserService implements IUserService {
       console.log("entering resendotp function in the userservice");
 
       const user = await this._userRepository.findByEmail(data);
-      console.log("user in the resendOtp in the user service:", user);
 
-      if (!user) {
+      if (user) {
+        const newOtp = await this.generateAndSendOtp(
+          data,
+          OtpPurpose.PASSWORD_RESET
+        );
+        console.log("generated new OTP for password reset:", newOtp);
+
         return {
-          success: false,
-          message: "User not found",
+          success: true,
+          message: "OTP sent successfully for password reset",
+          email: data,
         };
       }
 
-      let purpose: OtpPurpose;
-      let message: string;
+      const pendingUser = await this._redisService.getObject<CreateUser>(
+        `pending_user:${data}`
+      );
 
-      if (!user.is_verified) {
-        purpose = OtpPurpose.REGISTRATION;
-        message = "OTP sent successfully for registration";
+      if (pendingUser) {
+        const newOtp = await this.generateAndSendOtp(
+          data,
+          OtpPurpose.REGISTRATION
+        );
+        console.log("generated new OTP for registration:", newOtp);
 
-        const newExpiresAt = new Date(Date.now() + UserService.USER_EXPIRY_MS);
-        await this._userRepository.updateUserExpiry(data, newExpiresAt);
-      } else {
-        purpose = OtpPurpose.PASSWORD_RESET;
-        message = "OTP sent successfully for password reset";
+        await this._redisService.setObject(
+          `pending_user:${data}`,
+          pendingUser,
+          config.OTP_EXPIRY_SECONDS
+        );
+
+        return {
+          success: true,
+          message: "OTP sent successfully for registration",
+          email: data,
+        };
       }
 
-      const newOtp = await this.generateAndSendOtp(data, purpose);
-      console.log("generated new Otp:", newOtp);
-
       return {
-        success: true,
-        message,
-        email: data,
+        success: false,
+        message: "User not found. Please signup first",
       };
     } catch (error) {
       console.log("error occurred while resending the otp", error);
@@ -322,13 +322,6 @@ export class UserService implements IUserService {
         return {
           success: false,
           message: "User not found with this email",
-        };
-      }
-
-      if (!user.is_verified) {
-        return {
-          success: false,
-          message: "Please verify your email before resetting password",
         };
       }
 
@@ -374,13 +367,6 @@ export class UserService implements IUserService {
         };
       }
 
-      if (!user.is_verified) {
-        return {
-          success: false,
-          message: "Please verify your email first",
-        };
-      }
-
       if (user.status !== "Active") {
         return {
           success: false,
@@ -420,13 +406,6 @@ export class UserService implements IUserService {
         return {
           success: false,
           message: "User not found",
-        };
-      }
-
-      if (!user.is_verified) {
-        return {
-          success: false,
-          message: "Please verify your email before logging in",
         };
       }
 

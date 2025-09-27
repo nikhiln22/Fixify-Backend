@@ -16,6 +16,7 @@ import { ChatRoutes } from "./chat.routes";
 import { DesignationRoutes } from "./designations.routes";
 import { TimeSlotRoutes } from "./timeSlot.routes";
 import { SubscriptionPlanRoutes } from "./subscriptionPlan.routes";
+import { PartsRoutes } from "./parts.routes";
 
 export class RouteRegistry {
   public static registerRoutes(app: Express): void {
@@ -39,11 +40,13 @@ export class RouteRegistry {
     const bookingRoutes = new BookingRoutes();
     const jobRoutes = new DesignationRoutes();
     const timeSlotRoutes = new TimeSlotRoutes();
+    const partsRoutes = new PartsRoutes();
     app.use("/api/categories", categoryRoutes.getRouter());
     app.use("/api/services", serviceRoutes.getRouter());
     app.use("/api/bookings", bookingRoutes.getRouter());
     app.use("/api/designations", jobRoutes.getRouter());
     app.use("/api/timeslots", timeSlotRoutes.getRouter());
+    app.use("/api/parts", partsRoutes.getRouter());
 
     const offerRoutes = new OfferRoutes();
     const couponRoutes = new CouponRoutes();

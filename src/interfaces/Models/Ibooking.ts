@@ -10,9 +10,18 @@ export interface IBooking extends Document {
   serviceId: Types.ObjectId | IService;
   addressId: Types.ObjectId;
   paymentId: Types.ObjectId | IPayment;
-  timeSlotId: Types.ObjectId | ITimeSlot;
+  timeSlotId: Types.ObjectId[] | ITimeSlot[];
   bookingAmount: number;
-  bookingStatus: "Pending" | "Booked" | "Cancelled" | "Completed";
+  actualDuration?: number;
+  bookingStatus:
+    | "Pending"
+    | "Booked"
+    | "In Progress"
+    | "Cancelled"
+    | "Completed";
+  hasReplacementParts?: boolean;
+  replacementPartsApproved?: boolean;
+  finalServiceAmount?: number;
   cancellationReason: string;
   cancelledBy: "user" | "technician";
   cancellationDate: Date;

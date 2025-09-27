@@ -66,4 +66,28 @@ export class RedisService implements IRedisService {
       throw new Error("Failed to delete data from Redis");
     }
   }
+
+  async setObject(
+    key: string,
+    value: object,
+    expireSeconds: number
+  ): Promise<void> {
+    try {
+      const jsonString = JSON.stringify(value);
+      await this.client.set(key, jsonString, "EX", expireSeconds);
+    } catch (error) {
+      console.error("Redis setObject error:", error);
+      throw new Error("Failed to store the object in the reddis");
+    }
+  }
+
+  async getObject<T>(key: string): Promise<T | null> {
+    try {
+      const jsonString = await this.client.get(key);
+      return jsonString ? JSON.parse(jsonString) : null;
+    } catch (error) {
+      console.error("Redis getObject error:", error);
+      throw new Error("Failed to retrieve object from Redis");
+    }
+  }
 }

@@ -61,6 +61,7 @@ export interface ICouponService {
     data?: Partial<ICoupon>[];
   }>;
   applyCoupon(
+    userId: string,
     couponId: string,
     serviceId: string,
     hoursWorked?: number

@@ -58,4 +58,24 @@ export interface IOfferService {
     message: string;
     data?: Partial<IOffer>[];
   }>;
+  applyBestOffer(
+    userId: string,
+    serviceId: string,
+    totalAmount: number
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      offerId: string;
+      offerApplied: boolean;
+      offerName: string;
+      discountAmount: number;
+      finalAmount: number;
+      discountValue: number;
+      maxDiscount?: number;
+      discountType: string;
+      offerType: string;
+      minBookingAmount?: number;
+    };
+  }>;
 }

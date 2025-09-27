@@ -23,21 +23,12 @@ const userSchema: Schema<IUser> = new Schema(
       type: String,
       enum: ["Active", "Blocked"],
     },
-    expiresAt: {
-      type: Date,
-    },
-    is_verified: {
-      type: Boolean,
-      default: false,
-    },
     image: {
       type: String,
     },
   },
   { timestamps: true }
 );
-
-userSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 900 });
 
 const user = mongoose.model<IUser>("user", userSchema);
 

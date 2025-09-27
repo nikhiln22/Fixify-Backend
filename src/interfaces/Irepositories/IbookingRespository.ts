@@ -1,9 +1,29 @@
 import { FilterQuery, UpdateQuery } from "mongoose";
-import { CreateBookingRequest } from "../DTO/IServices/IuserService";
 import { IBooking } from "../Models/Ibooking";
 
 export interface IBookingRepository {
-  bookService(userId: string, data: CreateBookingRequest): Promise<IBooking>;
+  bookService(
+    userId: string,
+    data: {
+      technicianId: string;
+      serviceId: string;
+      addressId: string;
+      timeSlotId: string[];
+      originalAmount?: number;
+      bookingAmount: number;
+      offerId?: string;
+      couponId?: string;
+      paymentMethod: "Online" | "Wallet";
+      bookingStatus:
+        | "Pending"
+        | "Booked"
+        | "In Progress"
+        | "Cancelled"
+        | "Completed";
+      finalServiceAmount?: number;
+      actualDuration?: number;
+    }
+  ): Promise<IBooking>;
   updateBooking(
     filter: FilterQuery<IBooking>,
     update: UpdateQuery<IBooking>

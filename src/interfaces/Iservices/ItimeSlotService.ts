@@ -41,4 +41,21 @@ export interface ITimeSlotService {
     message: string;
     data?: ITimeSlot;
   }>;
+
+  blockMultipleSlotsForService(
+    technicianId: string,
+    startTimeSlotId: string,
+    serviceDurationMinutes: number
+  ): Promise<{
+    success: boolean;
+    message: string;
+    blockedSlots?: string[];
+  }>;
+  unblockMultipleSlots(
+    technicianId: string,
+    slotIds: string[]
+  ): Promise<{
+    success: boolean;
+    message: string;
+  }>;
 }

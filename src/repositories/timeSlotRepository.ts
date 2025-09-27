@@ -175,15 +175,11 @@ export class TimeSlotRepository
           );
           slotDate.setHours(0, 0, 0, 0);
 
-          // Skip past dates (before today)
           if (slotDate < today) return false;
 
-          // For today's slots - show ALL slots if no additionalFilters (technician view)
-          // Only filter by time if additionalFilters exist (user view)
           if (slot.date === todayDateString) {
             if (!slot.startTime) return false;
 
-            // If additionalFilters exist, it's a user request - filter past times
             if (
               additionalFilters &&
               Object.keys(additionalFilters).length > 0
@@ -194,7 +190,6 @@ export class TimeSlotRepository
               return slotTimeInMinutes > currentTime;
             }
 
-            // No additionalFilters means technician request - show all today's slots
             return true;
           }
 
@@ -305,6 +300,40 @@ export class TimeSlotRepository
       return updatedSlot;
     } catch (error) {
       console.error("Error updating slot booking status:", error);
+      throw error;
+    }
+  }
+
+  async getSlotsByDate(
+    technicianId: string,
+    date: string
+  ): Promise<ITimeSlot[]> {
+    try {
+      console.log(
+        `Getting all slots for technician ${technicianId} on date ${date}`
+      );
+
+      const filter = {
+        technicianId: new Types.ObjectId(technicianId),
+        date: date,
+      };
+
+      const slots = (await this.find(filter)) as ITimeSlot[];
+
+      const sortedSlots = slots.sort((a, b) => {
+        const dateA = new Date(`1970-01-01 ${a.startTime}`);
+        const dateB = new Date(`1970-01-01 ${b.startTime}`);
+        return dateA.getTime() - dateB.getTime();
+      });
+
+      console.log(`Found ${sortedSlots.length} slots for the date`);
+      console.log(
+        "Sorted slot times:",
+        sortedSlots.map((s) => s.startTime)
+      );
+      return sortedSlots;
+    } catch (error) {
+      console.error("Error getting slots by date:", error);
       throw error;
     }
   }

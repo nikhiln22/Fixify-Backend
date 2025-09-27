@@ -48,7 +48,7 @@ const paymentSchema: Schema<IPayment> = new Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ["Paid", "Refunded"],
+      enum: ["Partial", "Paid", "Refunded"],
       required: true,
     },
     technicianPaid: {
@@ -71,6 +71,12 @@ const paymentSchema: Schema<IPayment> = new Schema(
     },
     creditReleaseDate: {
       type: Date,
+    },
+    extraCharges: {
+      type: Number,
+    },
+    advanceAmount: {
+      type: Number,
     },
   },
   { timestamps: true }

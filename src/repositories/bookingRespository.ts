@@ -2,7 +2,6 @@ import { injectable } from "tsyringe";
 import { BaseRepository } from "./baseRepository";
 import { IBooking } from "../interfaces/Models/Ibooking";
 import Booking from "../models/bookingModel";
-import { CreateBookingRequest } from "../interfaces/DTO/IServices/IuserService";
 import { IBookingRepository } from "../interfaces/Irepositories/IbookingRespository";
 import mongoose, { FilterQuery, Types, UpdateQuery } from "mongoose";
 import { ITimeSlot } from "../interfaces/Models/ItimeSlot";
@@ -18,7 +17,25 @@ export class BookingRepository
 
   async bookService(
     userId: string,
-    data: CreateBookingRequest
+    data: {
+      technicianId: string;
+      serviceId: string;
+      addressId: string;
+      timeSlotId: string[];
+      originalAmount?: number;
+      bookingAmount: number;
+      offerId?: string;
+      couponId?: string;
+      paymentMethod: "Online" | "Wallet";
+      bookingStatus:
+        | "Pending"
+        | "Booked"
+        | "In Progress"
+        | "Cancelled"
+        | "Completed";
+      finalServiceAmount?: number;
+      actualDuration?: number;
+    }
   ): Promise<IBooking> {
     try {
       console.log("Creating booking in repository with userId:", userId);
@@ -29,10 +46,23 @@ export class BookingRepository
         technicianId: new Types.ObjectId(data.technicianId),
         serviceId: new Types.ObjectId(data.serviceId),
         addressId: new Types.ObjectId(data.addressId),
-        timeSlotId: new Types.ObjectId(data.timeSlotId),
+        timeSlotId: data.timeSlotId.map((slotId) => new Types.ObjectId(slotId)),
         bookingAmount: data.bookingAmount,
         bookingStatus: data.bookingStatus,
+        ...(data.originalAmount !== undefined && {
+          originalAmount: data.originalAmount,
+        }),
+        ...(data.finalServiceAmount !== undefined && {
+          finalServiceAmount: data.finalServiceAmount,
+        }),
+        ...(data.actualDuration !== undefined && {
+          actualDuration: data.actualDuration,
+        }),
+        ...(data.offerId && { offerId: new Types.ObjectId(data.offerId) }),
+        ...(data.couponId && { couponId: new Types.ObjectId(data.couponId) }),
       };
+
+      console.log("Final booking data to be saved:", bookingData);
 
       const newBooking = await this.create(bookingData);
 
@@ -139,8 +169,10 @@ export class BookingRepository
 
           console.log("todayStr:", todayStr);
           result.data = result.data.filter((booking) => {
-            const timeSlot = booking.timeSlotId as ITimeSlot;
-            return timeSlot && timeSlot.date === todayStr;
+            const timeSlots = booking.timeSlotId as ITimeSlot[];
+            const firstTimeSlot =
+              timeSlots && timeSlots.length > 0 ? timeSlots[0] : null;
+            return firstTimeSlot && firstTimeSlot.date === todayStr;
           });
           result.total = result.data.length;
         } else if (filter === "upcoming") {
@@ -156,8 +188,14 @@ export class BookingRepository
           console.log("tomorrowStr:", tomorrowStr);
 
           result.data = result.data.filter((booking) => {
-            const timeSlot = booking.timeSlotId as ITimeSlot;
-            return timeSlot && timeSlot.date && timeSlot.date >= tomorrowStr;
+            const timeSlots = booking.timeSlotId as ITimeSlot[];
+            const firstTimeSlot =
+              timeSlots && timeSlots.length > 0 ? timeSlots[0] : null;
+            return (
+              firstTimeSlot &&
+              firstTimeSlot.date &&
+              firstTimeSlot.date >= tomorrowStr
+            );
           });
           result.total = result.data.length;
         }

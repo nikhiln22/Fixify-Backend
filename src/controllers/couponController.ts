@@ -300,7 +300,7 @@ export class CouponController {
   async applyCoupon(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
-      const { couponId, serviceId } = req.body;
+      const { couponId, serviceId, hoursWorked } = req.body;
       console.log(
         "userId in the apply coupon function in the user controller:",
         userId
@@ -326,11 +326,14 @@ export class CouponController {
           .json(createErrorResponse("Coupon ID is required"));
         return;
       }
+
       const serviceResponse = await this._couponService.applyCoupon(
         userId,
         couponId,
-        serviceId
+        serviceId,
+        hoursWorked // This will be undefined for fixed services, which is fine
       );
+
       if (serviceResponse.success) {
         res
           .status(HTTP_STATUS.OK)
@@ -347,7 +350,7 @@ export class CouponController {
           );
       }
     } catch (error) {
-      console.log("error occurred while fetching eligible coupons:", error);
+      console.log("error occurred while applying coupon:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal Server Error"));

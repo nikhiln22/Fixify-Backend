@@ -21,6 +21,8 @@ interface Config {
   CLOUDINARY_API_SECRET: string;
   NODE_ENV: string;
   STRIPE_SECRET_KEY: string;
+  OTP_EXPIRY_SECONDS:number;
+  BOOKING_OTP_EXPIRATION_SECONDS:number;
 }
 
 function validateEnvVars(): void {
@@ -42,6 +44,8 @@ function validateEnvVars(): void {
     "CLOUDINARY_API_SECRET",
     "NODE_ENV",
     "STRIPE_SECRET_KEY",
+    "OTP_EXPIRY_SECONDS",
+    "BOOKING_OTP_EXPIRATION_SECONDS"
   ];
 
   requiredEnvVars.forEach((envVar) => {
@@ -74,6 +78,8 @@ const config: Config = {
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET as string,
   NODE_ENV: process.env.NODE_ENV as string,
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY as string,
+  OTP_EXPIRY_SECONDS: Number(process.env.OTP_EXPIRY_SECONDS) || 300,
+  BOOKING_OTP_EXPIRATION_SECONDS: Number(process.env.BOOKING_OTP_EXPIRATION_SECONDS) || 7200,
 };
 
 export default config;

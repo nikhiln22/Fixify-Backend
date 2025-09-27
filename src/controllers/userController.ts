@@ -505,7 +505,7 @@ export class UserController {
 
   async logout(req: Request, res: Response): Promise<void> {
     try {
-      console.log("entering the logout function from the user auth controller");
+      console.log("entering the logout function from the user controller");
       res.clearCookie("refresh_token", {
         httpOnly: true,
         secure: true,

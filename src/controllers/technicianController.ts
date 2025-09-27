@@ -857,10 +857,8 @@ export class TechnicianController {
   async logout(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log(
-        "entering the logout function from the technician auth controller"
+        "entering the logout function from the technician controller"
       );
-      const role = req.user?.role;
-      console.log("role in the technician auth controller:", role);
 
       res.clearCookie("refresh_token", {
         httpOnly: true,

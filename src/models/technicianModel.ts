@@ -27,9 +27,6 @@ const technicianSchema: Schema<ITechnician> = new Schema(
       type: Boolean,
       default: false,
     },
-    expiresAt: {
-      type: Date,
-    },
     yearsOfExperience: {
       type: Number,
     },
@@ -48,11 +45,13 @@ const technicianSchema: Schema<ITechnician> = new Schema(
         type: String,
       },
     ],
+    availabilityStatus: {
+      type: String,
+      enum: ["Available", "Busy", "Offline"],
+    },
   },
   { timestamps: true }
 );
-
-technicianSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 900 });
 
 const technician = mongoose.model<ITechnician>("technician", technicianSchema);
 
