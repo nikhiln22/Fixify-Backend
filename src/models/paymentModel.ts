@@ -48,7 +48,7 @@ const paymentSchema: Schema<IPayment> = new Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ["Partial", "Paid", "Refunded"],
+      enum: ["Partial Paid", "Paid", "Refunded"],
       required: true,
     },
     technicianPaid: {

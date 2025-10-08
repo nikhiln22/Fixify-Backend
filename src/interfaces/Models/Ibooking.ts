@@ -22,10 +22,11 @@ export interface IBooking extends Document {
   hasReplacementParts?: boolean;
   replacementPartsApproved?: boolean;
   finalServiceAmount?: number;
-  cancellationReason: string;
-  cancelledBy: "user" | "technician";
+  cancellationReason?: string;
+  cancelledBy?: "user" | "technician";
   cancellationDate: Date;
   isRated: boolean;
+  expiresAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

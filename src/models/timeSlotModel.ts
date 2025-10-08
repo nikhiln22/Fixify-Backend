@@ -28,6 +28,17 @@ const timeSlotSchema: Schema<ITimeSlot> = new Schema(
       type: Boolean,
       default: true,
     },
+    reservationExpiry: {
+      type: Date,
+    },
+    isReserved: {
+      type: Boolean,
+      default: false,
+    },
+    reservedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
+    },
   },
   { timestamps: true }
 );

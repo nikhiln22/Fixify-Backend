@@ -1,7 +1,7 @@
 import { ITechnician } from "../../../interfaces/Models/Itechnician";
-import { IAddress } from "../../Models/Iaddress";
 import { IRating } from "../../Models/Irating";
 import { ITimeSlot } from "../../Models/ItimeSlot";
+import { OwnerAddressResponseDto } from "./IaddressService";
 
 export interface SignupTechnicianData {
   username: string;
@@ -131,7 +131,7 @@ export interface TechnicianProfileResponse {
     About?: string;
     image?: string;
     certificates?: string[];
-    addresses?: IAddress[];
+    addresses?: OwnerAddressResponseDto[];
     currentSubscription?: {
       planName: string;
       status: string;
@@ -187,4 +187,14 @@ export interface EditProfileResponse {
   success: boolean;
   message: string;
   technician?: ITechnician;
+}
+
+export interface PaginatedTechnicianDto {
+  _id: string;
+  username: string;
+  email: string;
+  phone: number;
+  status?: "Active" | "Blocked";
+  Designation?: { _id: string; designation: string };
+  createdAt?: Date;
 }

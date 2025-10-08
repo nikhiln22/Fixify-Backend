@@ -1,7 +1,8 @@
+import { AddAddressDto } from "../DTO/IServices/IaddressService";
 import { IAddress } from "../Models/Iaddress";
 
 export interface IAddressRepository {
-  addAddress(addressData: IAddress): Promise<IAddress>;
+  addAddress(addressData: AddAddressDto): Promise<IAddress>;
   getOwnerAddresses(
     ownerId: string,
     ownerModel: "user" | "technician"

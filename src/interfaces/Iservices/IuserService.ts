@@ -4,6 +4,7 @@ import {
   ForgotPasswordResponse,
   LoginData,
   LoginResponse,
+  PaginatedUserDto,
   ResendOtpResponse,
   ResetPasswordData,
   ResetPasswordResponse,
@@ -15,7 +16,6 @@ import {
   VerifyOtpData,
   VerifyOtpResponse,
 } from "../DTO/IServices/IuserService";
-import { IUser } from "../../interfaces/Models/Iuser";
 
 export interface IUserService {
   userSignUp(data: SignupUserData): Promise<SignUpUserResponse>;
@@ -33,7 +33,7 @@ export interface IUserService {
     success: boolean;
     message: string;
     data?: {
-      users: IUser[];
+      users: PaginatedUserDto[];
       pagination: {
         total: number;
         page: number;

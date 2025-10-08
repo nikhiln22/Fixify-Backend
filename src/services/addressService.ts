@@ -1,8 +1,11 @@
 import { IAddressService } from "../interfaces/Iservices/IaddressService";
 import { inject, injectable } from "tsyringe";
 import { IAddressRepository } from "../interfaces/Irepositories/IaddressRepository";
-import { IAddress } from "../interfaces/Models/Iaddress";
-import { Types } from "mongoose";
+import {
+  AddAddressDto,
+  AddressResponseDto,
+  OwnerAddressResponseDto,
+} from "../interfaces/DTO/IServices/IaddressService";
 
 @injectable()
 export class AddressService implements IAddressService {
@@ -10,24 +13,19 @@ export class AddressService implements IAddressService {
     @inject("IAddressRepository") private _addressRepository: IAddressRepository
   ) {}
 
-  async addAddress(
-    ownerId: string,
-    ownerModel: "user" | "technician",
-    addressData: Partial<IAddress>
-  ): Promise<{
+  async addAddress(addressData: AddAddressDto): Promise<{
     success: boolean;
     message: string;
-    data?: IAddress;
+    data?: AddressResponseDto;
   }> {
     try {
-      console.log("entering to the address service adding the new address");
-      console.log("ownerId from the address service:", ownerId);
-      console.log("ownerModel from the address service:", ownerModel);
+      console.log("Entering address service - addAddress");
+      console.log("Address data received:", addressData);
 
       if (
         !addressData.fullAddress ||
-        !addressData.longitude ||
-        !addressData.latitude
+        addressData.latitude === undefined ||
+        addressData.longitude === undefined
       ) {
         return {
           success: false,
@@ -35,42 +33,25 @@ export class AddressService implements IAddressService {
         };
       }
 
-      const newAddressData: Partial<IAddress> = {
-        ownerId: new Types.ObjectId(ownerId),
-        ownerModel: ownerModel,
-        fullAddress: addressData.fullAddress,
-        longitude: addressData.longitude,
-        latitude: addressData.latitude,
-      };
-
-      if (addressData.addressType) {
-        newAddressData.addressType = addressData.addressType;
-      }
-
-      if (addressData.landmark) {
-        newAddressData.landmark = addressData.landmark;
-      }
-
-      if (addressData.houseNumber) {
-        newAddressData.houseNumber = addressData.houseNumber;
-      }
-
-      console.log(
-        "newAddressData for adding the address from the address service:",
-        newAddressData
-      );
-
       const savedAddress = await this._addressRepository.addAddress(
-        newAddressData as IAddress
+        addressData
       );
+
+      const responseDto: AddressResponseDto = {
+        _id: savedAddress._id.toString(),
+        addressType: savedAddress.addressType,
+        houseNumber: savedAddress.houseNumber,
+        landMark: savedAddress.landmark,
+        fullAddress: savedAddress.fullAddress,
+      };
 
       return {
         success: true,
         message: "Address added successfully",
-        data: savedAddress,
+        data: responseDto,
       };
     } catch (error) {
-      console.log("error occurred while adding the new Address:", error);
+      console.log("Error occurred while adding the new address:", error);
       return {
         success: false,
         message: "Internal Server Error",
@@ -84,18 +65,11 @@ export class AddressService implements IAddressService {
   ): Promise<{
     success: boolean;
     message: string;
-    data?: IAddress[];
+    data?: OwnerAddressResponseDto[];
   }> {
     try {
-      console.log("entering to the address fetching service");
-      console.log("ownerId from the address fetching service:", ownerId);
-      console.log("ownerModel from the address fetching service:", ownerModel);
-
       if (!ownerId) {
-        return {
-          success: false,
-          message: "Invalid Owner Id",
-        };
+        return { success: false, message: "Invalid Owner Id" };
       }
 
       const ownerAddresses = await this._addressRepository.getOwnerAddresses(
@@ -103,21 +77,26 @@ export class AddressService implements IAddressService {
         ownerModel
       );
 
-      console.log(
-        "owner addresses from the address repository in the address service:",
-        ownerAddresses
+      const addressesDto: OwnerAddressResponseDto[] = ownerAddresses.map(
+        (addr) => ({
+          _id: addr._id.toString(),
+          addressType: addr.addressType,
+          fullAddress: addr.fullAddress,
+          houseNumber: addr.houseNumber,
+          landmark: addr.landmark,
+          latitude: addr.latitude,
+          longitude: addr.longitude,
+        })
       );
+
       return {
         success: true,
         message: "Owner addresses retrieved successfully",
-        data: ownerAddresses,
+        data: addressesDto,
       };
     } catch (error) {
-      console.log("Error occurred while fetching owner addresses:", error);
-      return {
-        success: false,
-        message: "Internal Server Error",
-      };
+      console.error("Error occurred while fetching owner addresses:", error);
+      return { success: false, message: "Internal Server Error" };
     }
   }
 

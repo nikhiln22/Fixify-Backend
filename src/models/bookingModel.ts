@@ -71,6 +71,9 @@ const bookingSchema: Schema<IBooking> = new Schema(
       type: Boolean,
       default: false,
     },
+    expiresAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,

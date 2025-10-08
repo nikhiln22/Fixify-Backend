@@ -27,9 +27,17 @@ export interface ITimeSlotRepository {
   updateSlotBookingStatus(
     technicianId: string,
     slotId: string,
-    isBooked: boolean
+    data: {
+      isBooked?: boolean;
+      isReserved?: boolean;
+      reservedBy?: string | null;
+      reservationExpiry?: Date | null;
+      isAvailable?: boolean;
+    }
   ): Promise<ITimeSlot>;
   findSlotById(technicianId: string, slotId: string): Promise<ITimeSlot | null>;
   toggleSlotAvailability(slotId: string): Promise<ITimeSlot>;
   getSlotsByDate(technicianId: string, date: string): Promise<ITimeSlot[]>;
+  findExpiredReservedSlots(now: Date): Promise<ITimeSlot[]>;
+  findSlotsByIds(slotIds: string[]): Promise<ITimeSlot[]>;
 }

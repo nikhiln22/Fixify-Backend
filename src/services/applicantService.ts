@@ -3,6 +3,7 @@ import { IApplicantService } from "../interfaces/Iservices/IapplicantService";
 import { ITechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
 import {
   ApproveTechnicianResponse,
+  PaginatedTechnicianDto,
   RejectTechnicianResponse,
   TechnicianProfileResponse,
 } from "../interfaces/DTO/IServices/ItechnicianService";
@@ -10,9 +11,8 @@ import { IEmailService } from "../interfaces/Iemail/Iemail";
 import { ISubscriptionPlanHistoryRepository } from "../interfaces/Irepositories/IsubscriptionPlanHistoryRepository";
 import { ISubscriptionPlanRepository } from "../interfaces/Irepositories/IsubscriptionPlanRepository";
 import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
-import { ITechnician } from "../interfaces/Models/Itechnician";
 import { IAddressService } from "../interfaces/Iservices/IaddressService";
-import { IAddress } from "../interfaces/Models/Iaddress";
+import { OwnerAddressResponseDto } from "../interfaces/DTO/IServices/IaddressService";
 
 @injectable()
 export class ApplicantService implements IApplicantService {
@@ -32,7 +32,7 @@ export class ApplicantService implements IApplicantService {
     success: boolean;
     message: string;
     data?: {
-      applicants: ITechnician[];
+      applicants: PaginatedTechnicianDto[];
       pagination: {
         total: number;
         page: number;
@@ -54,11 +54,19 @@ export class ApplicantService implements IApplicantService {
 
       console.log("result from the technician service:", result);
 
+      const applicants: PaginatedTechnicianDto[] = result.data.map((tech) => ({
+        _id: tech._id,
+        username: tech.username,
+        email: tech.email,
+        phone: tech.phone,
+        createdAt: tech.createdAt,
+      }));
+
       return {
         success: true,
-        message: "technicians fetched successfully",
+        message: "applicants fetched successfully",
         data: {
-          applicants: result.data,
+          applicants,
           pagination: {
             total: result.total,
             page: result.page,
@@ -100,7 +108,7 @@ export class ApplicantService implements IApplicantService {
         };
       }
 
-      let addresses: IAddress[] = [];
+      let addresses: OwnerAddressResponseDto[] = [];
       try {
         console.log("Fetching addresses for applicant:", applicantId);
         const addressResponse = await this._addressService.getOwnerAddresses(

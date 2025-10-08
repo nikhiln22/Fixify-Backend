@@ -17,20 +17,26 @@ export class BookingRoutes {
   private setupRoutes() {
     const bookingController = container.resolve(BookingController);
 
+    this.router.post(
+      "/",
+      this.authMiddleware.authenticate(Roles.USER),
+      bookingController.bookService.bind(bookingController)
+    );
+
+    this.router.get(
+      "/:sessionId/verify-payment",
+      this.authMiddleware.authenticate(Roles.USER),
+      bookingController.verifyStripeSession.bind(bookingController)
+    );
+
     this.router.get(
       "/",
       this.authMiddleware.authenticate(
         Roles.USER,
         Roles.TECHNICIAN,
-        Roles.USER
+        Roles.ADMIN
       ),
       bookingController.getAllBookings.bind(bookingController)
-    );
-
-    this.router.post(
-      "/",
-      this.authMiddleware.authenticate(Roles.USER),
-      bookingController.bookService.bind(bookingController)
     );
 
     this.router.get(
@@ -49,10 +55,10 @@ export class BookingRoutes {
       bookingController.cancelBooking.bind(bookingController)
     );
 
-    this.router.get(
-      "/:sessionId/verify-payment",
-      this.authMiddleware.authenticate(Roles.USER),
-      bookingController.verifyStripeSession.bind(bookingController)
+    this.router.patch(
+      "/:bookingId/start",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      bookingController.startService.bind(bookingController)
     );
 
     this.router.post(

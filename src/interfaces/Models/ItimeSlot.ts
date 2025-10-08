@@ -8,4 +8,7 @@ export interface ITimeSlot extends Document {
   endTime: string;
   isBooked: boolean;
   isAvailable: boolean;
+  reservationExpiry?: Date;
+  isReserved: boolean;
+  reservedBy?: Types.ObjectId;
 }

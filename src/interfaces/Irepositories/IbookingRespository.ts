@@ -9,7 +9,6 @@ export interface IBookingRepository {
       serviceId: string;
       addressId: string;
       timeSlotId: string[];
-      originalAmount?: number;
       bookingAmount: number;
       offerId?: string;
       couponId?: string;
@@ -20,8 +19,6 @@ export interface IBookingRepository {
         | "In Progress"
         | "Cancelled"
         | "Completed";
-      finalServiceAmount?: number;
-      actualDuration?: number;
     }
   ): Promise<IBooking>;
   updateBooking(
@@ -85,4 +82,11 @@ export interface IBookingRepository {
       count: number;
     }>
   >;
+  findBooking(
+    userId: string,
+    status: string,
+    expiresAt: Date
+  ): Promise<IBooking | null>;
+  findExpiredPendingBookings(now: Date): Promise<IBooking[]>;
+  deleteBookingById(BookingId: string): Promise<number>;
 }

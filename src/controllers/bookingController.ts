@@ -610,6 +610,56 @@ export class BookingController {
     }
   }
 
+  async startService(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      console.log(
+        "entered into the start service function in the booking controller"
+      );
+      const bookingId = req.params.bookingId;
+      const technicianId = req.user?.id;
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("technician not authenticated"));
+        return;
+      }
+
+      const serviceResponse = await this._bookingService.startService(
+        bookingId,
+        technicianId
+      );
+
+      console.log("serverResponse from the booking service:", serviceResponse);
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch rating"
+            )
+          );
+      }
+    } catch (error) {
+      console.log(
+        "error occurred while fetching the rating for a booking:",
+        error
+      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
   async generateBookingCompletionOtp(
     req: AuthenticatedRequest,
     res: Response

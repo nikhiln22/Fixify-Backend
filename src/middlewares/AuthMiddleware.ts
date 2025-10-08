@@ -64,7 +64,7 @@ export class AuthMiddleware {
       const payload = this.jwtService.verifyAccessToken(token) as JwtPayload;
       if (!payload || !roles.includes(payload.role)) {
         res
-          .status(HTTP_STATUS.UNAUTHORIZED)
+          .status(HTTP_STATUS.FORBIDDEN)
           .json({ message: "Access denied: invalid role" });
         return null;
       }

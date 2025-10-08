@@ -3,6 +3,7 @@ import { ITimeSlotRepository } from "../interfaces/Irepositories/ItimeSlotReposi
 import { inject, injectable } from "tsyringe";
 import { ITimeSlot } from "../interfaces/Models/ItimeSlot";
 import { AddTimeSlotsResult } from "../interfaces/DTO/IServices/ItechnicianService";
+import { Types } from "mongoose";
 
 @injectable()
 export class TimeSlotService implements ITimeSlotService {
@@ -323,7 +324,7 @@ export class TimeSlotService implements ITimeSlotService {
         await this._timeSlotRepository.updateSlotBookingStatus(
           technicianId,
           slotId,
-          isBooked
+          { isBooked }
         );
 
       const action = isBooked ? "booked" : "unbooked";
@@ -457,6 +458,166 @@ export class TimeSlotService implements ITimeSlotService {
         success: false,
         message: "Failed to unblock time slots",
       };
+    }
+  }
+
+  async reserveTimeSlot(
+    technicianId: string,
+    slotId: string,
+    userId: string,
+    durationInMinutes: number
+  ): Promise<{
+    success: boolean;
+    message: string;
+    reservedSlots?: string[];
+  }> {
+    try {
+      const startSlot = await this._timeSlotRepository.findSlotById(
+        technicianId,
+        slotId
+      );
+      if (!startSlot) {
+        return {
+          success: false,
+          message: "Selected start time slot not found.",
+        };
+      }
+
+      const slotsNeeded = Math.ceil(durationInMinutes / 30);
+
+      const allSlots = await this._timeSlotRepository.getSlotsByDate(
+        technicianId,
+        startSlot.date
+      );
+
+      const startIndex = allSlots.findIndex((s) => s._id.toString() === slotId);
+
+      if (startIndex === -1) {
+        return { success: false, message: "Invalid starting slot selected." };
+      }
+
+      const slotsToReserve = allSlots.slice(
+        startIndex,
+        startIndex + slotsNeeded
+      );
+      if (slotsToReserve.length < slotsNeeded) {
+        return {
+          success: false,
+          message:
+            "Not enough consecutive slots available for this service duration. Please choose another time.",
+        };
+      }
+
+      const unavailableSlot = slotsToReserve.find((s) => {
+        const now = new Date();
+        return (
+          s.isBooked ||
+          (s.isReserved &&
+            s.reservedBy?.toString() !== userId &&
+            s.reservationExpiry &&
+            s.reservationExpiry > now)
+        );
+      });
+
+      if (unavailableSlot) {
+        return {
+          success: false,
+          message:
+            "The selected time slot or one of the consecutive slots is already reserved or booked. Please choose another time.",
+        };
+      }
+
+      const reservationExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+      for (const slot of slotsToReserve) {
+        await this._timeSlotRepository.updateSlotBookingStatus(
+          technicianId,
+          slot._id.toString(),
+          {
+            isReserved: true,
+            reservedBy: userId,
+            reservationExpiry,
+          }
+        );
+      }
+
+      return {
+        success: true,
+        message: `Successfully reserved ${slotsToReserve.length} consecutive slots.`,
+        reservedSlots: slotsToReserve.map((s) => s._id.toString()),
+      };
+    } catch (error) {
+      console.error("Error reserving slots:", error);
+      return {
+        success: false,
+        message: "An unexpected error occurred while reserving time slots.",
+      };
+    }
+  }
+
+  async releaseReservedSlots(
+    technicianId: string,
+    slotIds: string[]
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      if (!slotIds || slotIds.length === 0) {
+        return { success: false, message: "No slots provided to release" };
+      }
+
+      for (const slotId of slotIds) {
+        await this._timeSlotRepository.updateSlotBookingStatus(
+          technicianId,
+          slotId,
+          {
+            isReserved: false,
+            reservedBy: null,
+            reservationExpiry: null,
+          }
+        );
+      }
+
+      return { success: true, message: "Reserved slots released successfully" };
+    } catch (error) {
+      console.error("Error releasing reserved slots:", error);
+      return { success: false, message: "Failed to release reserved slots" };
+    }
+  }
+
+  async confirmReservedSlots(
+    technicianId: string,
+    userId: string,
+    slotIds: string[]
+  ): Promise<string[]> {
+    try {
+      if (!slotIds || slotIds.length === 0) return [];
+
+      const slots = await this._timeSlotRepository.findSlotsByIds(slotIds);
+
+      if (!slots) {
+        return [];
+      }
+
+      const userReservedSlots = slots.filter(
+        (slot) => slot.reservedBy === new Types.ObjectId(userId)
+      );
+
+      for (const slot of userReservedSlots) {
+        await this._timeSlotRepository.updateSlotBookingStatus(
+          technicianId,
+          slot._id.toString(),
+          {
+            isBooked: true,
+            isReserved: false,
+            reservedBy: null,
+            reservationExpiry: null,
+          }
+        );
+      }
+
+      return userReservedSlots.map((s) => s._id.toString());
+    } catch (error) {
+      console.error("Error confirming reserved slots:", error);
+      return [];
     }
   }
 }

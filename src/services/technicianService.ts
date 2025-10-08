@@ -16,6 +16,7 @@ import {
   TechnicianQualificationUpdateResponse,
   ToggleTechnicianStatusResponse,
   VerifyOtpData,
+  PaginatedTechnicianDto,
 } from "../interfaces/DTO/IServices/ItechnicianService";
 import { ITechnicianRepository } from "../interfaces/Irepositories/ItechnicianRepository";
 import { ITechnicianService } from "../interfaces/Iservices/ItechnicianService";
@@ -27,7 +28,6 @@ import { IRedisService } from "../interfaces/Iredis/Iredis";
 import { OtpVerificationResult } from "../interfaces/Iotp/IOTP";
 import { inject, injectable } from "tsyringe";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
-import { ITechnician } from "../interfaces/Models/Itechnician";
 import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
 import { IRatingRepository } from "../interfaces/Irepositories/IratingRepository";
 import { IRating } from "../interfaces/Models/Irating";
@@ -41,10 +41,13 @@ import { VerifyOtpResponse } from "../interfaces/DTO/IServices/IuserService";
 import { INotificationService } from "../interfaces/Iservices/InotificationService";
 import { IAdminRepository } from "../interfaces/Irepositories/IadminRepository";
 import { IAddressService } from "../interfaces/Iservices/IaddressService";
-import { IAddress } from "../interfaces/Models/Iaddress";
 import { IWalletService } from "../interfaces/Iservices/IwalletService";
 import { ISubscriptionPlanService } from "../interfaces/Iservices/IsubscriptionPlanService";
 import config from "../config/env";
+import {
+  AddAddressDto,
+  OwnerAddressResponseDto,
+} from "../interfaces/DTO/IServices/IaddressService";
 
 @injectable()
 export class TechnicianService implements ITechnicianService {
@@ -604,18 +607,16 @@ export class TechnicianService implements ITechnicianService {
 
       console.log("result from the technician service:", result);
 
-      const addressData = {
+      const addressDto: AddAddressDto = {
+        ownerId: technicianId,
+        ownerModel: "technician",
         fullAddress: qualificationData.address,
-        longitude: qualificationData.longitude,
         latitude: qualificationData.latitude,
-        addressType: "Work" as const,
+        longitude: qualificationData.longitude,
+        addressType: "Work",
       };
 
-      const addressResult = await this._addressService.addAddress(
-        technicianId,
-        "technician",
-        addressData
-      );
+      const addressResult = await this._addressService.addAddress(addressDto);
 
       if (!addressResult.success) {
         console.log(
@@ -731,7 +732,7 @@ export class TechnicianService implements ITechnicianService {
     success: boolean;
     message: string;
     data?: {
-      technicians: ITechnician[];
+      technicians: PaginatedTechnicianDto[];
       pagination: {
         total: number;
         page: number;
@@ -760,11 +761,23 @@ export class TechnicianService implements ITechnicianService {
 
       console.log("result from the technician service:", result);
 
+      const technicians: PaginatedTechnicianDto[] = result.data.map((tech) => ({
+        _id: tech._id,
+        username: tech.username,
+        email: tech.email,
+        phone: tech.phone,
+        status: (tech.status as "Active" | "Blocked") || "Active",
+        Designation: tech.Designation as unknown as {
+          _id: string;
+          designation: string;
+        },
+      }));
+
       return {
         success: true,
         message: "Technicians fetched successfully",
         data: {
-          technicians: result.data,
+          technicians,
           pagination: {
             total: result.total,
             page: result.page,
@@ -797,9 +810,9 @@ export class TechnicianService implements ITechnicianService {
         technicianId
       );
 
-      let addresses: IAddress[] = [];
+      let addresses: OwnerAddressResponseDto[] = [];
+
       try {
-        console.log("Fetching addresses for applicant:", technicianId);
         const addressResponse = await this._addressService.getOwnerAddresses(
           technicianId,
           "technician"
@@ -807,12 +820,6 @@ export class TechnicianService implements ITechnicianService {
 
         if (addressResponse.success && addressResponse.data) {
           addresses = addressResponse.data;
-          console.log("Successfully fetched addresses:", addresses.length);
-        } else {
-          console.log(
-            "No addresses found for technician:",
-            addressResponse.message
-          );
         }
       } catch (addressError) {
         console.error("Error fetching technician addresses:", addressError);

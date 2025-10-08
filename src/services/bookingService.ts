@@ -31,6 +31,8 @@ import { ISubscriptionPlanRepository } from "../interfaces/Irepositories/Isubscr
 import { IBookingDetails } from "../interfaces/DTO/IServices/IbookingService";
 import { CreatePaymentData } from "../interfaces/DTO/IRepository/IpayementRepository";
 import { PaymentMethod } from "../config/paymentMethod";
+import Stripe from "stripe";
+import { Types } from "mongoose";
 
 @injectable()
 export class BookingService implements IBookingService {
@@ -119,57 +121,19 @@ export class BookingService implements IBookingService {
     data: CreateBookingRequest
   ): Promise<BookServiceResponse> {
     try {
-      console.log("entered to the service which books the service");
-      console.log("data in the bookservice service:", data);
-
-      if (!userId) {
-        return {
-          success: false,
-          message: "User ID is required",
-        };
-      }
-
-      if (!data.technicianId) {
-        return {
-          success: false,
-          message: "Technician ID is required",
-        };
-      }
-
-      if (!data.serviceId) {
-        return {
-          success: false,
-          message: "Service ID is required",
-        };
-      }
-
-      if (!data.addressId) {
-        return {
-          success: false,
-          message: "Address ID is required",
-        };
-      }
-
-      if (!data.timeSlotId) {
-        return {
-          success: false,
-          message: "Time slot ID is required",
-        };
-      }
-
-      if (!data.bookingAmount) {
-        return {
-          success: false,
-          message: "Booking amount is required",
-        };
-      }
-
-      if (!data.paymentMethod) {
-        return {
-          success: false,
-          message: "Payment method is required",
-        };
-      }
+      if (!userId) return { success: false, message: "User ID is required" };
+      if (!data.technicianId)
+        return { success: false, message: "Technician ID is required" };
+      if (!data.serviceId)
+        return { success: false, message: "Service ID is required" };
+      if (!data.addressId)
+        return { success: false, message: "Address ID is required" };
+      if (!data.timeSlotId)
+        return { success: false, message: "Time slot ID is required" };
+      if (!data.bookingAmount)
+        return { success: false, message: "Booking amount is required" };
+      if (!data.paymentMethod)
+        return { success: false, message: "Payment method is required" };
 
       if (
         !Object.values(PaymentMethod).includes(
@@ -178,43 +142,72 @@ export class BookingService implements IBookingService {
       ) {
         return {
           success: false,
-          message: `Payment method must be either '${PaymentMethod.ONLINE}' or '${PaymentMethod.WALLET}'`,
+          message: `Payment method must be ONLINE or WALLET`,
         };
       }
 
       const service = await this._serviceRepository.findServiceById(
         data.serviceId
       );
+      if (!service) return { success: false, message: "Service not found" };
 
-      console.log("service details in the booking service function:", service);
+      let bookingDuration: number = 60;
+      if (service.serviceType === "fixed" && service.estimatedTime)
+        bookingDuration = service.estimatedTime;
+      else if (service.serviceType === "hourly" && service.maxHours)
+        bookingDuration = service.maxHours * 60;
 
-      if (!service) {
-        return {
-          success: false,
-          message: "Service not found",
-        };
-      }
+      const existingBooking = await this._bookingRepository.findBooking(
+        userId,
+        "Pending" as const,
+        new Date()
+      );
 
-      if (!service.estimatedTime) {
-        return {
-          success: false,
-          message: "estimated time is not there for this service",
-        };
-      }
+      let bookingToUse: IBooking;
 
-      const slotBooking =
-        await this._timeSlotService.blockMultipleSlotsForService(
+      if (existingBooking) {
+        bookingToUse = existingBooking;
+      } else {
+        const slotReservation = await this._timeSlotService.reserveTimeSlot(
           data.technicianId,
           data.timeSlotId,
-          service.estimatedTime
+          userId,
+          bookingDuration
         );
 
-      if (!slotBooking.success) {
-        return {
-          success: false,
-          message: slotBooking.message,
+        if (!slotReservation.success) {
+          return {
+            success: false,
+            message:
+              slotReservation.message ||
+              "The selected time slot is not available. Please choose another.",
+          };
+        }
+
+        const bookingData = {
+          technicianId: data.technicianId,
+          serviceId: data.serviceId,
+          addressId: data.addressId,
+          timeSlotId: slotReservation.reservedSlots || [data.timeSlotId],
+          bookingAmount: data.bookingAmount,
+          paymentMethod: data.paymentMethod,
+          bookingStatus: "Pending" as const,
+          ...(data.paymentMethod === PaymentMethod.ONLINE && {
+            expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+          }),
         };
+
+        bookingToUse = await this._bookingRepository.bookService(
+          userId,
+          bookingData
+        );
       }
+
+      const slotIds: string[] = bookingToUse.timeSlotId.map((slot) =>
+        (slot as ITimeSlot)._id
+          ? (slot as ITimeSlot)._id.toString()
+          : (slot as Types.ObjectId).toString()
+      );
 
       if (data.paymentMethod === PaymentMethod.WALLET) {
         try {
@@ -222,34 +215,19 @@ export class BookingService implements IBookingService {
             userId,
             "user"
           );
-          console.log(
-            "fetched user wallet in the booking by payment:",
-            userWallet
-          );
 
-          if (!userWallet) {
-            if (slotBooking.blockedSlots) {
-              await this._timeSlotService.unblockMultipleSlots(
+          if (!userWallet || userWallet.balance < data.bookingAmount) {
+            if (!existingBooking && bookingToUse.timeSlotId) {
+              await this._timeSlotService.releaseReservedSlots(
                 data.technicianId,
-                slotBooking.blockedSlots
+                slotIds
               );
             }
             return {
               success: false,
-              message: "Wallet not found for the user",
-            };
-          }
-
-          if (userWallet.balance < data.bookingAmount) {
-            if (slotBooking.blockedSlots) {
-              await this._timeSlotService.unblockMultipleSlots(
-                data.technicianId,
-                slotBooking.blockedSlots
-              );
-            }
-            return {
-              success: false,
-              message: "Insufficient wallet balance",
+              message: !userWallet
+                ? "Wallet not found"
+                : "Insufficient wallet balance",
             };
           }
 
@@ -265,118 +243,75 @@ export class BookingService implements IBookingService {
               newBookingId
             );
 
-          if (!walletUpdate.wallet || !walletUpdate.transaction) {
-            throw new Error("Failed to process wallet payment");
-          }
+          if (!walletUpdate.wallet || !walletUpdate.transaction)
+            throw new Error("Wallet debit failed");
 
-          const technicianSubscription =
-            await this._subscriptionPlanHistoryRepository.findActiveSubscriptionByTechnicianId(
-              data.technicianId
+          let fixifyShare = 0,
+            technicianShare = 0;
+          let paymentStatus: "Paid" | "Partial Paid" = "Partial Paid";
+
+          if (service.serviceType === "fixed") {
+            const technicianSubscription =
+              await this._subscriptionPlanHistoryRepository.findActiveSubscriptionByTechnicianId(
+                data.technicianId
+              );
+
+            if (!technicianSubscription)
+              throw new Error("No active subscription for technician");
+
+            const subscriptionPlan =
+              await this._subscriptionPlanRepository.findSubscriptionPlanById(
+                technicianSubscription.subscriptionPlanId.toString()
+              );
+
+            if (!subscriptionPlan)
+              throw new Error("Subscription plan not found");
+
+            fixifyShare = parseFloat(
+              (
+                data.bookingAmount *
+                (subscriptionPlan.commissionRate / 100)
+              ).toFixed(2)
             );
 
-          console.log(
-            "fetched technician subscription in booking service:",
-            technicianSubscription
-          );
-
-          if (!technicianSubscription) {
-            throw new Error("No active subscription found for technician");
-          }
-
-          const subscriptionPlan =
-            await this._subscriptionPlanRepository.findSubscriptionPlanById(
-              technicianSubscription.subscriptionPlanId.toString()
+            technicianShare = parseFloat(
+              (data.bookingAmount - fixifyShare).toFixed(2)
             );
 
-          if (!subscriptionPlan) {
-            throw new Error("Subscription plan not found");
+            paymentStatus = "Paid";
           }
-
-          const commissionRate = subscriptionPlan.commissionRate;
-
-          console.log("technician's commission Rate:", commissionRate);
-
-          const fixifySharePercentage = commissionRate / 100;
-          const fixifyShare = parseFloat(
-            (data.bookingAmount * fixifySharePercentage).toFixed(2)
-          );
-          const technicianShare = parseFloat(
-            (data.bookingAmount - fixifyShare).toFixed(2)
-          );
-
-          if (data.couponId && service.serviceType === "fixed") {
-            const coupon = await this._couponRepository.findCouponById(
-              data.couponId
-            );
-
-            if (!coupon) {
-              return {
-                message: "coupon not found",
-                success: false,
-              };
-            }
-
-            const updatedCoupon = await this._couponRepository.addUserToCoupon(
-              data.couponId,
-              userId
-            );
-
-            console.log("updated coupon in the wallet booking:", updatedCoupon);
-          }
-
-          const bookingData = {
-            technicianId: data.technicianId,
-            serviceId: data.serviceId,
-            addressId: data.addressId,
-            timeSlotId: slotBooking.blockedSlots || [data.timeSlotId],
-            originalAmount: data.originalAmount,
-            bookingAmount: data.bookingAmount,
-            offerId: data.offerId,
-            couponId: data.couponId,
-            paymentMethod: data.paymentMethod,
-            bookingStatus: "Booked" as const,
-            finalServiceAmount: data.finalServiceAmount,
-            actualDuration: data.actualDuration,
-          };
-
-          const newBooking = await this._bookingRepository.bookService(
-            userId,
-            bookingData
-          );
-
-          console.log("Booking created successfully:", newBooking);
 
           const paymentData: CreatePaymentData = {
-            userId: userId,
-            bookingId: newBooking._id.toString(),
+            userId,
+            bookingId: bookingToUse._id.toString(),
             technicianId: data.technicianId,
             originalAmount: data.originalAmount,
             amountPaid: data.bookingAmount,
-            fixifyShare: fixifyShare,
-            technicianShare: technicianShare,
             paymentMethod: PaymentMethod.WALLET,
-            paymentStatus:
-              service.serviceType === "hourly" ? "Partial Paid" : "Paid",
+            paymentStatus,
             technicianPaid: false,
-            refundStatus: "Not Refunded",
           };
 
           if (service.serviceType === "fixed") {
+            paymentData.fixifyShare = fixifyShare;
+            paymentData.technicianShare = technicianShare;
             if (data.offerId) paymentData.offerId = data.offerId;
             if (data.couponId) paymentData.couponId = data.couponId;
-          }
-
-          if (service.serviceType === "hourly") {
-            paymentData.advanceAmount = data.bookingAmount;
-          }
+          } else paymentData.advanceAmount = data.bookingAmount;
 
           const newPayment = await this._paymentRepository.createPayment(
             paymentData
           );
 
           await this._bookingRepository.updateBooking(
-            { _id: newBooking._id },
-            { paymentId: newPayment._id }
+            { _id: bookingToUse._id },
+            { bookingStatus: "Booked", paymentId: newPayment._id }
+          );
+
+          await this._timeSlotService.confirmReservedSlots(
+            data.technicianId,
+            userId,
+            slotIds
           );
 
           return {
@@ -384,22 +319,21 @@ export class BookingService implements IBookingService {
             message:
               "Booking created and payment completed successfully using wallet",
             data: {
-              ...newBooking.toObject(),
+              ...bookingToUse.toObject(),
               paymentMethod: data.paymentMethod,
-              requiresPayment: false,
               paymentCompleted: true,
+              requiresPayment: false,
+              serviceType: service.serviceType,
             },
           };
         } catch (walletError) {
           console.error("Wallet payment failed:", walletError);
-
-          if (slotBooking.blockedSlots) {
-            await this._timeSlotService.unblockMultipleSlots(
+          if (!existingBooking && bookingToUse.timeSlotId) {
+            await this._timeSlotService.releaseReservedSlots(
               data.technicianId,
-              slotBooking.blockedSlots
+              slotIds
             );
           }
-
           return {
             success: false,
             message: "Wallet payment failed. Please try again.",
@@ -407,102 +341,77 @@ export class BookingService implements IBookingService {
         }
       }
 
-      const bookingData = {
-        technicianId: data.technicianId,
-        serviceId: data.serviceId,
-        addressId: data.addressId,
-        timeSlotId: slotBooking.blockedSlots || [data.timeSlotId],
-        originalAmount: data.originalAmount,
-        bookingAmount: data.bookingAmount,
-        offerId: data.offerId,
-        couponId: data.couponId,
-        paymentMethod: data.paymentMethod,
-        bookingStatus: "Pending" as const,
-        finalServiceAmount: data.finalServiceAmount,
-        actualDuration: data.actualDuration,
-      };
-
-      const newBooking = await this._bookingRepository.bookService(
-        userId,
-        bookingData
-      );
-      console.log("Booking created successfully:", newBooking);
-
       try {
         const amountInCents = Math.round(data.bookingAmount * 100);
+        const getClientUrl = () =>
+          config.NODE_ENV === "production"
+            ? config.CLIENT_URL || "https://www.fixify.homes"
+            : config.CLIENT_URL || "http://localhost:5173";
 
-        const getClientUrl = () => {
-          switch (config.NODE_ENV) {
-            case "production":
-              return config.CLIENT_URL || "https://www.fixify.homes";
-            case "development":
-            default:
-              return config.CLIENT_URL || "http://localhost:5173";
-          }
-        };
-
-        const session = await stripe.checkout.sessions.create({
-          payment_method_types: ["card"],
-          mode: "payment",
-          line_items: [
-            {
-              price_data: {
-                currency: "inr",
-                product_data: {
-                  name: "Fixify Service Booking",
-                  description: "Booking for service with technician",
+        const session: Stripe.Checkout.Session =
+          await stripe.checkout.sessions.create({
+            payment_method_types: ["card"],
+            mode: "payment",
+            line_items: [
+              {
+                price_data: {
+                  currency: "inr",
+                  product_data: {
+                    name: "Fixify Service Booking",
+                    description:
+                      service.serviceType === "fixed"
+                        ? "Booking for fixed service"
+                        : "Advance payment for hourly service",
+                  },
+                  unit_amount: amountInCents,
                 },
-                unit_amount: amountInCents,
+                quantity: 1,
               },
-              quantity: 1,
+            ],
+            metadata: {
+              bookingId: bookingToUse._id.toString(),
+              userId,
+              serviceId: data.serviceId,
+              technicianId: data.technicianId,
+              serviceType: service.serviceType,
+              originalAmount: data.originalAmount?.toString() || "",
+              offerId: data.offerId || "",
+              couponId: data.couponId || "",
             },
-          ],
-          metadata: {
-            bookingId: newBooking._id.toString(),
-            userId: userId,
-            serviceId: data.serviceId,
-            technicianId: data.technicianId,
-            originalAmount: data.originalAmount?.toString() || "",
-            offerId: data.offerId || "",
-            couponId: data.couponId || "",
-          },
-          success_url: `${getClientUrl()}/user/bookingsuccess?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${getClientUrl()}/user/payment-cancelled`,
-        });
-
-        console.log("Session:", session);
+            success_url: `${getClientUrl()}/user/bookingsuccess?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${getClientUrl()}/user/payment-cancelled`,
+          });
 
         return {
           success: true,
-          message: "Booking created successfully. Complete payment to confirm.",
+          message:
+            service.serviceType === "fixed"
+              ? "Booking created. Complete payment to confirm."
+              : "Advance payment booking created. Complete payment to confirm.",
           data: {
-            ...newBooking.toObject(),
-            paymentMethod: data.paymentMethod,
+            ...bookingToUse.toObject(),
             checkoutUrl: session.url,
             requiresPayment: true,
+            paymentMethod: PaymentMethod.ONLINE,
+            serviceType: service.serviceType,
           },
         };
-      } catch (paymentError) {
-        console.error("Payment intent creation failed:", paymentError);
-
-        if (slotBooking.blockedSlots) {
-          await this._timeSlotService.unblockMultipleSlots(
+      } catch (stripeError) {
+        console.error("Stripe session creation failed:", stripeError);
+        if (!existingBooking && bookingToUse.timeSlotId) {
+          await this._timeSlotService.releaseReservedSlots(
             data.technicianId,
-            slotBooking.blockedSlots
+            slotIds
           );
         }
-
         return {
           success: false,
-          message: "Failed to create payment intent. Please try again.",
+          message: "Failed to create payment session. Please try again.",
         };
       }
     } catch (error) {
       console.error("Error in bookService:", error);
-      return {
-        success: false,
-        message: "Failed to create booking",
-      };
+      return { success: false, message: "Failed to create booking" };
     }
   }
 
@@ -511,11 +420,7 @@ export class BookingService implements IBookingService {
     userId: string
   ): Promise<BookServiceResponse> {
     try {
-      console.log(
-        "entering to the booking service that verifies stripe session"
-      );
-      console.log("sessionId in the booking service:", sessionId);
-      console.log("userId in the booking service:", userId);
+      console.log("Verifying Stripe session:", sessionId, "for user:", userId);
 
       const session = await stripe.checkout.sessions.retrieve(sessionId);
 
@@ -533,35 +438,27 @@ export class BookingService implements IBookingService {
       const offerId = session.metadata?.offerId || undefined;
       const couponId = session.metadata?.couponId || undefined;
 
-      console.log("bookingId in the booking service:", bookingId);
-
       if (!bookingId) {
-        return {
-          success: false,
-          message: "Invalid or missing booking ID in session metadata",
-        };
+        return { success: false, message: "Invalid or missing booking ID" };
       }
 
       const booking = await this._bookingRepository.getBookingDetailsById(
         bookingId
       );
-
-      console.log(
-        "booking details in the stripe verifying function in the booking service:",
-        booking
-      );
-
       if (!booking) {
+        return { success: false, message: "Booking not found" };
+      }
+
+      if (booking.expiresAt && booking.expiresAt < new Date()) {
         return {
           success: false,
-          message: "Booking not found",
+          message: "Booking has expired. Please create a new booking.",
         };
       }
 
       const existingPayment = await this._paymentRepository.findByBookingId(
         bookingId
       );
-
       if (existingPayment) {
         return {
           success: true,
@@ -574,82 +471,91 @@ export class BookingService implements IBookingService {
         };
       }
 
+      if (booking.timeSlotId && booking.timeSlotId.length > 0) {
+        const slotIds = (booking.timeSlotId as ITimeSlot[]).map((slot) =>
+          slot._id.toString()
+        );
+
+        await this._timeSlotService.confirmReservedSlots(
+          booking.technicianId._id.toString(),
+          userId,
+          slotIds
+        );
+      }
+
       const updatedBooking = await this._bookingRepository.updateBooking(
         { _id: bookingId },
         { bookingStatus: "Booked" }
       );
-
-      console.log("updatedBooking in the booking service:", updatedBooking);
-
       if (!updatedBooking) {
-        return {
-          success: false,
-          message: "Failed to update booking status",
-        };
+        return { success: false, message: "Failed to update booking status" };
       }
 
-      const technicianSubscription =
-        await this._subscriptionPlanHistoryRepository.findActiveSubscriptionByTechnicianId(
-          booking.technicianId._id.toString()
+      const service = booking.serviceId as IService;
+      const isHourly = service.serviceType === "hourly";
+
+      let fixifyShare = 0;
+      let technicianShare = 0;
+
+      if (!isHourly) {
+        const technicianSubscription =
+          await this._subscriptionPlanHistoryRepository.findActiveSubscriptionByTechnicianId(
+            booking.technicianId._id.toString()
+          );
+        if (!technicianSubscription) {
+          throw new Error("No active subscription plan found for technician");
+        }
+
+        const subscriptionPlan =
+          await this._subscriptionPlanRepository.findSubscriptionPlanById(
+            technicianSubscription.subscriptionPlanId.toString()
+          );
+        if (!subscriptionPlan) {
+          throw new Error("Subscription plan not found");
+        }
+
+        const commissionRate = subscriptionPlan.commissionRate;
+        const fixifySharePercentage = commissionRate / 100;
+        fixifyShare = parseFloat(
+          (booking.bookingAmount * fixifySharePercentage).toFixed(2)
         );
-
-      console.log(
-        "fetched technician subscription plan in booking service:",
-        technicianSubscription
-      );
-
-      if (!technicianSubscription) {
-        throw new Error("No active subscription plan found for technician");
-      }
-
-      const subscriptionPlan =
-        await this._subscriptionPlanRepository.findSubscriptionPlanById(
-          technicianSubscription.subscriptionPlanId.toString()
+        technicianShare = parseFloat(
+          (booking.bookingAmount - fixifyShare).toFixed(2)
         );
-
-      if (!subscriptionPlan) {
-        throw new Error("Subscription plan not found");
       }
 
-      const commissionRate = subscriptionPlan.commissionRate;
-
-      console.log("technician's commission Rate:", commissionRate);
-
-      const fixifySharePercentage = commissionRate / 100;
-      const fixifyShare = parseFloat(
-        (booking.bookingAmount * fixifySharePercentage).toFixed(2)
-      );
-      const technicianShare = parseFloat(
-        (booking.bookingAmount - fixifyShare).toFixed(2)
-      );
-
-      if (couponId) {
+      if (!isHourly && couponId) {
         const coupon = await this._couponRepository.findCouponById(couponId);
-
         if (coupon) {
           await this._couponRepository.addUserToCoupon(couponId, userId);
         } else {
-          throw Error(
-            `Coupon with ID ${couponId} not found during payment verification`
-          );
+          throw new Error(`Coupon with ID ${couponId} not found`);
         }
       }
 
-      const newPayment = await this._paymentRepository.createPayment({
-        userId: userId,
+      const paymentData: CreatePaymentData = {
+        userId,
         bookingId: booking._id.toString(),
         technicianId: booking.technicianId._id.toString(),
-        originalAmount: originalAmount,
+        originalAmount,
         amountPaid: booking.bookingAmount,
-        offerId: offerId,
-        couponId: couponId,
-        fixifyShare: fixifyShare,
-        technicianShare: technicianShare,
         paymentMethod: "Online",
-        paymentStatus: "Paid",
+        paymentStatus: isHourly ? "Partial Paid" : "Paid",
         technicianPaid: false,
-        refundStatus: "Not Refunded",
-      });
+      };
+
+      if (isHourly) {
+        paymentData.advanceAmount = booking.bookingAmount;
+      } else {
+        paymentData.offerId = offerId;
+        paymentData.couponId = couponId;
+        paymentData.fixifyShare = fixifyShare;
+        paymentData.technicianShare = technicianShare;
+      }
+
+      const newPayment = await this._paymentRepository.createPayment(
+        paymentData
+      );
 
       await this._bookingRepository.updateBooking(
         { _id: bookingId },
@@ -658,7 +564,9 @@ export class BookingService implements IBookingService {
 
       return {
         success: true,
-        message: "Payment verified and booking completed",
+        message: isHourly
+          ? "Advance payment verified for hourly service"
+          : "Payment verified and booking completed",
         data: {
           ...updatedBooking.toObject(),
           paymentMethod: "Online",
@@ -666,8 +574,8 @@ export class BookingService implements IBookingService {
         },
       };
     } catch (error) {
-      console.log(
-        "error occurred while verifying the session in the booking service:",
+      console.error(
+        "Error verifying Stripe session in booking service:",
         error
       );
       return {
@@ -796,6 +704,75 @@ export class BookingService implements IBookingService {
       return {
         success: false,
         message: "Failed to retrieve booking details",
+      };
+    }
+  }
+
+  async startService(
+    bookingId: string,
+    technicianId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: { bookingId: string; status: string };
+  }> {
+    try {
+      console.log(
+        "entered to the start service function in the booking service"
+      );
+      console.log(
+        `changing the status of the ${bookingId} by the technician whose technicianId is ${technicianId}`
+      );
+
+      const booking = (await this._bookingRepository.getBookingDetailsById(
+        bookingId
+      )) as IBookingDetails | null;
+
+      console.log("fetched booking:", booking);
+
+      if (!booking) {
+        return {
+          success: false,
+          message: "Booking not found",
+        };
+      }
+
+      if (booking.technicianId._id.toString() !== technicianId) {
+        return {
+          success: false,
+          message: "You are not authorized to complete this booking",
+        };
+      }
+
+      if (booking.bookingStatus !== "Booked") {
+        return {
+          success: false,
+          message: `Cannot complete booking with status: ${booking.bookingStatus}`,
+        };
+      }
+
+      const updatedBooking = await this._bookingRepository.updateBooking(
+        { _id: bookingId },
+        { bookingStatus: "In Progress" }
+      );
+
+      if (!updatedBooking) {
+        return { success: false, message: "Failed to update booking status" };
+      }
+
+      return {
+        success: true,
+        message: "Service started successfully",
+        data: {
+          bookingId: updatedBooking._id.toString(),
+          status: updatedBooking.bookingStatus,
+        },
+      };
+    } catch (error) {
+      console.error("Error in starting the service:", error);
+      return {
+        success: false,
+        message: "Failed to start the service",
       };
     }
   }
