@@ -102,6 +102,10 @@ import { IPartService } from "../interfaces/Iservices/IpartService";
 import { PartsService } from "../services/partService";
 import { IPartsRepository } from "../interfaces/Irepositories/IpartRepository";
 import { PartsRepository } from "../repositories/partsRepository";
+import { IReservationExpiryService } from "../interfaces/Iservices/IreservationExpiryService";
+import { ReservationExpiryService } from "../services/reservationExpiryService";
+import { IBookingExpiryService } from "../interfaces/Iservices/IbookingExpiryService";
+import { BookingExpiryService } from "../services/BookingExpiryService";
 
 container.registerSingleton<IPasswordHasher>("IPasswordHasher", PasswordHasher);
 container.registerSingleton<IJwtService>("IJwtService", JWTService);
@@ -152,6 +156,8 @@ container.registerSingleton<IDesignationService>("IjobsService", DesignationServ
 container.registerSingleton<IDesignationService>("IDesignationService", DesignationService);
 container.registerSingleton<ISubscriptionExpiryService>("ISubscriptionExpiryService", SubscriptionExpiryService);
 container.registerSingleton<IWalletCreditService>("IWalletCreditService", WalletCreditService);
+container.registerSingleton<IReservationExpiryService>("IReservationExpiryService",ReservationExpiryService);
+container.registerSingleton<IBookingExpiryService>("IBookingExpiryService",BookingExpiryService);
 container.registerSingleton<IApplicantService>("IApplicantService", ApplicantService);
 container.registerSingleton<IServiceService>("IServiceService", ServiceServices);
 container.registerSingleton<ISubscriptionPlanService>("ISubscriptionPlanService", SubscriptionPlanService);

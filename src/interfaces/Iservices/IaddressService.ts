@@ -1,23 +1,23 @@
-import { IAddress } from "../Models/Iaddress";
+import {
+  AddAddressDto,
+  AddressResponseDto,
+  OwnerAddressResponseDto,
+} from "../DTO/IServices/IaddressService";
 
 export interface IAddressService {
-  addAddress(
-    ownerId: string,
-    ownerModel: "user" | "technician",
-    addressData: Partial<IAddress>
-  ): Promise<{
+  addAddress(addressData: AddAddressDto): Promise<{
     success: boolean;
     message: string;
-    data?: IAddress;
+    data?: AddressResponseDto;
   }>;
 
   getOwnerAddresses(
-    userId: string,
+    ownerId: string,
     ownerModel: "user" | "technician"
   ): Promise<{
     success: boolean;
     message: string;
-    data?: IAddress[];
+    data?: OwnerAddressResponseDto[];
   }>;
 
   //   updateAddress(

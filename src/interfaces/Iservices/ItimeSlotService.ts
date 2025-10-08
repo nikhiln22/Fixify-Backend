@@ -58,4 +58,23 @@ export interface ITimeSlotService {
     success: boolean;
     message: string;
   }>;
+  reserveTimeSlot(
+    technicianId: string,
+    slotId: string,
+    userId: string,
+    durationInMinutes: number
+  ): Promise<{
+    success: boolean;
+    message: string;
+    reservedSlots?: string[];
+  }>;
+  releaseReservedSlots(
+    technicianId: string,
+    slotIds: string[]
+  ): Promise<{ success: boolean; message: string }>;
+  confirmReservedSlots(
+    technicianId: string,
+    userId: string,
+    slotIds: string[]
+  ): Promise<string[]>;
 }

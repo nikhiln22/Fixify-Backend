@@ -18,7 +18,9 @@ export class TimeSlotController {
     try {
       console.log("fetching the available time slots for booking for user");
       const technicianId = req.params.technicianId;
-      const includePast = false;
+      const includePast = Boolean(req.params.includePast);
+
+      console.log("includePast in the time slot controller:", includePast);
 
       const userFilters = {
         isAvailable: true,

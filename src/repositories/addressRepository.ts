@@ -4,6 +4,7 @@ import { BaseRepository } from "./baseRepository";
 import address from "../models/addressModel";
 import { IAddressRepository } from "../interfaces/Irepositories/IaddressRepository";
 import { Types } from "mongoose";
+import { AddAddressDto } from "../interfaces/DTO/IServices/IaddressService";
 
 @injectable()
 export class AddressRepository
@@ -14,11 +15,14 @@ export class AddressRepository
     super(address);
   }
 
-  async addAddress(addressData: IAddress): Promise<IAddress> {
+  async addAddress(addressData: AddAddressDto): Promise<IAddress> {
     try {
       console.log("adding the address in the address repository");
       console.log("addressData from the address repository:", addressData);
-      const newAddress = await this.create(addressData);
+      const newAddress = await this.create({
+        ...addressData,
+        ownerId: new Types.ObjectId(addressData.ownerId),
+      });
 
       console.log("address added successfully:", newAddress);
 

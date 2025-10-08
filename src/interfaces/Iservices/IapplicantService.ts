@@ -1,15 +1,15 @@
 import {
+  PaginatedTechnicianDto,
   RejectTechnicianResponse,
   TechnicianProfileResponse,
 } from "../DTO/IServices/ItechnicianService";
-import { ITechnician } from "../Models/Itechnician";
 
 export interface IApplicantService {
   getAllApplicants(options: { page?: number; limit?: number }): Promise<{
     success: boolean;
     message: string;
     data?: {
-      applicants: ITechnician[];
+      applicants: PaginatedTechnicianDto[];
       pagination: {
         total: number;
         page: number;

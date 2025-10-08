@@ -8,6 +8,7 @@ import {
 import { inject, injectable } from "tsyringe";
 import { IAddressService } from "../interfaces/Iservices/IaddressService";
 import { Roles } from "../config/roles";
+import { AddAddressDto } from "../interfaces/DTO/IServices/IaddressService";
 
 @injectable()
 export class AddressController {
@@ -96,13 +97,20 @@ export class AddressController {
           .json(createErrorResponse("Invalid user role"));
         return;
       }
+      const addressData: AddAddressDto = {
+        addressType: req.body.addressType,
+        houseNumber: req.body.houseNumber,
+        landmark: req.body.landmark,
+        fullAddress: req.body.fullAddress,
+        longitude: req.body.longitude,
+        latitude: req.body.latitude,
+        ownerId: userId,
+        ownerModel: ownerModel,
+      };
 
-      const addressData = req.body;
-      console.log("address Data received:", req.body);
+      console.log("Mapped AddAddressDto:", addressData);
 
       const serviceResponse = await this._addressService.addAddress(
-        userId,
-        ownerModel,
         addressData
       );
 

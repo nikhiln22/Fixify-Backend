@@ -133,4 +133,12 @@ export interface IBookingService {
       categoryId: string;
     }>;
   }>;
+  startService(
+    bookingId: string,
+    technicianId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: { bookingId: string; status: string };
+  }>;
 }

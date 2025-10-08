@@ -13,10 +13,10 @@ import {
   VerifyOtpData,
   TechnicianQualificationUpdateResponse,
   signupTechnicianResponse,
+  PaginatedTechnicianDto,
 } from "../DTO/IServices/ItechnicianService";
 import { VerifyOtpResponse } from "../DTO/IServices/IuserService";
 import { IRating } from "../Models/Irating";
-import { ITechnician } from "../Models/Itechnician";
 
 export interface ITechnicianService {
   technicianSignUp(
@@ -49,15 +49,11 @@ export interface ITechnicianService {
     search?: string;
     status?: string;
     designation?: string;
-    designationId?: string;
-    longitude?: string;
-    latitude?: string;
-    radius?: number;
   }): Promise<{
     success: boolean;
     message: string;
     data?: {
-      technicians: ITechnician[];
+      technicians: PaginatedTechnicianDto[];
       pagination: {
         total: number;
         page: number;

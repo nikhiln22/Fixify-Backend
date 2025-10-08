@@ -115,6 +115,7 @@ export interface CreateBookingRequest {
     | "Completed";
   finalServiceAmount?: number;
   actualDuration?: number;
+  expiresAt?:Date;
 }
 
 export interface BookServiceResponse {
@@ -131,4 +132,12 @@ export interface AddMoneyResponse {
     sessionId: string;
     requiresPayment: boolean;
   };
+}
+
+export interface PaginatedUserDto {
+  _id: string;
+  username: string;
+  email: string;
+  phone: number;
+  status: "Active" | "Blocked";
 }

@@ -14,11 +14,11 @@ import {
   ResetPasswordResponse,
   LoginData,
   LoginResponse,
+  PaginatedUserDto,
 } from "../interfaces/DTO/IServices/IuserService";
 import { IUserRepository } from "../interfaces/Irepositories/IuserRepository";
 import { IUserService } from "../interfaces/Iservices/IuserService";
 import { inject, injectable } from "tsyringe";
-import { IUser } from "../interfaces/Models/Iuser";
 import { IFileUploader } from "../interfaces/IfileUploader/IfileUploader";
 import { OTP_PREFIX, OtpPurpose } from "../config/otpConfig";
 import { IOTPService, OtpVerificationResult } from "../interfaces/Iotp/IOTP";
@@ -473,7 +473,7 @@ export class UserService implements IUserService {
     success: boolean;
     message: string;
     data?: {
-      users: IUser[];
+      users: PaginatedUserDto[];
       pagination: {
         total: number;
         page: number;
@@ -497,11 +497,19 @@ export class UserService implements IUserService {
 
       console.log("result from the user service:", result);
 
+      const users: PaginatedUserDto[] = result.data.map((user) => ({
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        status: user.status,
+      }));
+
       return {
         success: true,
         message: "Users fetched successfully",
         data: {
-          users: result.data,
+          users,
           pagination: {
             total: result.total,
             page: result.page,

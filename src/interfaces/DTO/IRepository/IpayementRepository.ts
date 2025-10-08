@@ -12,7 +12,6 @@ export interface CreatePaymentData {
   paymentMethod: "Online" | "Wallet";
   paymentStatus: "Paid" | "Refunded" | "Partial Paid";
   technicianPaid?: boolean;
-  refundStatus?: "Not Refunded" | "Refunded";
   refundAmount?: number;
   technicianPaidAt?: Date;
   refundDate?: Date;

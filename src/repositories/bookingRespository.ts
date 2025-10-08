@@ -33,8 +33,6 @@ export class BookingRepository
         | "In Progress"
         | "Cancelled"
         | "Completed";
-      finalServiceAmount?: number;
-      actualDuration?: number;
     }
   ): Promise<IBooking> {
     try {
@@ -51,12 +49,6 @@ export class BookingRepository
         bookingStatus: data.bookingStatus,
         ...(data.originalAmount !== undefined && {
           originalAmount: data.originalAmount,
-        }),
-        ...(data.finalServiceAmount !== undefined && {
-          finalServiceAmount: data.finalServiceAmount,
-        }),
-        ...(data.actualDuration !== undefined && {
-          actualDuration: data.actualDuration,
         }),
         ...(data.offerId && { offerId: new Types.ObjectId(data.offerId) }),
         ...(data.couponId && { couponId: new Types.ObjectId(data.couponId) }),
@@ -249,10 +241,11 @@ export class BookingRepository
         populate: [
           {
             path: "serviceId",
-            select: "name price description image",
+            select: "name price description image serviceType",
           },
           {
             path: "userId",
+
             select: "username email phone",
           },
           {
@@ -598,6 +591,56 @@ export class BookingRepository
       return statusDistribution;
     } catch (error) {
       console.log("Error fetching booking status distribution:", error);
+      throw error;
+    }
+  }
+
+  async findBooking(
+    userId: string,
+    status: string,
+    expiresAt: Date
+  ): Promise<IBooking | null> {
+    try {
+      const filter: FilterQuery<IBooking> = {
+        userId: new Types.ObjectId(userId),
+        bookingStatus: status,
+        expiresAt: { $gt: expiresAt },
+      };
+
+      const booking = await this.findOne(filter);
+      return booking;
+    } catch (error) {
+      console.error("Error fetching the booking:", error);
+      throw error;
+    }
+  }
+
+  async findExpiredPendingBookings(now: Date): Promise<IBooking[]> {
+    try {
+      const filter: FilterQuery<IBooking> = {
+        bookingStatus: "Pending",
+        expiresAt: { $lt: now },
+      };
+
+      const expiredBookings = await this.findAll(filter);
+      return expiredBookings;
+    } catch (error) {
+      console.error("Error fetching expired pending bookings:", error);
+      throw error;
+    }
+  }
+
+  async deleteBookingById(bookingId: string): Promise<number> {
+    try {
+      const filter: FilterQuery<IBooking> = {
+        _id: bookingId,
+        bookingStatus: "Pending",
+      };
+
+      const result = await this.deleteMany(filter);
+      return result.deletedCount;
+    } catch (error) {
+      console.error("Error deleting expired pending bookings:", error);
       throw error;
     }
   }
