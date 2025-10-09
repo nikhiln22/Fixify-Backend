@@ -33,6 +33,7 @@ export class BookingRepository
         | "In Progress"
         | "Cancelled"
         | "Completed";
+      expiresAt?: Date;
     }
   ): Promise<IBooking> {
     try {
@@ -52,6 +53,7 @@ export class BookingRepository
         }),
         ...(data.offerId && { offerId: new Types.ObjectId(data.offerId) }),
         ...(data.couponId && { couponId: new Types.ObjectId(data.couponId) }),
+        ...(data.expiresAt && { expiresAt: data.expiresAt }),
       };
 
       console.log("Final booking data to be saved:", bookingData);
@@ -529,6 +531,7 @@ export class BookingRepository
         technicianId: technicianId,
         bookingStatus: "Booked",
       });
+      console.log("techncianPendingJobs", techncianPendingJobs);
       return techncianPendingJobs;
     } catch (error) {
       console.log(
@@ -597,12 +600,16 @@ export class BookingRepository
 
   async findBooking(
     userId: string,
+    technicianId: string,
+    serviceId: string,
     status: string,
     expiresAt: Date
   ): Promise<IBooking | null> {
     try {
       const filter: FilterQuery<IBooking> = {
         userId: new Types.ObjectId(userId),
+        technicianId: new Types.ObjectId(technicianId),
+        serviceId: new Types.ObjectId(serviceId),
         bookingStatus: status,
         expiresAt: { $gt: expiresAt },
       };

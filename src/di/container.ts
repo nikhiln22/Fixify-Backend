@@ -157,7 +157,7 @@ container.registerSingleton<IDesignationService>("IDesignationService", Designat
 container.registerSingleton<ISubscriptionExpiryService>("ISubscriptionExpiryService", SubscriptionExpiryService);
 container.registerSingleton<IWalletCreditService>("IWalletCreditService", WalletCreditService);
 container.registerSingleton<IReservationExpiryService>("IReservationExpiryService",ReservationExpiryService);
-container.registerSingleton<IBookingExpiryService>("IBookingExpiryService",BookingExpiryService);
+container.registerSingleton<IBookingExpiryService>("IBookingExpiryService",BookingExpiryService)
 container.registerSingleton<IApplicantService>("IApplicantService", ApplicantService);
 container.registerSingleton<IServiceService>("IServiceService", ServiceServices);
 container.registerSingleton<ISubscriptionPlanService>("ISubscriptionPlanService", SubscriptionPlanService);

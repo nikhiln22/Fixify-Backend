@@ -35,6 +35,9 @@ const paymentSchema: Schema<IPayment> = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "coupon",
     },
+    offerDiscount: {
+      type: Number,
+    },
     fixifyShare: {
       type: Number,
     },

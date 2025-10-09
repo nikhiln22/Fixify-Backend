@@ -29,7 +29,7 @@ export interface ITimeSlotRepository {
     slotId: string,
     data: {
       isBooked?: boolean;
-      isReserved?: boolean;
+      isReserved?: boolean | null;
       reservedBy?: string | null;
       reservationExpiry?: Date | null;
       isAvailable?: boolean;

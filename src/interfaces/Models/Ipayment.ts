@@ -10,6 +10,8 @@ export interface IPayment extends Document {
   amountPaid: number;
   offerId?: Types.ObjectId;
   couponId?: Types.ObjectId;
+  offerDiscount?: number;
+  couponDiscount?: number;
   fixifyShare?: number;
   technicianShare?: number;
   paymentMethod: "Online" | "Wallet";

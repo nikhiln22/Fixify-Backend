@@ -55,43 +55,6 @@ export class TechnicianRoutes {
       technicianController.logout.bind(technicianController)
     );
 
-    this.router.patch(
-      "/qualifications",
-      this.authMiddleware.authenticateBasic(Roles.TECHNICIAN),
-      this.localUpload.technicianQualificationUpload,
-      technicianController.submitQualifications.bind(technicianController)
-    );
-
-    this.router.get(
-      "/me",
-      this.authMiddleware.authenticateBasic(Roles.TECHNICIAN),
-      technicianController.getProfile.bind(technicianController)
-    );
-
-    this.router.get(
-      "/reviews",
-      this.authMiddleware.authenticateBasic(Roles.TECHNICIAN),
-      technicianController.getReviews.bind(technicianController)
-    );
-
-    this.router.get(
-      "/",
-      this.authMiddleware.authenticate(Roles.ADMIN),
-      technicianController.getAllTechnicians.bind(technicianController)
-    );
-
-    this.router.get(
-      "/:technicianId",
-      this.authMiddleware.authenticate(Roles.ADMIN),
-      technicianController.getTechnicianDetails.bind(technicianController)
-    );
-
-    this.router.patch(
-      "/:technicianId/block",
-      this.authMiddleware.authenticate(Roles.ADMIN),
-      technicianController.toggleTechnicianStatus.bind(technicianController)
-    );
-
     this.router.get(
       "/dashboardstats",
       this.authMiddleware.authenticate(Roles.TECHNICIAN),
@@ -119,9 +82,46 @@ export class TechnicianRoutes {
         technicianController
       )
     );
+
+    this.router.get(
+      "/me",
+      this.authMiddleware.authenticateBasic(Roles.TECHNICIAN),
+      technicianController.getProfile.bind(technicianController)
+    );
+
+    this.router.get(
+      "/reviews",
+      this.authMiddleware.authenticateBasic(Roles.TECHNICIAN),
+      technicianController.getReviews.bind(technicianController)
+    );
+
+    this.router.patch(
+      "/qualifications",
+      this.authMiddleware.authenticateBasic(Roles.TECHNICIAN),
+      this.localUpload.technicianQualificationUpload,
+      technicianController.submitQualifications.bind(technicianController)
+    );
+
+    this.router.get(
+      "/",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      technicianController.getAllTechnicians.bind(technicianController)
+    );
+
+    this.router.get(
+      "/:technicianId",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      technicianController.getTechnicianDetails.bind(technicianController)
+    );
+
+    this.router.patch(
+      "/:technicianId/block",
+      this.authMiddleware.authenticate(Roles.ADMIN),
+      technicianController.toggleTechnicianStatus.bind(technicianController)
+    );
   }
 
-  public getRouter() {
+  public getRouter(): Router {
     return this.router;
   }
 }
