@@ -19,6 +19,7 @@ export interface IBookingRepository {
         | "In Progress"
         | "Cancelled"
         | "Completed";
+      expiresAt?: Date;
     }
   ): Promise<IBooking>;
   updateBooking(
@@ -84,6 +85,8 @@ export interface IBookingRepository {
   >;
   findBooking(
     userId: string,
+    technicianId: string,
+    ServiceId: string,
     status: string,
     expiresAt: Date
   ): Promise<IBooking | null>;

@@ -12,11 +12,14 @@ export interface IBooking extends Document {
   paymentId: Types.ObjectId | IPayment;
   timeSlotId: Types.ObjectId[] | ITimeSlot[];
   bookingAmount: number;
+  serviceStartTime?: Date;
+  serviceEndTime?: Date;
   actualDuration?: number;
   bookingStatus:
     | "Pending"
     | "Booked"
     | "In Progress"
+    | "Payment Pending"
     | "Cancelled"
     | "Completed";
   hasReplacementParts?: boolean;

@@ -62,7 +62,13 @@ export class AuthMiddleware {
 
     try {
       const payload = this.jwtService.verifyAccessToken(token) as JwtPayload;
+      console.log(
+        "payload in the validateTokenAndRole private method:",
+        payload
+      );
+      console.log("role", roles);
       if (!payload || !roles.includes(payload.role)) {
+        console.log("payload in validationtoken", payload);
         res
           .status(HTTP_STATUS.FORBIDDEN)
           .json({ message: "Access denied: invalid role" });
@@ -154,10 +160,13 @@ export class AuthMiddleware {
     }
   }
 
-  // Full authentication - requires complete verification (for main features)
   authenticate(...roles: Roles[]) {
     return async (req: Request, res: Response, next: NextFunction) => {
       const payload = await this.validateTokenAndRole(req, res, roles);
+      console.log(
+        "payload in the authenticate function in auth middleware:",
+        payload
+      );
       if (!payload) return;
 
       const isFullyVerified = await this.checkAccountStatus(

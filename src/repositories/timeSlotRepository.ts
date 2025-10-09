@@ -266,42 +266,50 @@ export class TimeSlotRepository
       isAvailable?: boolean;
     }
   ): Promise<ITimeSlot> {
-    const currentSlot = await this.findSlotById(technicianId, slotId);
-    if (!currentSlot) throw new Error("Slot not found");
+    try {
+      const currentSlot = await this.findSlotById(technicianId, slotId);
+      if (!currentSlot) throw new Error("Slot not found");
 
-    const updateData: Partial<ITimeSlot> = {};
-    const unsetData: Record<string, ""> = {};
+      const updateData: Partial<ITimeSlot> = {};
+      const unsetData: Record<string, ""> = {};
 
-    if (data.isBooked !== undefined) updateData.isBooked = data.isBooked;
-    if (data.isReserved !== undefined) updateData.isReserved = data.isReserved;
+      if (data.isBooked !== undefined) updateData.isBooked = data.isBooked;
+      if (data.isReserved !== undefined)
+        updateData.isReserved = data.isReserved;
+      if (data.isAvailable !== undefined)
+        updateData.isAvailable = data.isAvailable;
 
-    if (data.reservedBy === null) {
-      unsetData.reservedBy = "";
-    } else if (data.reservedBy !== undefined) {
-      updateData.reservedBy = new Types.ObjectId(data.reservedBy);
+      if (data.reservedBy === null) {
+        unsetData.reservedBy = "";
+      } else if (data.reservedBy !== undefined) {
+        updateData.reservedBy = new Types.ObjectId(data.reservedBy);
+      }
+
+      if (data.reservationExpiry === null) {
+        unsetData.reservationExpiry = "";
+      } else if (data.reservationExpiry !== undefined) {
+        updateData.reservationExpiry = data.reservationExpiry;
+      }
+
+      const updateQuery: {
+        $set?: Partial<ITimeSlot>;
+        $unset?: Partial<Record<keyof ITimeSlot, "">>;
+      } = {};
+      if (Object.keys(updateData).length) updateQuery.$set = updateData;
+      if (Object.keys(unsetData).length) updateQuery.$unset = unsetData;
+
+      const updatedSlot = await this.updateOne(
+        { _id: slotId, technicianId },
+        updateQuery
+      );
+
+      if (!updatedSlot) throw new Error("Failed to update time slot");
+
+      return updatedSlot;
+    } catch (error) {
+      console.error("Error updating the slot status:", error);
+      throw error;
     }
-
-    if (data.reservationExpiry === null) {
-      unsetData.reservationExpiry = "";
-    } else if (data.reservationExpiry !== undefined) {
-      updateData.reservationExpiry = data.reservationExpiry;
-    }
-
-    const updateQuery: {
-      $set?: Partial<ITimeSlot>;
-      $unset?: Partial<Record<keyof ITimeSlot, "">>;
-    } = {};
-    if (Object.keys(updateData).length) updateQuery.$set = updateData;
-    if (Object.keys(unsetData).length) updateQuery.$unset = unsetData;
-
-    const updatedSlot = await this.updateOne(
-      { _id: slotId, technicianId },
-      updateQuery
-    );
-
-    if (!updatedSlot) throw new Error("Failed to update time slot");
-
-    return updatedSlot;
   }
 
   async getSlotsByDate(

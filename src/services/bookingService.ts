@@ -159,6 +159,8 @@ export class BookingService implements IBookingService {
 
       const existingBooking = await this._bookingRepository.findBooking(
         userId,
+        data.technicianId,
+        data.serviceId,
         "Pending" as const,
         new Date()
       );
@@ -423,7 +425,6 @@ export class BookingService implements IBookingService {
       console.log("Verifying Stripe session:", sessionId, "for user:", userId);
 
       const session = await stripe.checkout.sessions.retrieve(sessionId);
-
       if (!session || session.payment_status !== "paid") {
         return {
           success: false,
@@ -481,14 +482,6 @@ export class BookingService implements IBookingService {
           userId,
           slotIds
         );
-      }
-
-      const updatedBooking = await this._bookingRepository.updateBooking(
-        { _id: bookingId },
-        { bookingStatus: "Booked" }
-      );
-      if (!updatedBooking) {
-        return { success: false, message: "Failed to update booking status" };
       }
 
       const service = booking.serviceId as IService;
@@ -557,9 +550,21 @@ export class BookingService implements IBookingService {
         paymentData
       );
 
-      await this._bookingRepository.updateBooking(
+      const updatedBooking = await this._bookingRepository.updateBooking(
         { _id: bookingId },
-        { paymentId: newPayment._id }
+        {
+          bookingStatus: "Booked",
+          paymentId: newPayment._id,
+          $unset: { expiresAt: "" },
+        }
+      );
+      if (!updatedBooking) {
+        return { success: false, message: "Failed to update booking status" };
+      }
+
+      console.log(
+        "Updated booking to Booked, expiresAt unset:",
+        updatedBooking._id
       );
 
       return {
@@ -819,7 +824,7 @@ export class BookingService implements IBookingService {
         };
       }
 
-      if (booking.bookingStatus !== "Booked") {
+      if (booking.bookingStatus !== "In Progress") {
         return {
           success: false,
           status: HTTP_STATUS.BAD_REQUEST,
@@ -936,7 +941,7 @@ export class BookingService implements IBookingService {
         };
       }
 
-      if (booking.bookingStatus !== "Booked") {
+      if (booking.bookingStatus !== "In Progress") {
         return {
           success: false,
           message: `Cannot complete booking with status: ${booking.bookingStatus}`,

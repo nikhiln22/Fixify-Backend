@@ -38,12 +38,25 @@ const bookingSchema: Schema<IBooking> = new Schema(
       type: Number,
       required: true,
     },
+    serviceStartTime: {
+      type: Date,
+    },
+    serviceEndTime: {
+      type: Date,
+    },
     actualDuration: {
       type: Number,
     },
     bookingStatus: {
       type: String,
-      enum: ["Pending", "Booked", "In Progress", "Cancelled", "Completed"],
+      enum: [
+        "Pending",
+        "Booked",
+        "In Progress",
+        "Payment Pending",
+        "Cancelled",
+        "Completed",
+      ],
       required: true,
     },
     hasReplacementParts: {

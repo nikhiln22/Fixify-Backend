@@ -3,7 +3,6 @@ import { ITimeSlotRepository } from "../interfaces/Irepositories/ItimeSlotReposi
 import { inject, injectable } from "tsyringe";
 import { ITimeSlot } from "../interfaces/Models/ItimeSlot";
 import { AddTimeSlotsResult } from "../interfaces/DTO/IServices/ItechnicianService";
-import { Types } from "mongoose";
 
 @injectable()
 export class TimeSlotService implements ITimeSlotService {
@@ -589,35 +588,57 @@ export class TimeSlotService implements ITimeSlotService {
     slotIds: string[]
   ): Promise<string[]> {
     try {
-      if (!slotIds || slotIds.length === 0) return [];
+      console.log("Confirming reserved slots:", {
+        technicianId,
+        userId,
+        slotIds,
+      });
+
+      if (!slotIds || slotIds.length === 0) {
+        console.log("No slot IDs provided");
+        return [];
+      }
 
       const slots = await this._timeSlotRepository.findSlotsByIds(slotIds);
+      console.log("Found slots:", slots);
 
-      if (!slots) {
+      if (!slots || slots.length === 0) {
+        console.log("No slots found for provided IDs");
         return [];
       }
 
       const userReservedSlots = slots.filter(
-        (slot) => slot.reservedBy === new Types.ObjectId(userId)
+        (slot) => slot.reservedBy && slot.reservedBy.toString() === userId
       );
+      console.log("User reserved slots:", userReservedSlots);
 
-      for (const slot of userReservedSlots) {
-        await this._timeSlotRepository.updateSlotBookingStatus(
-          technicianId,
-          slot._id.toString(),
-          {
-            isBooked: true,
-            isReserved: false,
-            reservedBy: null,
-            reservationExpiry: null,
-          }
-        );
+      if (userReservedSlots.length === 0) {
+        throw new Error("No slots reserved by user: " + userId);
       }
 
-      return userReservedSlots.map((s) => s._id.toString());
+      const updatedSlotIds: string[] = [];
+      for (const slot of userReservedSlots) {
+        console.log("Updating slot:", slot._id.toString());
+        const updatedSlot =
+          await this._timeSlotRepository.updateSlotBookingStatus(
+            technicianId,
+            slot._id.toString(),
+            {
+              isBooked: true,
+              isReserved: true,
+              isAvailable: false,
+              reservedBy: null,
+              reservationExpiry: null,
+            }
+          );
+        console.log("Updated slot:", updatedSlot);
+        updatedSlotIds.push(slot._id.toString());
+      }
+
+      return updatedSlotIds;
     } catch (error) {
       console.error("Error confirming reserved slots:", error);
-      return [];
+      throw error;
     }
   }
 }
