@@ -88,6 +88,24 @@ export class BookingRoutes {
       ),
       bookingController.getRating.bind(bookingController)
     );
+
+    this.router.post(
+      "/:bookingId/add-parts",
+      this.authMiddleware.authenticate(Roles.TECHNICIAN),
+      bookingController.addReplacementParts.bind(bookingController)
+    );
+
+    this.router.get(
+      "/:bookingId/replacement-parts",
+      this.authMiddleware.authenticate(Roles.USER),
+      bookingController.getReplacementPartsForApproval.bind(bookingController)
+    );
+
+    this.router.patch(
+      "/:bookingId/parts-approval",
+      this.authMiddleware.authenticate(Roles.USER),
+      bookingController.approveReplacementParts.bind(bookingController)
+    );
   }
 
   public getRouter() {

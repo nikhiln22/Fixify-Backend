@@ -247,7 +247,6 @@ export class BookingRepository
           },
           {
             path: "userId",
-
             select: "username email phone",
           },
           {
@@ -270,13 +269,17 @@ export class BookingRepository
           {
             path: "paymentId",
             select:
-              "paymentMethod paymentStatus amountPaid refundStatus refundDate refundAmount fixifyShare technicianShare technicianPaid technicianPaidAt creditReleaseDate",
+              "paymentMethod paymentStatus amountPaid refundStatus refundDate refundAmount fixifyShare technicianShare technicianPaid technicianPaidAt creditReleaseDate partsAmount originalAmount offerDiscount couponDiscount",
+          },
+          {
+            path: "replacementParts",
+            select: "name description price services status",
           },
         ],
       });
 
       console.log(
-        "Booking details fetched successfully with populated timeSlot:",
+        "Booking details fetched successfully with populated data:",
         booking
       );
       return booking;

@@ -4,9 +4,23 @@ export interface IBookingDetails {
   serviceId: {
     _id: string;
     name: string;
-    price: number;
     description: string;
+    serviceType: "fixed" | "hourly";
+    price: number;
+    bookingAmount: number;
+    hourlyRate: number;
     image: string;
+    category: {
+      _id: string;
+      name: string;
+    };
+    designation: {
+      _id: string;
+      designation: string;
+    };
+    status: string;
+    estimatedTime?: number;
+    maxHours?: number;
   };
 
   userId: {
@@ -57,9 +71,61 @@ export interface IBookingDetails {
     technicianPaid: boolean;
     technicianPaidAt: Date;
     creditReleaseDate: Date;
+    partsAmount?: number;
+    originalAmount?: number;
+    offerDiscount?: number;
+    couponDiscount?: number;
+    offerId?: {
+      _id: string;
+      title: string;
+      description: string;
+      discountPercentage?: number;
+      discountAmount?: number;
+      offerType: string;
+    };
+    couponId?: {
+      _id: string;
+      code: string;
+      discountType: string;
+      discountValue: number;
+      maxDiscount?: number;
+      minPurchaseAmount?: number;
+    };
   };
 
+  serviceStartTime?: Date;
+  serviceEndTime?: Date;
+  bookingStatus: string;
+  actualDuration?: number;
+  finalServiceAmount?: number;
+  hasReplacementParts?: boolean;
+  replacementPartsApproved?: boolean | null;
+  replacementParts?: Array<{
+    _id: string;
+    name: string;
+    description: string;
+    price: number;
+    services: string[];
+    status: string;
+  }>;
+  partsQuantities?: Map<string, number>;
+  totalPartsAmount?: number;
+  bookingAmount?: number;
+  cancellationReason?: string;
+  cancelledBy?: string;
+  cancellationDate?: Date;
+  isRated?: boolean;
+}
+
+export interface BookingUpdateData {
   bookingStatus?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  serviceStartTime?: Date;
+  serviceEndTime?: Date;
+  actualDuration?: number;
+  finalServiceAmount?: number;
+}
+
+export interface StartServiceResponseData {
+  bookingId: string;
+  bookingStatus: string;
 }

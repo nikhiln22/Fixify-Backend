@@ -1,4 +1,7 @@
-import { IBookingDetails } from "../DTO/IServices/IbookingService";
+import {
+  IBookingDetails,
+  StartServiceResponseData,
+} from "../DTO/IServices/IbookingService";
 import {
   BookServiceResponse,
   CreateBookingRequest,
@@ -43,6 +46,64 @@ export interface IBookingService {
     bookingId: string,
     options?: { userId?: string; technicianId?: string }
   ): Promise<BookServiceResponse>;
+  startService(
+    bookingId: string,
+    technicianId: string,
+    serviceStartTime?: Date
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: StartServiceResponseData;
+  }>;
+  addReplacementParts(
+    bookingId: string,
+    technicianId: string,
+    parts: Array<{
+      partId: string;
+      quantity: number;
+    }>,
+    totalPartsAmount: number
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: { booking: IBookingDetails };
+  }>;
+  getReplacementPartsForApproval(
+    bookingId: string,
+    userId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      bookingId: string;
+      parts: Array<{
+        partId: string;
+        name: string;
+        description: string;
+        price: number;
+        quantity: number;
+        totalPrice: number;
+      }>;
+      totalPartsAmount: number;
+      approvalStatus: boolean | null;
+      hasReplacementParts: boolean;
+    };
+  }>;
+  approveReplacementParts(
+    bookingId: string,
+    userId: string,
+    approved: boolean,
+    rejectionReason?: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      booking: IBookingDetails;
+      approved: boolean;
+      totalPartsAmount?: number;
+      rejectionReason?: string;
+    };
+  }>;
   generateCompletionOtp(
     technicianId: string,
     bookingId: string
@@ -54,7 +115,8 @@ export interface IBookingService {
   verifyCompletionOtp(
     technicianId: string,
     bookingId: string,
-    otp: string
+    otp: string,
+    servieEndTime?: Date
   ): Promise<{
     success: boolean;
     message: string;
@@ -132,13 +194,5 @@ export interface IBookingService {
       bookingCount: number;
       categoryId: string;
     }>;
-  }>;
-  startService(
-    bookingId: string,
-    technicianId: string
-  ): Promise<{
-    success: boolean;
-    message: string;
-    data?: { bookingId: string; status: string };
   }>;
 }

@@ -62,6 +62,8 @@ export class PartController {
 
       console.log("limit in the parts fetching controller:", limit);
 
+      console.log("serviceId in the parts fetching controller:", serviceId);
+
       const serviceResponse = await this._partService.getAllParts({
         page,
         limit,
