@@ -28,7 +28,11 @@ import { IService } from "../interfaces/Models/Iservice";
 import { ICouponRepository } from "../interfaces/Irepositories/IcouponRepository";
 import { ISubscriptionPlanHistoryRepository } from "../interfaces/Irepositories/IsubscriptionPlanHistoryRepository";
 import { ISubscriptionPlanRepository } from "../interfaces/Irepositories/IsubscriptionPlanRepository";
-import { IBookingDetails } from "../interfaces/DTO/IServices/IbookingService";
+import {
+  BookingUpdateData,
+  IBookingDetails,
+  StartServiceResponseData,
+} from "../interfaces/DTO/IServices/IbookingService";
 import { CreatePaymentData } from "../interfaces/DTO/IRepository/IpayementRepository";
 import { PaymentMethod } from "../config/paymentMethod";
 import Stripe from "stripe";
@@ -715,11 +719,12 @@ export class BookingService implements IBookingService {
 
   async startService(
     bookingId: string,
-    technicianId: string
+    technicianId: string,
+    serviceStartTime?: Date
   ): Promise<{
     success: boolean;
     message: string;
-    data?: { bookingId: string; status: string };
+    data?: StartServiceResponseData;
   }> {
     try {
       console.log(
@@ -756,28 +761,381 @@ export class BookingService implements IBookingService {
         };
       }
 
+      const updateData: BookingUpdateData = {
+        bookingStatus: "In Progress",
+      };
+
+      if (serviceStartTime) {
+        updateData.serviceStartTime = new Date(serviceStartTime);
+      }
+
+      if (serviceStartTime) {
+        updateData.serviceStartTime = new Date(serviceStartTime);
+      }
+
       const updatedBooking = await this._bookingRepository.updateBooking(
         { _id: bookingId },
-        { bookingStatus: "In Progress" }
+        updateData
       );
 
       if (!updatedBooking) {
         return { success: false, message: "Failed to update booking status" };
       }
 
+      const responseData: StartServiceResponseData = {
+        bookingId: updatedBooking._id.toString(),
+        bookingStatus: updatedBooking.bookingStatus,
+      };
+
       return {
         success: true,
         message: "Service started successfully",
-        data: {
-          bookingId: updatedBooking._id.toString(),
-          status: updatedBooking.bookingStatus,
-        },
+        data: responseData,
       };
     } catch (error) {
       console.error("Error in starting the service:", error);
       return {
         success: false,
         message: "Failed to start the service",
+      };
+    }
+  }
+
+  async addReplacementParts(
+    bookingId: string,
+    technicianId: string,
+    parts: Array<{ partId: string; quantity: number }>,
+    totalPartsAmount: number
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: { booking: IBookingDetails };
+  }> {
+    try {
+      console.log(
+        "entered to the adding the replacement parts in the booking service function"
+      );
+
+      const booking = (await this._bookingRepository.getBookingDetailsById(
+        bookingId,
+        undefined,
+        technicianId
+      )) as IBookingDetails | null;
+
+      console.log(
+        "fetched booking in the adding replaced parts function:",
+        booking
+      );
+
+      if (!booking) {
+        return {
+          success: false,
+          message: "Booking not found",
+        };
+      }
+
+      if (booking.technicianId._id?.toString() !== technicianId) {
+        return {
+          success: false,
+          message: "Technician not authorized for this booking",
+        };
+      }
+
+      if (booking.bookingStatus !== "In Progress") {
+        return {
+          success: false,
+          message:
+            "Replacement parts can only be added when service is in progress",
+        };
+      }
+
+      if (
+        booking.hasReplacementParts &&
+        booking.replacementPartsApproved === null
+      ) {
+        return {
+          success: false,
+          message: "Replacement parts already added and awaiting user approval",
+        };
+      }
+
+      const partIds = parts.map((p) => new Types.ObjectId(p.partId));
+      const partsQuantities = new Map<string, number>();
+      parts.forEach((p) => {
+        partsQuantities.set(p.partId, p.quantity);
+      });
+
+      const updatedBooking = await this._bookingRepository.updateBooking(
+        { _id: new Types.ObjectId(bookingId) },
+        {
+          hasReplacementParts: true,
+          replacementParts: partIds,
+          partsQuantities: partsQuantities,
+          totalPartsAmount: totalPartsAmount,
+          replacementPartsApproved: null,
+        }
+      );
+
+      if (!updatedBooking) {
+        return {
+          success: false,
+          message: "Failed to update booking with replacement parts",
+        };
+      }
+
+      const updatedBookingDetails =
+        (await this._bookingRepository.getBookingDetailsById(
+          bookingId,
+          undefined,
+          technicianId
+        )) as IBookingDetails | null;
+
+      console.log(
+        "booking updated successfully with replacement parts:",
+        updatedBookingDetails
+      );
+
+      return {
+        success: true,
+        message:
+          "Replacement parts added successfully and awaiting user approval",
+        data: { booking: updatedBookingDetails! },
+      };
+    } catch (error) {
+      console.error("Error in adding the replaced parts:", error);
+      return {
+        success: false,
+        message: "Failed to add the replaced parts",
+      };
+    }
+  }
+
+  async getReplacementPartsForApproval(
+    bookingId: string,
+    userId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      bookingId: string;
+      parts: Array<{
+        partId: string;
+        name: string;
+        description: string;
+        price: number;
+        quantity: number;
+        totalPrice: number;
+      }>;
+      totalPartsAmount: number;
+      approvalStatus: boolean | null;
+      hasReplacementParts: boolean;
+    };
+  }> {
+    try {
+      console.log(
+        "Entered get replacement parts for approval in booking service"
+      );
+      console.log("BookingId:", bookingId, "UserId:", userId);
+
+      const booking = (await this._bookingRepository.getBookingDetailsById(
+        bookingId,
+        userId
+      )) as IBookingDetails | null;
+
+      console.log("Fetched booking for parts approval:", booking);
+
+      if (!booking) {
+        return {
+          success: false,
+          message: "Booking not found or does not belong to this user",
+        };
+      }
+
+      if (booking.userId._id?.toString() !== userId) {
+        return {
+          success: false,
+          message: "You are not authorized to view this booking",
+        };
+      }
+
+      if (!booking.hasReplacementParts) {
+        return {
+          success: false,
+          message: "No replacement parts found for this booking",
+        };
+      }
+
+      if (!booking.replacementParts || booking.replacementParts.length === 0) {
+        return {
+          success: false,
+          message: "Replacement parts details not available",
+        };
+      }
+
+      const partsWithDetails = booking.replacementParts!.map((part) => {
+        const partId = part._id.toString();
+        const quantity = booking.partsQuantities?.get(partId) || 1;
+        const totalPrice = part.price * quantity;
+
+        return {
+          partId: partId,
+          name: part.name,
+          description: part.description,
+          price: part.price,
+          quantity: quantity,
+          totalPrice: totalPrice,
+        };
+      });
+
+      console.log("Parts with details:", partsWithDetails);
+
+      return {
+        success: true,
+        message: "Replacement parts fetched successfully",
+        data: {
+          bookingId: booking._id.toString(),
+          parts: partsWithDetails,
+          totalPartsAmount: booking.totalPartsAmount || 0,
+          approvalStatus: booking.replacementPartsApproved as boolean | null,
+          hasReplacementParts: booking.hasReplacementParts,
+        },
+      };
+    } catch (error) {
+      console.error("Error in getReplacementPartsForApproval service:", error);
+      return {
+        success: false,
+        message: "Failed to fetch replacement parts for approval",
+      };
+    }
+  }
+
+  async approveReplacementParts(
+    bookingId: string,
+    userId: string,
+    approved: boolean,
+    rejectionReason?: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      booking: IBookingDetails;
+      approved: boolean;
+      totalPartsAmount?: number;
+      rejectionReason?: string;
+    };
+  }> {
+    try {
+      console.log("Entered approveReplacementParts in booking service");
+      console.log("Data:", { bookingId, userId, approved, rejectionReason });
+
+      const booking = await this._bookingRepository.getBookingDetailsById(
+        bookingId,
+        userId
+      );
+
+      if (!booking) {
+        return {
+          success: false,
+          message: "Booking not found or does not belong to this user",
+        };
+      }
+
+      if (booking.userId._id?.toString() !== userId) {
+        return {
+          success: false,
+          message: "You are not authorized to approve parts for this booking",
+        };
+      }
+
+      if (!booking.hasReplacementParts) {
+        return {
+          success: false,
+          message: "No replacement parts found for this booking",
+        };
+      }
+
+      if (booking.replacementPartsApproved !== null) {
+        return {
+          success: false,
+          message: `Replacement parts have already been ${
+            booking.replacementPartsApproved ? "approved" : "rejected"
+          }`,
+        };
+      }
+
+      let updateData: {
+        replacementPartsApproved: boolean;
+        hasReplacementParts?: boolean;
+        replacementParts?: string[];
+        partsQuantities?: Map<string, number>;
+        totalPartsAmount?: number;
+        partsRejectionReason?: string;
+      };
+
+      if (approved) {
+        console.log("Parts approved successfully");
+        updateData = {
+          replacementPartsApproved: true,
+        };
+      } else {
+        console.log("Parts rejected - clearing parts data");
+        updateData = {
+          replacementPartsApproved: false,
+          hasReplacementParts: false,
+          replacementParts: [],
+          partsQuantities: new Map(),
+          totalPartsAmount: 0,
+        };
+
+        if (rejectionReason) {
+          updateData.partsRejectionReason = rejectionReason;
+        }
+      }
+
+      const updatedBooking = await this._bookingRepository.updateBooking(
+        { _id: bookingId },
+        updateData
+      );
+
+      if (!updatedBooking) {
+        return {
+          success: false,
+          message: "Failed to update booking with approval status",
+        };
+      }
+
+      console.log("Booking updated with parts approval status");
+
+      const updatedBookingDetails =
+        (await this._bookingRepository.getBookingDetailsById(
+          bookingId,
+          userId
+        )) as IBookingDetails | null;
+
+      if (!updatedBookingDetails) {
+        return {
+          success: false,
+          message: "Failed to fetch updated booking details",
+        };
+      }
+
+      return {
+        success: true,
+        message: approved
+          ? "Replacement parts approved successfully"
+          : "Replacement parts rejected successfully",
+        data: {
+          booking: updatedBookingDetails,
+          approved,
+          ...(approved && { totalPartsAmount: booking.totalPartsAmount }),
+          ...(rejectionReason && { rejectionReason }),
+        },
+      };
+    } catch (error) {
+      console.error("Error in approveReplacementParts service:", error);
+      return {
+        success: false,
+        message: "Failed to approve/reject replacement parts",
       };
     }
   }
@@ -904,7 +1262,8 @@ export class BookingService implements IBookingService {
   async verifyCompletionOtp(
     technicianId: string,
     bookingId: string,
-    otp: string
+    otp: string,
+    serviceEndTime?: Date
   ): Promise<{
     success: boolean;
     message: string;
@@ -915,6 +1274,7 @@ export class BookingService implements IBookingService {
       console.log("technicianId:", technicianId);
       console.log("bookingId:", bookingId);
       console.log("provided OTP:", otp);
+      console.log("serviceEndTime:", serviceEndTime);
 
       if (!technicianId || !bookingId || !otp) {
         return {
@@ -923,9 +1283,9 @@ export class BookingService implements IBookingService {
         };
       }
 
-      const booking = await this._bookingRepository.getBookingDetailsById(
+      const booking = (await this._bookingRepository.getBookingDetailsById(
         bookingId
-      );
+      )) as IBookingDetails | null;
 
       if (!booking) {
         return {
@@ -958,9 +1318,45 @@ export class BookingService implements IBookingService {
         return otpVerification;
       }
 
+      const isHourlyService =
+        typeof booking.serviceId === "object" &&
+        booking.serviceId.serviceType === "hourly";
+
+      const updateData: BookingUpdateData = {
+        bookingStatus: isHourlyService ? "Payment Pending" : "Completed",
+      };
+
+      if (isHourlyService && serviceEndTime && booking.serviceStartTime) {
+        const endTime = new Date(serviceEndTime);
+        const startTime = new Date(booking.serviceStartTime);
+
+        const durationInMs = endTime.getTime() - startTime.getTime();
+        const durationInHours = durationInMs / (1000 * 60 * 60);
+
+        updateData.serviceEndTime = endTime;
+        updateData.actualDuration = durationInHours;
+
+        const billedHours = Math.max(1, Math.ceil(durationInHours));
+        const hourlyRate =
+          typeof booking.serviceId === "object"
+            ? booking.serviceId.hourlyRate
+            : 0;
+
+        updateData.finalServiceAmount = billedHours * hourlyRate;
+
+        console.log("Hourly service calculation:", {
+          startTime,
+          endTime,
+          durationInHours,
+          billedHours,
+          hourlyRate,
+          finalAmount: updateData.finalServiceAmount,
+        });
+      }
+
       const updatedBooking = await this._bookingRepository.updateBooking(
         { _id: bookingId },
-        { bookingStatus: "Completed" }
+        updateData
       );
 
       if (!updatedBooking) {
@@ -970,50 +1366,52 @@ export class BookingService implements IBookingService {
         };
       }
 
-      try {
-        const technicianSubscription =
-          await this._subscriptionPlanHistoryRepository.findActiveSubscriptionByTechnicianId(
-            booking.technicianId._id.toString()
-          );
-
-        console.log(
-          "fetched technician subscription plan in booking service:",
-          technicianSubscription
-        );
-
-        if (!technicianSubscription) {
-          throw new Error("No active subscription plan found for technician");
-        }
-
-        const subscriptionPlan =
-          await this._subscriptionPlanRepository.findSubscriptionPlanById(
-            technicianSubscription.subscriptionPlanId.toString()
-          );
-
-        if (!subscriptionPlan) {
-          throw new Error("Subscription plan not found");
-        }
-
-        if (subscriptionPlan) {
-          const walletCreditDelay = subscriptionPlan.WalletCreditDelay;
-
-          const completionTime = new Date();
-          const newCreditReleaseDate = new Date(completionTime);
-          newCreditReleaseDate.setDate(
-            newCreditReleaseDate.getDate() + walletCreditDelay
-          );
-
-          await this._paymentRepository.updatePayment(
-            booking.paymentId._id.toString(),
-            { creditReleaseDate: newCreditReleaseDate }
-          );
+      if (!isHourlyService) {
+        try {
+          const technicianSubscription =
+            await this._subscriptionPlanHistoryRepository.findActiveSubscriptionByTechnicianId(
+              booking.technicianId._id.toString()
+            );
 
           console.log(
-            `Credit release date updated to ${newCreditReleaseDate} for booking ${bookingId}`
+            "fetched technician subscription plan in booking service:",
+            technicianSubscription
           );
+
+          if (!technicianSubscription) {
+            throw new Error("No active subscription plan found for technician");
+          }
+
+          const subscriptionPlan =
+            await this._subscriptionPlanRepository.findSubscriptionPlanById(
+              technicianSubscription.subscriptionPlanId.toString()
+            );
+
+          if (!subscriptionPlan) {
+            throw new Error("Subscription plan not found");
+          }
+
+          if (subscriptionPlan) {
+            const walletCreditDelay = subscriptionPlan.WalletCreditDelay;
+
+            const completionTime = new Date();
+            const newCreditReleaseDate = new Date(completionTime);
+            newCreditReleaseDate.setDate(
+              newCreditReleaseDate.getDate() + walletCreditDelay
+            );
+
+            await this._paymentRepository.updatePayment(
+              booking.paymentId._id.toString(),
+              { creditReleaseDate: newCreditReleaseDate }
+            );
+
+            console.log(
+              `Credit release date updated to ${newCreditReleaseDate} for booking ${bookingId}`
+            );
+          }
+        } catch (error) {
+          console.error("Error updating credit release date:", error);
         }
-      } catch (error) {
-        console.error("Error updating credit release date:", error);
       }
 
       const redisKey = this.getOtpRedisKey(
@@ -1035,13 +1433,16 @@ export class BookingService implements IBookingService {
       }
 
       console.log(
-        `Booking ${bookingId} completed successfully by technician ${technicianId}. Payment will be processed according to subscription plan.`
+        `Booking ${bookingId} ${
+          isHourlyService ? "awaiting final payment" : "completed successfully"
+        } by technician ${technicianId}.`
       );
 
       return {
         success: true,
-        message:
-          "Service completed successfully. Payment will be credited according to your subscription plan.",
+        message: isHourlyService
+          ? "Service completed successfully. Waiting for customer payment."
+          : "Service completed successfully. Payment will be credited according to your subscription plan.",
         data: { booking: completedBooking },
       };
     } catch (error) {

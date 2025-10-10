@@ -617,6 +617,7 @@ export class BookingController {
       );
       const bookingId = req.params.bookingId;
       const technicianId = req.user?.id;
+      const { serviceStartTime } = req.body;
 
       if (!technicianId) {
         res
@@ -627,7 +628,8 @@ export class BookingController {
 
       const serviceResponse = await this._bookingService.startService(
         bookingId,
-        technicianId
+        technicianId,
+        serviceStartTime
       );
 
       console.log("serverResponse from the booking service:", serviceResponse);
@@ -654,6 +656,356 @@ export class BookingController {
         "error occurred while fetching the rating for a booking:",
         error
       );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async addReplacementParts(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log(
+        "entering to the add replacement parts function in booking controller"
+      );
+      const technicianId = req.user?.id;
+      const { bookingId } = req.params;
+      const { parts, totalPartsAmount } = req.body;
+
+      console.log("received data:", {
+        bookingId,
+        technicianId,
+        parts,
+        totalPartsAmount,
+      });
+
+      if (!technicianId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("Technician not authenticated"));
+        return;
+      }
+
+      if (!parts || !Array.isArray(parts) || parts.length === 0) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(
+            createErrorResponse("Parts array is required and cannot be empty")
+          );
+        return;
+      }
+
+      if (!totalPartsAmount || totalPartsAmount <= 0) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("Valid total parts amount is required"));
+        return;
+      }
+
+      const serviceResponse = await this._bookingService.addReplacementParts(
+        bookingId,
+        technicianId,
+        parts,
+        totalPartsAmount
+      );
+
+      console.log("response from booking service:", serviceResponse);
+
+      if (serviceResponse.success) {
+        try {
+          const booking = serviceResponse.data?.booking;
+          const userId =
+            booking?.userId?._id?.toString() || booking?.userId?.toString();
+
+          if (userId) {
+            const userNotification =
+              await this._notificationService.createNotification({
+                recipientId: userId,
+                recipientType: "user",
+                title: "Replacement Parts Required",
+                message: `Technician found damaged parts for booking #${bookingId
+                  .slice(-8)
+                  .toUpperCase()}. Total: ₹${totalPartsAmount}. Please review and approve.`,
+                type: "parts_approval_required",
+              });
+
+            const userSocketData: ISocketNotificationData = {
+              id: userNotification._id.toString(),
+              title: userNotification.title,
+              message: userNotification.message,
+              type: userNotification.type,
+              createdAt: userNotification.createdAt!,
+              recipientId: userNotification.recipientId.toString(),
+              recipientType: userNotification.recipientType,
+              isRead: false,
+            };
+
+            req.io
+              ?.to(`user_${userId}`)
+              .emit("new_notification", userSocketData);
+            console.log(`Parts approval notification sent to user ${userId}`);
+          }
+
+          res
+            .status(HTTP_STATUS.OK)
+            .json(
+              createSuccessResponse(
+                serviceResponse.data,
+                serviceResponse.message
+              )
+            );
+        } catch (notificationError) {
+          console.log(
+            "Failed to send parts approval notification:",
+            notificationError
+          );
+          res
+            .status(HTTP_STATUS.OK)
+            .json(
+              createSuccessResponse(
+                serviceResponse.data,
+                serviceResponse.message
+              )
+            );
+        }
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("not authorized")
+          ? HTTP_STATUS.FORBIDDEN
+          : HTTP_STATUS.BAD_REQUEST;
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to add replacement parts"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("error occurred while adding replacement parts:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async getReplacementPartsForApproval(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log(
+        "Entering get replacement parts for approval function in booking controller"
+      );
+
+      const userId = req.user?.id;
+      const { bookingId } = req.params;
+
+      console.log("Received data:", {
+        bookingId,
+        userId,
+      });
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      if (!bookingId) {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("Booking ID is required"));
+        return;
+      }
+
+      const serviceResponse =
+        await this._bookingService.getReplacementPartsForApproval(
+          bookingId,
+          userId
+        );
+
+      console.log("Response from booking service:", serviceResponse);
+
+      if (serviceResponse.success) {
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+          );
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("not authorized") ||
+            serviceResponse.message?.includes("does not belong")
+          ? HTTP_STATUS.FORBIDDEN
+          : serviceResponse.message?.includes("No replacement parts")
+          ? HTTP_STATUS.NOT_FOUND
+          : HTTP_STATUS.BAD_REQUEST;
+
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to fetch replacement parts"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("Error occurred while fetching replacement parts:", error);
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async approveReplacementParts(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log(
+        "entered inside the replacement parts approval function in controller"
+      );
+
+      const { bookingId } = req.params;
+      const { approved, rejectionReason } = req.body;
+      const userId = req.user?.id;
+
+      console.log("Approval data:", {
+        bookingId,
+        userId,
+        approved,
+        rejectionReason,
+      });
+
+      if (!userId) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse("User not authenticated"));
+        return;
+      }
+
+      if (typeof approved !== "boolean") {
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(createErrorResponse("Approved field must be a boolean"));
+        return;
+      }
+
+      const serviceResponse =
+        await this._bookingService.approveReplacementParts(
+          bookingId,
+          userId,
+          approved,
+          rejectionReason
+        );
+
+      console.log("Service response for parts approval:", serviceResponse);
+
+      if (serviceResponse.success) {
+        try {
+          const booking = serviceResponse.data?.booking;
+          const technicianId =
+            booking?.technicianId?._id?.toString() ||
+            booking?.technicianId?.toString();
+
+          if (technicianId) {
+            let technicianMessage: string;
+            let notificationType: string;
+            let notificationTitle: string;
+
+            if (approved) {
+              technicianMessage = `Customer has approved the replacement parts for booking #${bookingId
+                .slice(-8)
+                .toUpperCase()}. Total parts amount: ₹${
+                booking?.totalPartsAmount || 0
+              }. You can proceed with the repairs.`;
+              notificationType = "parts_approved";
+              notificationTitle = "Replacement Parts Approved";
+            } else {
+              technicianMessage = `Customer has rejected the replacement parts for booking #${bookingId
+                .slice(-8)
+                .toUpperCase()}.`;
+              if (rejectionReason) {
+                technicianMessage += ` Reason: ${rejectionReason}`;
+              }
+              notificationType = "parts_rejected";
+              notificationTitle = "Replacement Parts Rejected";
+            }
+
+            const technicianNotification =
+              await this._notificationService.createNotification({
+                recipientId: technicianId,
+                recipientType: "technician",
+                title: notificationTitle,
+                message: technicianMessage,
+                type: notificationType,
+              });
+
+            const technicianSocketData: ISocketNotificationData = {
+              id: technicianNotification._id.toString(),
+              title: technicianNotification.title,
+              message: technicianNotification.message,
+              type: technicianNotification.type,
+              createdAt: technicianNotification.createdAt!,
+              recipientId: technicianNotification.recipientId.toString(),
+              recipientType: technicianNotification.recipientType,
+              isRead: false,
+            };
+
+            req.io
+              ?.to(`technician_${technicianId}`)
+              .emit("new_notification", technicianSocketData);
+
+            console.log(
+              `Parts approval notification sent to technician ${technicianId}`
+            );
+          }
+
+          res
+            .status(HTTP_STATUS.OK)
+            .json(
+              createSuccessResponse(
+                serviceResponse.data,
+                serviceResponse.message
+              )
+            );
+        } catch (notificationError) {
+          console.log(
+            "Failed to send parts approval notification:",
+            notificationError
+          );
+          res
+            .status(HTTP_STATUS.OK)
+            .json(
+              createSuccessResponse(
+                serviceResponse.data,
+                serviceResponse.message
+              )
+            );
+        }
+      } else {
+        const statusCode = serviceResponse.message?.includes("not found")
+          ? HTTP_STATUS.NOT_FOUND
+          : serviceResponse.message?.includes("not authorized")
+          ? HTTP_STATUS.FORBIDDEN
+          : HTTP_STATUS.BAD_REQUEST;
+
+        res
+          .status(statusCode)
+          .json(
+            createErrorResponse(
+              serviceResponse.message || "Failed to approve replacement parts"
+            )
+          );
+      }
+    } catch (error) {
+      console.log("Error occurred while approving replacement parts:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal Server Error"));
@@ -715,7 +1067,7 @@ export class BookingController {
   ): Promise<void> {
     try {
       console.log("entering the controller that verify the work completion");
-      const { otp } = req.body;
+      const { otp, serviceEndTime } = req.body;
       const { bookingId } = req.params;
       const technicianId = req.user?.id;
 
@@ -724,7 +1076,7 @@ export class BookingController {
         technicianId,
       });
 
-      console.log("received data:", otp);
+      console.log("received data:", { otp, serviceEndTime });
 
       if (!technicianId) {
         res
@@ -736,8 +1088,10 @@ export class BookingController {
       const serviceResponse = await this._bookingService.verifyCompletionOtp(
         technicianId,
         bookingId,
-        otp
+        otp,
+        serviceEndTime
       );
+
       console.log(
         "response after verifying the otp from the booking service:",
         serviceResponse
@@ -752,16 +1106,33 @@ export class BookingController {
           const technicianShare = paymentDetails?.technicianShare;
           const creditReleaseDate = paymentDetails?.creditReleaseDate;
 
+          const isHourlyService =
+            typeof booking?.serviceId === "object" &&
+            booking.serviceId.serviceType === "hourly";
+
           if (userId) {
+            let userMessage = `Your service for booking #${bookingId
+              .slice(-8)
+              .toUpperCase()} has been completed successfully.`;
+
+            if (isHourlyService) {
+              userMessage +=
+                " Please complete the final payment to finish your booking.";
+            } else {
+              userMessage += " Please rate your experience.";
+            }
+
             const userNotification =
               await this._notificationService.createNotification({
                 recipientId: userId,
                 recipientType: "user",
-                title: "Service Completed",
-                message: `Your service for booking #${bookingId
-                  .slice(-8)
-                  .toUpperCase()} has been completed successfully. Please rate your experience.`,
-                type: "service_completed",
+                title: isHourlyService
+                  ? "Service Completed - Payment Required"
+                  : "Service Completed",
+                message: userMessage,
+                type: isHourlyService
+                  ? "payment_required"
+                  : "service_completed",
               });
 
             const userSocketData: ISocketNotificationData = {
@@ -783,11 +1154,11 @@ export class BookingController {
             );
           }
 
-          let technicianMessage = `You have successfully completed booking #${bookingId
-            .slice(-8)
-            .toUpperCase()}.`;
+          if (!isHourlyService && technicianShare && creditReleaseDate) {
+            let technicianMessage = `You have successfully completed booking #${bookingId
+              .slice(-8)
+              .toUpperCase()}.`;
 
-          if (technicianShare && creditReleaseDate) {
             const releaseDate = new Date(creditReleaseDate);
             const formattedDate = releaseDate.toLocaleDateString("en-GB", {
               day: "2-digit",
@@ -796,6 +1167,7 @@ export class BookingController {
             });
 
             technicianMessage += ` Your payment of ₹${technicianShare} will be credited to your wallet on ${formattedDate}.`;
+
             const technicianNotification =
               await this._notificationService.createNotification({
                 recipientId: technicianId,
@@ -822,15 +1194,60 @@ export class BookingController {
             console.log(
               `Service completion and payment schedule notification sent to technician ${technicianId}`
             );
-            res
-              .status(HTTP_STATUS.OK)
-              .json(createSuccessResponse(serviceResponse.message));
+          } else if (isHourlyService) {
+            const technicianMessage = `You have successfully completed booking #${bookingId
+              .slice(-8)
+              .toUpperCase()}. Waiting for customer to complete final payment.`;
+
+            const technicianNotification =
+              await this._notificationService.createNotification({
+                recipientId: technicianId,
+                recipientType: "technician",
+                title: "Service Completed - Awaiting Payment",
+                message: technicianMessage,
+                type: "service_completed_pending",
+              });
+
+            const technicianSocketData: ISocketNotificationData = {
+              id: technicianNotification._id.toString(),
+              title: technicianNotification.title,
+              message: technicianNotification.message,
+              type: technicianNotification.type,
+              createdAt: technicianNotification.createdAt!,
+              recipientId: technicianNotification.recipientId.toString(),
+              recipientType: technicianNotification.recipientType,
+              isRead: false,
+            };
+
+            req.io
+              ?.to(`technician_${technicianId}`)
+              .emit("new_notification", technicianSocketData);
+            console.log(
+              `Service completion notification sent to technician ${technicianId}`
+            );
           }
+
+          res
+            .status(HTTP_STATUS.OK)
+            .json(
+              createSuccessResponse(
+                serviceResponse.data,
+                serviceResponse.message
+              )
+            );
         } catch (notificationError) {
           console.log(
             "Failed to send service completion notifications:",
             notificationError
           );
+          res
+            .status(HTTP_STATUS.OK)
+            .json(
+              createSuccessResponse(
+                serviceResponse.data,
+                serviceResponse.message
+              )
+            );
         }
       } else {
         const statusCode = serviceResponse.message?.includes("not found")

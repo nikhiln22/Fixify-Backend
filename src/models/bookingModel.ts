@@ -65,7 +65,21 @@ const bookingSchema: Schema<IBooking> = new Schema(
     },
     replacementPartsApproved: {
       type: Boolean,
-      default: false,
+      default: null,
+    },
+    replacementParts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "part",
+      },
+    ],
+    partsQuantities: {
+      type: Map,
+      of: Number,
+      default: {},
+    },
+    totalPartsAmount: {
+      type: Number,
     },
     finalServiceAmount: {
       type: Number,
@@ -86,6 +100,9 @@ const bookingSchema: Schema<IBooking> = new Schema(
     },
     expiresAt: {
       type: Date,
+    },
+    partsRejectionReason: {
+      type: String,
     },
   },
   {

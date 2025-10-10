@@ -38,6 +38,9 @@ const paymentSchema: Schema<IPayment> = new Schema(
     offerDiscount: {
       type: Number,
     },
+    couponDiscount: {
+      type: Number,
+    },
     fixifyShare: {
       type: Number,
     },
@@ -53,6 +56,9 @@ const paymentSchema: Schema<IPayment> = new Schema(
       type: String,
       enum: ["Partial Paid", "Paid", "Refunded"],
       required: true,
+    },
+    partsAmount: {
+      type: Number,
     },
     technicianPaid: {
       type: Boolean,
