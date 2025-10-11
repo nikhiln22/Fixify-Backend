@@ -143,7 +143,10 @@ export class BookingRepository
         pagination: { page, limit },
         sort: { createdAt: -1 },
         populate: [
-          { path: "serviceId", select: "name" },
+          {
+            path: "serviceId",
+            select: "name serviceType estimatedTime maxHours HourlyRate",
+          },
           { path: "paymentId", select: "paymentStatus technicianShare" },
           { path: "timeSlotId", select: "startTime endTime date" },
           { path: "technicianId", select: "username image" },
@@ -243,7 +246,7 @@ export class BookingRepository
         populate: [
           {
             path: "serviceId",
-            select: "name price description image serviceType",
+            select: "name price description image serviceType hourlyRate estimatedTime",
           },
           {
             path: "userId",

@@ -129,3 +129,22 @@ export interface StartServiceResponseData {
   bookingId: string;
   bookingStatus: string;
 }
+
+export interface CompleteFinalPaymentRequest {
+  paymentMethod: string;
+  finalAmount: number;
+  offerId?: string;
+  couponId?: string;
+}
+
+export interface CompleteFinalPaymentResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    booking?: IBookingDetails;
+    checkoutUrl?: string | null;
+    requiresPayment?: boolean;
+    paymentMethod?: string;
+    paymentCompleted?: boolean;
+  };
+}

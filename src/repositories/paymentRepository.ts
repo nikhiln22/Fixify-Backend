@@ -7,6 +7,7 @@ import {
   CreatePaymentData,
   FormattedEarningsResult,
   ProjectedEarningsResult,
+  UpdatePaymentData,
 } from "../interfaces/DTO/IRepository/IpayementRepository";
 import mongoose, { FilterQuery, Types } from "mongoose";
 
@@ -101,7 +102,7 @@ export class PaymentRepository
 
   async updatePayment(
     paymentId: string,
-    updateData: Partial<IPayment>
+    updateData: UpdatePaymentData
   ): Promise<IPayment | null> {
     try {
       console.log("updating payment in payment repository");

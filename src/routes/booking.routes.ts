@@ -106,6 +106,18 @@ export class BookingRoutes {
       this.authMiddleware.authenticate(Roles.USER),
       bookingController.approveReplacementParts.bind(bookingController)
     );
+
+    this.router.post(
+      "/:bookingId/complete-payment",
+      this.authMiddleware.authenticate(Roles.USER),
+      bookingController.completeFinalPayment.bind(bookingController)
+    );
+
+    this.router.get(
+      "/:sessionId/verify-final-payment",
+      this.authMiddleware.authenticate(Roles.USER),
+      bookingController.verifyFinalPaymentStripeSession.bind(bookingController)
+    );
   }
 
   public getRouter() {

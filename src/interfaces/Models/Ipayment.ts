@@ -23,7 +23,6 @@ export interface IPayment extends Document {
   refundDate?: Date;
   refundAmount?: number;
   creditReleaseDate?: Date;
-  extraCharges?: number;
   advanceAmount?: number;
   createdAt: Date;
   updatedAt: Date;

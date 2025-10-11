@@ -54,3 +54,20 @@ export interface FormattedEarningsResult {
   totalBookingAmount: number;
   totalFixifyShare: number;
 }
+
+export interface UpdatePaymentData {
+  paymentStatus?: "Partial Paid" | "Paid" | "Refunded";
+  partsAmount?: number;
+  offerDiscount?: number;
+  couponDiscount?: number;
+  offerId?: string;
+  couponId?: string;
+  fixifyShare?: number;
+  technicianShare?: number;
+  creditReleaseDate?: Date;
+  refundStatus?: "Not Refunded" | "Refunded";
+  refundAmount?: number;
+  refundDate?: Date;
+  technicianPaid?: boolean;
+  technicianPaidAt?: Date;
+}

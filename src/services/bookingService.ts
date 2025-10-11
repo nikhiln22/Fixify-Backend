@@ -32,8 +32,13 @@ import {
   BookingUpdateData,
   IBookingDetails,
   StartServiceResponseData,
+  CompleteFinalPaymentRequest,
+  CompleteFinalPaymentResponse,
 } from "../interfaces/DTO/IServices/IbookingService";
-import { CreatePaymentData } from "../interfaces/DTO/IRepository/IpayementRepository";
+import {
+  CreatePaymentData,
+  UpdatePaymentData,
+} from "../interfaces/DTO/IRepository/IpayementRepository";
 import { PaymentMethod } from "../config/paymentMethod";
 import Stripe from "stripe";
 import { Types } from "mongoose";
@@ -728,7 +733,8 @@ export class BookingService implements IBookingService {
   }> {
     try {
       console.log(
-        "entered to the start service function in the booking service"
+        "entered to the start service function in the booking service:",
+        serviceStartTime
       );
       console.log(
         `changing the status of the ${bookingId} by the technician whose technicianId is ${technicianId}`
@@ -764,10 +770,6 @@ export class BookingService implements IBookingService {
       const updateData: BookingUpdateData = {
         bookingStatus: "In Progress",
       };
-
-      if (serviceStartTime) {
-        updateData.serviceStartTime = new Date(serviceStartTime);
-      }
 
       if (serviceStartTime) {
         updateData.serviceStartTime = new Date(serviceStartTime);
@@ -1450,6 +1452,477 @@ export class BookingService implements IBookingService {
       return {
         success: false,
         message: "Failed to verify completion OTP",
+      };
+    }
+  }
+
+  async completeFinalPayment(
+    userId: string,
+    bookingId: string,
+    data: CompleteFinalPaymentRequest
+  ): Promise<CompleteFinalPaymentResponse> {
+    try {
+      console.log("Entering completeFinalPayment service");
+      console.log("Data:", { userId, bookingId, ...data });
+
+      if (
+        !Object.values(PaymentMethod).includes(
+          data.paymentMethod as PaymentMethod
+        )
+      ) {
+        return {
+          success: false,
+          message: "Invalid payment method. Must be ONLINE or WALLET",
+        };
+      }
+
+      const booking = (await this._bookingRepository.getBookingDetailsById(
+        bookingId,
+        userId
+      )) as IBookingDetails | null;
+
+      if (!booking) {
+        return {
+          success: false,
+          message:
+            "Booking not found or you don't have permission to access it",
+        };
+      }
+
+      if (booking.bookingStatus !== "Payment Pending") {
+        return {
+          success: false,
+          message: `Cannot process payment for booking with status: ${booking.bookingStatus}`,
+        };
+      }
+
+      const isHourlyService = booking.serviceId.serviceType === "hourly";
+
+      let partsAmount = 0;
+      if (
+        booking.hasReplacementParts &&
+        booking.replacementPartsApproved === true
+      ) {
+        partsAmount = booking.totalPartsAmount || 0;
+      }
+
+      let serviceCharges = 0;
+      if (isHourlyService && booking.finalServiceAmount) {
+        serviceCharges = booking.finalServiceAmount;
+      }
+
+      console.log("Payment breakdown:", {
+        serviceCharges,
+        partsAmount,
+        finalAmount: data.finalAmount,
+        isHourlyService,
+      });
+
+      if (data.finalAmount === 0) {
+        await this._bookingRepository.updateBooking(
+          { _id: bookingId },
+          { bookingStatus: "Completed" }
+        );
+
+        if (typeof booking.paymentId === "object") {
+          await this._paymentRepository.updatePayment(
+            booking.paymentId._id.toString(),
+            {
+              paymentStatus: "Paid",
+              partsAmount: partsAmount,
+            }
+          );
+        }
+
+        const updatedBooking =
+          (await this._bookingRepository.getBookingDetailsById(
+            bookingId
+          )) as IBookingDetails | null;
+
+        return {
+          success: true,
+          message:
+            "Booking completed successfully. No additional payment required.",
+          data: {
+            booking: updatedBooking!,
+            paymentMethod: data.paymentMethod,
+            paymentCompleted: true,
+            requiresPayment: false,
+          },
+        };
+      }
+
+      if (data.paymentMethod === PaymentMethod.WALLET) {
+        try {
+          const userWallet = await this._walletRepository.getWalletByOwnerId(
+            userId,
+            "user"
+          );
+
+          if (!userWallet || userWallet.balance < data.finalAmount) {
+            return {
+              success: false,
+              message: !userWallet
+                ? "Wallet not found"
+                : "Insufficient wallet balance",
+            };
+          }
+
+          const transactionId = `FINAL_${bookingId.slice(-8).toUpperCase()}`;
+          const walletUpdate =
+            await this._walletRepository.updateWalletBalanceWithTransaction(
+              userId,
+              "user",
+              data.finalAmount,
+              "Debit",
+              `Final payment for booking #${bookingId.slice(-8).toUpperCase()}`,
+              transactionId
+            );
+
+          if (!walletUpdate.wallet || !walletUpdate.transaction) {
+            throw new Error("Wallet debit failed");
+          }
+
+          let fixifyShare = 0;
+          let technicianShare = 0;
+
+          if (isHourlyService && serviceCharges > 0) {
+            const technicianSubscription =
+              await this._subscriptionPlanHistoryRepository.findActiveSubscriptionByTechnicianId(
+                booking.technicianId._id.toString()
+              );
+
+            if (!technicianSubscription) {
+              throw new Error("No active subscription for technician");
+            }
+
+            const subscriptionPlan =
+              await this._subscriptionPlanRepository.findSubscriptionPlanById(
+                technicianSubscription.subscriptionPlanId.toString()
+              );
+
+            if (!subscriptionPlan) {
+              throw new Error("Subscription plan not found");
+            }
+
+            fixifyShare = parseFloat(
+              (
+                serviceCharges *
+                (subscriptionPlan.commissionRate / 100)
+              ).toFixed(2)
+            );
+            technicianShare = parseFloat(
+              (serviceCharges - fixifyShare).toFixed(2)
+            );
+
+            fixifyShare += partsAmount;
+          } else if (!isHourlyService && partsAmount > 0) {
+            fixifyShare = partsAmount;
+            technicianShare = 0;
+          }
+
+          if (typeof booking.paymentId === "object") {
+            const updateData: UpdatePaymentData = {
+              paymentStatus: "Paid",
+              partsAmount: partsAmount,
+            };
+
+            if (isHourlyService) {
+              if (data.offerId) updateData.offerId = data.offerId;
+              if (data.couponId) updateData.couponId = data.couponId;
+              updateData.fixifyShare =
+                (booking.paymentId.fixifyShare || 0) + fixifyShare;
+              updateData.technicianShare =
+                (booking.paymentId.technicianShare || 0) + technicianShare;
+            } else {
+              updateData.fixifyShare =
+                (booking.paymentId.fixifyShare || 0) + fixifyShare;
+            }
+
+            await this._paymentRepository.updatePayment(
+              booking.paymentId._id.toString(),
+              updateData
+            );
+          }
+
+          await this._bookingRepository.updateBooking(
+            { _id: bookingId },
+            { bookingStatus: "Completed" }
+          );
+
+          const updatedBooking =
+            (await this._bookingRepository.getBookingDetailsById(
+              bookingId
+            )) as IBookingDetails | null;
+
+          console.log(
+            `Final payment completed via wallet for booking ${bookingId}`
+          );
+
+          return {
+            success: true,
+            message: "Final payment completed successfully using wallet",
+            data: {
+              booking: updatedBooking!,
+              paymentMethod: PaymentMethod.WALLET,
+              paymentCompleted: true,
+              requiresPayment: false,
+            },
+          };
+        } catch (walletError) {
+          console.error("Wallet payment failed:", walletError);
+          return {
+            success: false,
+            message: "Wallet payment failed. Please try again.",
+          };
+        }
+      }
+
+      try {
+        const amountInCents = Math.round(data.finalAmount * 100);
+        const getClientUrl = () =>
+          config.NODE_ENV === "production"
+            ? config.CLIENT_URL || "https://www.fixify.homes"
+            : config.CLIENT_URL || "http://localhost:5173";
+
+        const session: Stripe.Checkout.Session =
+          await stripe.checkout.sessions.create({
+            payment_method_types: ["card"],
+            mode: "payment",
+            line_items: [
+              {
+                price_data: {
+                  currency: "inr",
+                  product_data: {
+                    name: "Fixify Final Service Payment",
+                    description: isHourlyService
+                      ? "Final payment for hourly service"
+                      : "Payment for replacement parts",
+                  },
+                  unit_amount: amountInCents,
+                },
+                quantity: 1,
+              },
+            ],
+            metadata: {
+              bookingId: bookingId,
+              userId: userId,
+              serviceId: booking.serviceId._id.toString(),
+              technicianId: booking.technicianId._id.toString(),
+              serviceType: booking.serviceId.serviceType,
+              isFinalPayment: "true",
+              serviceCharges: serviceCharges.toString(),
+              partsAmount: partsAmount.toString(),
+              offerId: data.offerId || "",
+              couponId: data.couponId || "",
+            },
+            success_url: `${getClientUrl()}/user/finalpayment/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${getClientUrl()}/user/payment-cancelled`,
+          });
+
+        return {
+          success: true,
+          message: "Payment session created. Redirecting to payment gateway.",
+          data: {
+            checkoutUrl: session.url,
+            requiresPayment: true,
+            paymentMethod: PaymentMethod.ONLINE,
+          },
+        };
+      } catch (stripeError) {
+        console.error("Stripe session creation failed:", stripeError);
+        return {
+          success: false,
+          message: "Failed to create payment session. Please try again.",
+        };
+      }
+    } catch (error) {
+      console.error("Error in completeFinalPayment service:", error);
+      return {
+        success: false,
+        message: "Failed to process final payment",
+      };
+    }
+  }
+
+  async verifyFinalPaymentStripeSession(
+    sessionId: string,
+    userId: string,
+  ): Promise<CompleteFinalPaymentResponse> {
+    try {
+      console.log(
+        "Verifying final payment Stripe session:",
+        sessionId,
+        "for user:",
+        userId
+      );
+
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+      if (!session || session.payment_status !== "paid") {
+        return {
+          success: false,
+          message: "Payment not completed or session not found",
+        };
+      }
+
+      const bookingId = session.metadata?.bookingId;
+      const serviceCharges = session.metadata?.serviceCharges
+        ? parseFloat(session.metadata.serviceCharges)
+        : 0;
+      const partsAmount = session.metadata?.partsAmount
+        ? parseFloat(session.metadata.partsAmount)
+        : 0;
+      const offerId = session.metadata?.offerId || undefined;
+      const couponId = session.metadata?.couponId || undefined;
+      const isFinalPayment = session.metadata?.isFinalPayment === "true";
+      const serviceType = session.metadata?.serviceType;
+
+      if (!bookingId) {
+        return {
+          success: false,
+          message: "Invalid or missing booking ID",
+        };
+      }
+
+      if (!isFinalPayment) {
+        return {
+          success: false,
+          message: "This is not a final payment session",
+        };
+      }
+
+      const booking = (await this._bookingRepository.getBookingDetailsById(
+        bookingId
+      )) as IBookingDetails | null;
+
+      if (!booking) {
+        return {
+          success: false,
+          message: "Booking not found",
+        };
+      }
+
+      if (booking.bookingStatus !== "Payment Pending") {
+        return {
+          success: false,
+          message: `Booking status is ${booking.bookingStatus}. Payment may have already been processed.`,
+        };
+      }
+
+      if (
+        typeof booking.paymentId === "object" &&
+        booking.paymentId.paymentStatus === "Paid"
+      ) {
+        return {
+          success: true,
+          message: "Payment already verified",
+          data: {
+            booking: booking,
+            paymentMethod: "Online",
+            paymentCompleted: true,
+          },
+        };
+      }
+
+      const isHourlyService = serviceType === "hourly";
+
+      let fixifyShare = 0;
+      let technicianShare = 0;
+
+      if (isHourlyService && serviceCharges > 0) {
+        const technicianSubscription =
+          await this._subscriptionPlanHistoryRepository.findActiveSubscriptionByTechnicianId(
+            booking.technicianId._id.toString()
+          );
+
+        if (!technicianSubscription) {
+          throw new Error("No active subscription for technician");
+        }
+
+        const subscriptionPlan =
+          await this._subscriptionPlanRepository.findSubscriptionPlanById(
+            technicianSubscription.subscriptionPlanId.toString()
+          );
+
+        if (!subscriptionPlan) {
+          throw new Error("Subscription plan not found");
+        }
+
+        fixifyShare = parseFloat(
+          (serviceCharges * (subscriptionPlan.commissionRate / 100)).toFixed(2)
+        );
+        technicianShare = parseFloat((serviceCharges - fixifyShare).toFixed(2));
+
+        fixifyShare += partsAmount;
+      } else if (!isHourlyService && partsAmount > 0) {
+        fixifyShare = partsAmount;
+        technicianShare = 0;
+      }
+
+      if (isHourlyService && couponId) {
+        const coupon = await this._couponRepository.findCouponById(couponId);
+        if (coupon) {
+          await this._couponRepository.addUserToCoupon(couponId, userId);
+        } else {
+          console.log(`Coupon with ID ${couponId} not found`);
+        }
+      }
+
+      if (typeof booking.paymentId === "object") {
+        const updateData: UpdatePaymentData = {
+          paymentStatus: "Paid",
+          partsAmount: partsAmount,
+        };
+
+        if (isHourlyService) {
+          if (offerId) updateData.offerId = offerId;
+          if (couponId) updateData.couponId = couponId;
+          updateData.fixifyShare =
+            (booking.paymentId.fixifyShare || 0) + fixifyShare;
+          updateData.technicianShare =
+            (booking.paymentId.technicianShare || 0) + technicianShare;
+        } else {
+          updateData.fixifyShare =
+            (booking.paymentId.fixifyShare || 0) + fixifyShare;
+        }
+
+        await this._paymentRepository.updatePayment(
+          booking.paymentId._id.toString(),
+          updateData
+        );
+      }
+
+      const updatedBooking = (await this._bookingRepository.updateBooking(
+        { _id: bookingId },
+        { bookingStatus: "Completed" }
+      )) as IBookingDetails | null;
+
+      if (!updatedBooking) {
+        return {
+          success: false,
+          message: "Failed to update booking status",
+        };
+      }
+
+      console.log(`Final payment verified for booking ${bookingId}`);
+
+      return {
+        success: true,
+        message: isHourlyService
+          ? "Final payment completed successfully"
+          : "Parts payment completed successfully",
+        data: {
+          booking: updatedBooking,
+          paymentMethod: "Online",
+          paymentCompleted: true,
+        },
+      };
+    } catch (error) {
+      console.error("Error verifying final payment Stripe session:", error);
+      return {
+        success: false,
+        message: "Internal server error while verifying payment",
       };
     }
   }
