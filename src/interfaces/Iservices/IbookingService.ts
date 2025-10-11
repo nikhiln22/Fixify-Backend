@@ -1,4 +1,6 @@
 import {
+  CompleteFinalPaymentRequest,
+  CompleteFinalPaymentResponse,
   IBookingDetails,
   StartServiceResponseData,
 } from "../DTO/IServices/IbookingService";
@@ -195,4 +197,14 @@ export interface IBookingService {
       categoryId: string;
     }>;
   }>;
+  completeFinalPayment(
+    userId: string,
+    bookingId: string,
+    data: CompleteFinalPaymentRequest
+  ): Promise<CompleteFinalPaymentResponse>;
+
+  verifyFinalPaymentStripeSession(
+    sessionId: string,
+    userId: string
+  ): Promise<CompleteFinalPaymentResponse>;
 }

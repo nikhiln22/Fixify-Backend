@@ -48,6 +48,7 @@ import {
   AddAddressDto,
   OwnerAddressResponseDto,
 } from "../interfaces/DTO/IServices/IaddressService";
+import { formatDateForPeriod } from "../utils/dateHelpers";
 
 @injectable()
 export class TechnicianService implements ITechnicianService {
@@ -1089,28 +1090,21 @@ export class TechnicianService implements ITechnicianService {
     };
   }> {
     try {
-      console.log(
-        "entering to the technician service that fetches the dashbaord stats for the technicians"
-      );
-      console.log("technicianId in the dashboard stats:", technicianId);
-      const totalEarnings =
-        await this._walletRepository.getTechncianTotalEarnings(technicianId);
-      console.log("totalearnings earned by the technician:", totalEarnings);
-      const completedJobs =
-        await this._bookingRepository.getTechnicianTotalCompletedBookings(
-          technicianId
-        );
-      console.log("total completed jobs by the technician:", completedJobs);
-      const averageRating =
-        await this._ratingRepository.getRatingsByTechnicianId(technicianId);
-      console.log("averageratings by the technician:", averageRating);
-      const pendingJobs =
-        await this._bookingRepository.getTechnicianPendingJobs(technicianId);
-      console.log("pending jobs for the technician:", pendingJobs);
+      console.log("Fetching dashboard stats for technician:", technicianId);
+
+      const [totalEarnings, completedJobs, averageRating, pendingJobs] =
+        await Promise.all([
+          this._walletRepository.getTechncianTotalEarnings(technicianId),
+          this._bookingRepository.getTechnicianTotalCompletedBookings(
+            technicianId
+          ),
+          this._ratingRepository.getRatingsByTechnicianId(technicianId),
+          this._bookingRepository.getTechnicianPendingJobs(technicianId),
+        ]);
 
       return {
         success: true,
-        message: "fetched the technician dashbaord stats successfully",
+        message: "Fetched technician dashboard stats successfully",
         data: {
           totalEarnings,
           completedJobs,
@@ -1119,13 +1113,10 @@ export class TechnicianService implements ITechnicianService {
         },
       };
     } catch (error) {
-      console.log(
-        "error occured while fetching the technician dashbaord stats:",
-        error
-      );
+      console.log("Error fetching technician dashboard stats:", error);
       return {
         success: false,
-        message: "failed to fetch the technician dashboard stats",
+        message: "Failed to fetch technician dashboard stats",
       };
     }
   }
@@ -1164,7 +1155,7 @@ export class TechnicianService implements ITechnicianService {
       );
 
       const formattedData = earningsData.map((item) => ({
-        date: this.formatDateForPeriod(item.date, period),
+        date: formatDateForPeriod(item.date, period),
         earnings: item.totalEarnings,
         jobs: item.jobsCompleted,
         avgPerJob: item.avgEarningsPerJob,
@@ -1201,45 +1192,6 @@ export class TechnicianService implements ITechnicianService {
         message: "Failed to fetch technician earnings data",
       };
     }
-  }
-
-  private formatDateForPeriod(date: Date | string, period: string): string {
-    let d: Date;
-
-    if (typeof date === "string") {
-      d = new Date(date);
-    } else {
-      d = date;
-    }
-
-    switch (period) {
-      case "daily":
-        return d.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        });
-      case "weekly":
-        return `Week ${this.getWeekNumber(d)}`;
-      case "monthly":
-        return d.toLocaleDateString("en-US", {
-          month: "short",
-          year: "numeric",
-        });
-      case "yearly":
-        return d.getFullYear().toString();
-      default:
-        return d.toLocaleDateString();
-    }
-  }
-
-  private getWeekNumber(date: Date): number {
-    const d = new Date(
-      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
-    );
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   }
 
   async getTechnicianServiceCategoriesData(

@@ -9,6 +9,7 @@ import {
 import { ISocketNotificationData } from "../interfaces/DTO/IServices/InotificationService";
 import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
 import { INotificationService } from "../interfaces/Iservices/InotificationService";
+import { Roles } from "../config/roles";
 
 @injectable()
 export class BookingController {
@@ -266,11 +267,17 @@ export class BookingController {
       const filter = (req.query.filter as string) || undefined;
       const role = req.user?.role;
 
+      const userId = role === Roles.USER ? req.user?.id : "";
+
+      const technicianId = role === Roles.TECHNICIAN ? req.user?.id : "";
+
       console.log("filter status in the admin controller:", filter);
 
       const serviceResponse = await this._bookingService.getAllBookings({
         page,
         limit,
+        technicianId,
+        userId,
         search,
         filter,
         role,
@@ -618,6 +625,8 @@ export class BookingController {
       const bookingId = req.params.bookingId;
       const technicianId = req.user?.id;
       const { serviceStartTime } = req.body;
+
+      console.log("serviceZStartTime in booking controller:", serviceStartTime);
 
       if (!technicianId) {
         res
@@ -1268,6 +1277,144 @@ export class BookingController {
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json(createErrorResponse("Internal Server Error"));
+    }
+  }
+
+  async completeFinalPayment(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log("Entering final payment in booking controller");
+      const userId = req.user?.id;
+      const { bookingId } = req.params;
+      const { paymentMethod, finalAmount, offerId, couponId } = req.body;
+
+      console.log("Final payment request:", {
+        userId,
+        bookingId,
+        paymentMethod,
+        finalAmount,
+        offerId,
+        couponId,
+      });
+
+      if (!userId) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: "User not authenticated",
+        });
+        return;
+      }
+
+      if (!bookingId) {
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "Booking ID is required",
+        });
+        return;
+      }
+
+      if (!paymentMethod) {
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "Payment method is required",
+        });
+        return;
+      }
+
+      if (finalAmount === undefined || finalAmount === null) {
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "Final amount is required",
+        });
+        return;
+      }
+
+      if (finalAmount < 0) {
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "Invalid payment amount",
+        });
+        return;
+      }
+
+      const result = await this._bookingService.completeFinalPayment(
+        userId,
+        bookingId,
+        {
+          paymentMethod,
+          finalAmount,
+          offerId,
+          couponId,
+        }
+      );
+
+      if (result.success) {
+        res.status(HTTP_STATUS.OK).json(result);
+      } else {
+        res.status(HTTP_STATUS.BAD_REQUEST).json(result);
+      }
+    } catch (error) {
+      console.error("Error in completeFinalPayment controller:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Failed to process final payment",
+      });
+    }
+  }
+
+  async verifyFinalPaymentStripeSession(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      console.log(
+        "Entering verify final payment stripe session in booking controller"
+      );
+      const userId = req.user?.id;
+      const { sessionId } = req.params;
+
+      console.log("Verify final payment session request:", {
+        userId,
+        sessionId,
+      });
+
+      if (!userId) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: "User not authenticated",
+        });
+        return;
+      }
+
+      if (!sessionId) {
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: "Session ID is required",
+        });
+        return;
+      }
+
+      const result = await this._bookingService.verifyFinalPaymentStripeSession(
+        sessionId,
+        userId
+      );
+
+      if (result.success) {
+        res.status(HTTP_STATUS.OK).json(result);
+      } else {
+        res.status(HTTP_STATUS.BAD_REQUEST).json(result);
+      }
+    } catch (error) {
+      console.error(
+        "Error in verifyFinalPaymentStripeSession controller:",
+        error
+      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: "Failed to verify payment session",
+      });
     }
   }
 

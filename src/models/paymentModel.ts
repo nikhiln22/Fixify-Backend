@@ -81,9 +81,6 @@ const paymentSchema: Schema<IPayment> = new Schema(
     creditReleaseDate: {
       type: Date,
     },
-    extraCharges: {
-      type: Number,
-    },
     advanceAmount: {
       type: Number,
     },

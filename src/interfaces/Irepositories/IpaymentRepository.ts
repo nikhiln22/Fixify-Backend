@@ -1,6 +1,7 @@
 import {
   CreatePaymentData,
   FormattedEarningsResult,
+  UpdatePaymentData,
 } from "../DTO/IRepository/IpayementRepository";
 import { IPayment } from "../Models/Ipayment";
 
@@ -9,7 +10,7 @@ export interface IPaymentRepository {
   findByBookingId(bookingId: string): Promise<IPayment | null>;
   updatePayment(
     paymentId: string,
-    updateData: Partial<IPayment>
+    updateData: UpdatePaymentData
   ): Promise<IPayment | null>;
   findPaymentsReadyForCredit(): Promise<IPayment[]>;
   getTotalRevenue(): Promise<number>;
