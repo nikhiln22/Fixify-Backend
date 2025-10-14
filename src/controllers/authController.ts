@@ -1,7 +1,7 @@
 import { inject, injectable } from "tsyringe";
 import { IAuthService } from "../interfaces/Iservices/IauthService";
 import { Request, Response } from "express";
-import { HTTP_STATUS } from "../utils/httpStatus";
+import { HTTP_STATUS } from "../constants/httpStatus";
 import {
   createSuccessResponse,
   createErrorResponse,

@@ -1,6 +1,6 @@
 import { ITechnicianService } from "../interfaces/Iservices/ItechnicianService";
 import { Request, Response } from "express";
-import { HTTP_STATUS } from "../utils/httpStatus";
+import { HTTP_STATUS } from "../constants/httpStatus";
 import { inject, injectable } from "tsyringe";
 import {
   createErrorResponse,

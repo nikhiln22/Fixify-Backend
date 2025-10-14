@@ -1,5 +1,5 @@
 import { injectable, inject } from "tsyringe";
-import { HTTP_STATUS } from "../utils/httpStatus";
+import { HTTP_STATUS } from "../constants/httpStatus";
 import {
   createSuccessResponse,
   createErrorResponse,

@@ -1,4 +1,4 @@
-import { HTTP_STATUS } from "../utils/httpStatus";
+import { HTTP_STATUS } from "../constants/httpStatus";
 import { injectable, inject } from "tsyringe";
 import { Request, Response } from "express";
 import { IServiceService } from "../interfaces/Iservices/IserviceService";

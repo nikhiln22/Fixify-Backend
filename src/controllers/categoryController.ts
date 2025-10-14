@@ -1,4 +1,4 @@
-import { HTTP_STATUS } from "../utils/httpStatus";
+import { HTTP_STATUS } from "../constants/httpStatus";
 import { inject, injectable } from "tsyringe";
 import {
   createErrorResponse,

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { HTTP_STATUS } from "../utils/httpStatus";
+import { HTTP_STATUS } from "../constants/httpStatus";
 import { inject, injectable } from "tsyringe";
 import { IUserService } from "../interfaces/Iservices/IuserService";
 import { IAdminService } from "../interfaces/Iservices/IadminService";

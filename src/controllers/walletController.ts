@@ -1,6 +1,6 @@
 import { inject, injectable } from "tsyringe";
 import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
-import { HTTP_STATUS } from "../utils/httpStatus";
+import { HTTP_STATUS } from "../constants/httpStatus";
 import {
   createErrorResponse,
   createSuccessResponse,

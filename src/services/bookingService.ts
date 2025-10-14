@@ -7,7 +7,7 @@ import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
 import { IBookingRepository } from "../interfaces/Irepositories/IbookingRespository";
 import { IWalletRepository } from "../interfaces/Irepositories/IwalletRepository";
 import { IPaymentRepository } from "../interfaces/Irepositories/IpaymentRepository";
-import { HTTP_STATUS } from "../utils/httpStatus";
+import { HTTP_STATUS } from "../constants/httpStatus";
 import { inject, injectable } from "tsyringe";
 import { IBooking } from "../interfaces/Models/Ibooking";
 import { stripe } from "../config/stripeConfig";
@@ -1147,7 +1147,6 @@ export class BookingService implements IBookingService {
     bookingId: string
   ): Promise<{
     success: boolean;
-    status: number;
     message: string;
   }> {
     try {
@@ -1157,7 +1156,6 @@ export class BookingService implements IBookingService {
       if (!technicianId || !bookingId) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "Technician ID and Booking ID are required",
         };
       }
@@ -1171,7 +1169,6 @@ export class BookingService implements IBookingService {
       if (!booking) {
         return {
           success: false,
-          status: HTTP_STATUS.NOT_FOUND,
           message: "Booking not found",
         };
       }
@@ -1179,7 +1176,6 @@ export class BookingService implements IBookingService {
       if (booking.technicianId._id.toString() !== technicianId) {
         return {
           success: false,
-          status: HTTP_STATUS.FORBIDDEN,
           message: "You are not authorized to complete this booking",
         };
       }
@@ -1187,7 +1183,6 @@ export class BookingService implements IBookingService {
       if (booking.bookingStatus !== "In Progress") {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: `Cannot complete booking with status: ${booking.bookingStatus}`,
         };
       }
@@ -1201,7 +1196,6 @@ export class BookingService implements IBookingService {
       if (existingOtp) {
         return {
           success: false,
-          status: HTTP_STATUS.BAD_REQUEST,
           message: "OTP already sent. Please wait before requesting a new one.",
         };
       }
@@ -1246,7 +1240,6 @@ export class BookingService implements IBookingService {
 
       return {
         success: true,
-        status: HTTP_STATUS.OK,
         message: emailSent
           ? "Completion OTP generated and sent to customer successfully"
           : "Completion OTP generated but email notification failed. OTP is still valid.",
@@ -1255,7 +1248,6 @@ export class BookingService implements IBookingService {
       console.error("Error in generateCompletionOtp:", error);
       return {
         success: false,
-        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
         message: "Failed to generate completion OTP",
       };
     }
@@ -1747,7 +1739,7 @@ export class BookingService implements IBookingService {
 
   async verifyFinalPaymentStripeSession(
     sessionId: string,
-    userId: string,
+    userId: string
   ): Promise<CompleteFinalPaymentResponse> {
     try {
       console.log(

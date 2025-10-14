@@ -3,7 +3,7 @@ import {
   createErrorResponse,
   createSuccessResponse,
 } from "../utils/responseHelper";
-import { HTTP_STATUS } from "../utils/httpStatus";
+import { HTTP_STATUS } from "../constants/httpStatus";
 import { inject, injectable } from "tsyringe";
 import { IChatService } from "../interfaces/Iservices/IchatService";
 import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
