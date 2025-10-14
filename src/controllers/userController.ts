@@ -90,11 +90,8 @@ export class UserController {
 
   async resendOtp(req: Request, res: Response): Promise<void> {
     try {
-      console.log("entering into the resend otp functionality");
       const { email } = req.body;
-      console.log("email in the resend otp in the controller:", email);
       const serviceResponse = await this._userService.resendOtp(email);
-      console.log("response from the resendotp controller:", serviceResponse);
 
       if (serviceResponse.success) {
         res.status(HTTP_STATUS.OK).json(
