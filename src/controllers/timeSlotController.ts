@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { inject, injectable } from "tsyringe";
 import { ITimeSlotService } from "../interfaces/Iservices/ItimeSlotService";
-import { HTTP_STATUS } from "../utils/httpStatus";
+import { HTTP_STATUS } from "../constants/httpStatus";
 import {
   createErrorResponse,
   createSuccessResponse,

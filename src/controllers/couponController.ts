@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { inject, injectable } from "tsyringe";
 import { ICouponService } from "../interfaces/Iservices/IcouponService";
-import { HTTP_STATUS } from "../utils/httpStatus";
+import { HTTP_STATUS } from "../constants/httpStatus";
 import {
   createErrorResponse,
   createSuccessResponse,

@@ -1,12 +1,13 @@
 import { IUserService } from "../interfaces/Iservices/IuserService";
 import { ITechnicianService } from "../interfaces/Iservices/ItechnicianService";
 import { Request, Response } from "express";
-import { HTTP_STATUS } from "../utils/httpStatus";
+import { HTTP_STATUS } from "../constants/httpStatus";
 import { inject, injectable } from "tsyringe";
 import {
   createSuccessResponse,
   createErrorResponse,
 } from "../utils/responseHelper";
+import { MESSAGES } from "../constants/messages";
 import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
 import config from "../config/env";
 
@@ -23,6 +24,7 @@ export class UserController {
       console.log("entering to the register function in userController");
       const data = req.body;
       console.log("data:", data);
+
       const serviceResponse = await this._userService.userSignUp(data);
       console.log("response in register:", serviceResponse);
 
@@ -30,14 +32,17 @@ export class UserController {
         res
           .status(HTTP_STATUS.CREATED)
           .json(
-            createSuccessResponse(serviceResponse.data, serviceResponse.message)
+            createSuccessResponse(
+              serviceResponse.data,
+              serviceResponse.message || MESSAGES.REGISTRATION_SUCCESS
+            )
           );
       } else {
         res
           .status(HTTP_STATUS.BAD_REQUEST)
           .json(
             createErrorResponse(
-              serviceResponse.message || "Registration failed"
+              serviceResponse.message || MESSAGES.REGISTRATION_FAILED
             )
           );
       }
@@ -45,7 +50,7 @@ export class UserController {
       console.log("error occurred", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
+        .json(createErrorResponse(MESSAGES.INTERNAL_SERVER_ERROR));
     }
   }
 
@@ -54,37 +59,46 @@ export class UserController {
       console.log("entering into the verify otp function in userController");
       const data = req.body;
       console.log("userData in verifyOtp controller:", data);
+
       const serviceResponse = await this._userService.verifyOtp(data);
       console.log("response in verifyOtp controller:", serviceResponse);
 
       if (serviceResponse.success) {
         res
-          .status(200)
+          .status(HTTP_STATUS.OK)
           .json(createSuccessResponse(null, serviceResponse.message));
       } else {
-        const statusCode = serviceResponse.message?.includes("not found")
-          ? HTTP_STATUS.NOT_FOUND
-          : serviceResponse.message?.includes("expired")
-          ? HTTP_STATUS.NOT_FOUND
-          : serviceResponse.message?.includes("Invalid OTP")
-          ? HTTP_STATUS.UNAUTHORIZED
-          : serviceResponse.message?.includes("already verified")
-          ? HTTP_STATUS.CONFLICT
-          : HTTP_STATUS.BAD_REQUEST;
+        let statusCode: number;
+        let message: string = serviceResponse.message || MESSAGES.OTP_INVALID;
 
-        res
-          .status(statusCode)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "OTP verification failed"
-            )
-          );
+        switch (true) {
+          case serviceResponse.message?.includes("not found"):
+            statusCode = HTTP_STATUS.NOT_FOUND;
+            message = MESSAGES.USER_NOT_FOUND;
+            break;
+          case serviceResponse.message?.includes("expired"):
+            statusCode = HTTP_STATUS.NOT_FOUND;
+            message = MESSAGES.OTP_EXPIRED;
+            break;
+          case serviceResponse.message?.includes("Invalid OTP"):
+            statusCode = HTTP_STATUS.UNAUTHORIZED;
+            message = MESSAGES.OTP_INVALID;
+            break;
+          case serviceResponse.message?.includes("already verified"):
+            statusCode = HTTP_STATUS.CONFLICT;
+            message = "User already verified";
+            break;
+          default:
+            statusCode = HTTP_STATUS.BAD_REQUEST;
+            message = MESSAGES.OTP_INVALID;
+        }
+        res.status(statusCode).json(createErrorResponse(message));
       }
     } catch (error) {
       console.log("error occurred:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
+        .json(createErrorResponse(MESSAGES.INTERNAL_SERVER_ERROR));
     }
   }
 
@@ -94,72 +108,68 @@ export class UserController {
       const serviceResponse = await this._userService.resendOtp(email);
 
       if (serviceResponse.success) {
-        res.status(HTTP_STATUS.OK).json(
-          createSuccessResponse(
-            {
-              email: serviceResponse.email,
-            },
-            serviceResponse.message
-          )
-        );
-      } else {
-        const statusCode = serviceResponse.message?.includes("not found")
-          ? HTTP_STATUS.NOT_FOUND
-          : HTTP_STATUS.BAD_REQUEST;
         res
-          .status(statusCode)
+          .status(HTTP_STATUS.OK)
           .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to resend OTP"
+            createSuccessResponse(
+              { email: serviceResponse.email },
+              serviceResponse.message
             )
           );
+      } else {
+        let statusCode: number;
+        let message: string = serviceResponse.message || "Failed to resend OTP";
+
+        if (serviceResponse.message?.includes("not found")) {
+          statusCode = HTTP_STATUS.NOT_FOUND;
+          message = MESSAGES.USER_NOT_FOUND;
+        } else {
+          statusCode = HTTP_STATUS.BAD_REQUEST;
+        }
+
+        res.status(statusCode).json(createErrorResponse(message));
       }
     } catch (error) {
       console.log("error in the resendOtp controller", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
+        .json(createErrorResponse(MESSAGES.INTERNAL_SERVER_ERROR));
     }
   }
 
   async forgotPassword(req: Request, res: Response): Promise<void> {
     try {
-      console.log("Entering forgotPassword function in userController");
       const { email } = req.body;
-
       const serviceResponse = await this._userService.forgotPassword({ email });
-      console.log("Response from forgotPassword service:", serviceResponse);
 
       if (serviceResponse.success) {
-        res.status(HTTP_STATUS.OK).json(
-          createSuccessResponse(
-            {
-              email: serviceResponse.email,
-            },
-            serviceResponse.message
-          )
-        );
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            createSuccessResponse(
+              { email: serviceResponse.email },
+              serviceResponse.message
+            )
+          );
       } else {
         const statusCode = serviceResponse.message?.includes("not found")
           ? HTTP_STATUS.NOT_FOUND
-          : serviceResponse.message?.includes("verify your email")
-          ? HTTP_STATUS.FORBIDDEN
-          : serviceResponse.message?.includes("blocked")
+          : serviceResponse.message?.includes("blocked") ||
+            serviceResponse.message?.includes("verify your email")
           ? HTTP_STATUS.FORBIDDEN
           : HTTP_STATUS.BAD_REQUEST;
-        res
-          .status(statusCode)
-          .json(
-            createErrorResponse(
-              serviceResponse.message || "Failed to send reset email"
-            )
-          );
+
+        const message = serviceResponse.message?.includes("not found")
+          ? MESSAGES.USER_NOT_FOUND
+          : serviceResponse.message || "Failed to send reset email";
+
+        res.status(statusCode).json(createErrorResponse(message));
       }
     } catch (error) {
-      console.log("Error in forgotPassword controller:", error);
+      console.log("error occured:", error);
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json(createErrorResponse("Internal Server Error"));
+        .json(createErrorResponse(MESSAGES.INTERNAL_SERVER_ERROR));
     }
   }
 

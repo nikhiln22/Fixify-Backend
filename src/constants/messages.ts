@@ -1,0 +1,15 @@
+export const MESSAGES = {
+  INTERNAL_SERVER_ERROR: "Internal Server Error",
+  USER_NOT_FOUND: "User not found",
+  LOGIN_SUCCESS: "Login successful",
+  REGISTRATION_SUCCESS: "User created successfully, OTP sent",
+  REGISTRATION_FAILED: "User registration failed",
+  OTP_INVALID: "Invalid OTP",
+  OTP_EXPIRED: "OTP has expired or doesn’t exist",
+  OTP_ALREADY_VERIFIED: "User already verified",
+  LOGIN_FAILED: "Login failed",
+  PASSWORD_RESET_SUCCESS: "Password reset successful",
+  PASSWORD_RESET_FAILED: "Password reset failed",
+  PROFILE_UPDATE_SUCCESS: "Profile updated successfully",
+  PROFILE_UPDATE_FAILED: "Failed to update profile",
+};

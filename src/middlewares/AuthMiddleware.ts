@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { JWTService } from "../utils/jwt";
-import { HTTP_STATUS } from "../utils/httpStatus";
+import { HTTP_STATUS } from "../constants/httpStatus";
 import { Roles } from "../config/roles";
 import { UserRepository } from "../repositories/userRepository";
 import { TechnicianRepository } from "../repositories/technicianRepository";
