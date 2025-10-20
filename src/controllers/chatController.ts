@@ -8,6 +8,7 @@ import { inject, injectable } from "tsyringe";
 import { IChatService } from "../interfaces/Iservices/IchatService";
 import { AuthenticatedRequest } from "../middlewares/AuthMiddleware";
 import { Roles } from "../config/roles";
+import { CreateChatData } from "../interfaces/DTO/IRepository/IchatRepository";
 
 @injectable()
 export class ChatController {
@@ -46,13 +47,13 @@ export class ChatController {
   async sendChat(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       console.log("Sending chat message");
-      const userId = req.user?.id;
-      const role = req.user?.role as Roles;
+      const senderId = req.user?.id;
+      const senderRole = req.user?.role as Roles;
       const { bookingId } = req.params;
-      const { messageText, technicianId } = req.body;
+      const { messageText, recipientId } = req.body;
       const io = req.io;
 
-      if (!userId) {
+      if (!senderId) {
         res
           .status(HTTP_STATUS.UNAUTHORIZED)
           .json(createErrorResponse("User not authenticated"));
@@ -60,12 +61,20 @@ export class ChatController {
       }
 
       const chatData = {
-        userId,
-        technicianId,
+        userId: "",
+        technicianId: "",
         bookingId,
         messageText,
-        senderType: role,
-      };
+        senderType: senderRole,
+      } as CreateChatData;
+
+      if (senderRole === "user") {
+        chatData.userId = senderId;
+        chatData.technicianId = recipientId;
+      } else if (senderRole === "technician") {
+        chatData.technicianId = senderId;
+        chatData.userId = recipientId;
+      }
 
       const serviceResponse = await this._chatService.sendChat(chatData);
 
