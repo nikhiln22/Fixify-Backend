@@ -7,6 +7,8 @@ export interface CreatePaymentData {
   amountPaid: number;
   offerId?: string;
   couponId?: string;
+  offerDiscount?: number;
+  couponDiscount?: number;
   fixifyShare?: number;
   technicianShare?: number;
   paymentMethod: "Online" | "Wallet";

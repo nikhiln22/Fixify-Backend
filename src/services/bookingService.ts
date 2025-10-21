@@ -42,6 +42,7 @@ import {
 import { PaymentMethod } from "../config/paymentMethod";
 import Stripe from "stripe";
 import { Types } from "mongoose";
+import { IOfferRepository } from "../interfaces/Irepositories/IofferRepository";
 
 @injectable()
 export class BookingService implements IBookingService {
@@ -62,7 +63,8 @@ export class BookingService implements IBookingService {
     @inject("ISubscriptionPlanHistoryRepository")
     private _subscriptionPlanHistoryRepository: ISubscriptionPlanHistoryRepository,
     @inject("ISubscriptionPlanRepository")
-    private _subscriptionPlanRepository: ISubscriptionPlanRepository
+    private _subscriptionPlanRepository: ISubscriptionPlanRepository,
+    @inject("IOfferRepository") private _offerRepository: IOfferRepository
   ) {}
 
   private getOtpRedisKey(email: string, purpose: OtpPurpose): string {
@@ -123,6 +125,37 @@ export class BookingService implements IBookingService {
       message: "OTP verified successfully",
       status: HTTP_STATUS.OK,
     };
+  }
+
+  private async calculateDiscounts(
+    bookingAmount: number,
+    offerId?: string,
+    couponId?: string
+  ) {
+    let offerDiscount = 0;
+    let couponDiscount = 0;
+
+    if (offerId) {
+      const offer = await this._offerRepository.findOfferById(offerId);
+      if (offer && offer.discount_value) {
+        offerDiscount =
+          offer.discount_type === "percentage"
+            ? (bookingAmount * offer.discount_value) / 100
+            : offer.discount_value;
+      }
+    }
+
+    if (couponId) {
+      const coupon = await this._couponRepository.findCouponById(couponId);
+      if (coupon && coupon.discount_value) {
+        couponDiscount =
+          coupon.discount_type === "percentage"
+            ? (bookingAmount * coupon.discount_value) / 100
+            : coupon.discount_value;
+      }
+    }
+
+    return { offerDiscount, couponDiscount };
   }
 
   async bookService(
