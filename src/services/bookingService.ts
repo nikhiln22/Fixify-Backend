@@ -294,6 +294,9 @@ export class BookingService implements IBookingService {
             technicianShare = 0;
           let paymentStatus: "Paid" | "Partial Paid" = "Partial Paid";
 
+          let offerDiscount = 0;
+          let couponDiscount = 0;
+
           if (service.serviceType === "fixed") {
             const technicianSubscription =
               await this._subscriptionPlanHistoryRepository.findActiveSubscriptionByTechnicianId(
@@ -323,6 +326,15 @@ export class BookingService implements IBookingService {
             );
 
             paymentStatus = "Paid";
+
+            const discounts = await this.calculateDiscounts(
+              data.originalAmount ?? 0,
+              data.offerId,
+              data.couponId
+            );
+
+            offerDiscount = discounts.offerDiscount;
+            couponDiscount = discounts.couponDiscount;
           }
 
           const paymentData: CreatePaymentData = {
@@ -334,6 +346,8 @@ export class BookingService implements IBookingService {
             paymentMethod: PaymentMethod.WALLET,
             paymentStatus,
             technicianPaid: false,
+            offerDiscount,
+            couponDiscount,
           };
 
           if (service.serviceType === "fixed") {
@@ -568,6 +582,18 @@ export class BookingService implements IBookingService {
         }
       }
 
+      let offerDiscount = 0;
+      let couponDiscount = 0;
+      if (!isHourly) {
+        const discounts = await this.calculateDiscounts(
+          originalAmount ?? 0,
+          offerId || undefined,
+          couponId || undefined
+        );
+        offerDiscount = discounts.offerDiscount;
+        couponDiscount = discounts.couponDiscount;
+      }
+
       const paymentData: CreatePaymentData = {
         userId,
         bookingId: booking._id.toString(),
@@ -577,6 +603,8 @@ export class BookingService implements IBookingService {
         paymentMethod: "Online",
         paymentStatus: isHourly ? "Partial Paid" : "Paid",
         technicianPaid: false,
+        offerDiscount,
+        couponDiscount,
       };
 
       if (isHourly) {
@@ -1353,6 +1381,25 @@ export class BookingService implements IBookingService {
         bookingStatus: isHourlyService ? "Payment Pending" : "Completed",
       };
 
+      if (
+        !isHourlyService &&
+        booking.hasReplacementParts &&
+        booking.replacementPartsApproved
+      ) {
+        const payment = await this._paymentRepository.findByBookingId(
+          bookingId
+        );
+        if (payment) {
+          await this._paymentRepository.updatePayment(payment._id.toString(), {
+            partsAmount: booking.totalPartsAmount || 0,
+            paymentStatus: "Partial Paid",
+          });
+          console.log(
+            `Updated payment to Partial Paid due to replacement parts for booking ${bookingId}`
+          );
+        }
+      }
+
       if (isHourlyService && serviceEndTime && booking.serviceStartTime) {
         const endTime = new Date(serviceEndTime);
         const startTime = new Date(booking.serviceStartTime);
@@ -1514,10 +1561,10 @@ export class BookingService implements IBookingService {
         };
       }
 
-      if (booking.bookingStatus !== "Payment Pending") {
+      if (booking.paymentId.paymentStatus !== "Partial Paid") {
         return {
           success: false,
-          message: `Cannot process payment for booking with status: ${booking.bookingStatus}`,
+          message: `Cannot process payment for booking with payment status: ${booking.paymentId.paymentStatus}`,
         };
       }
 
@@ -1828,25 +1875,19 @@ export class BookingService implements IBookingService {
         };
       }
 
-      if (booking.bookingStatus !== "Payment Pending") {
+      const paymentStatus = booking.paymentId.paymentStatus;
+
+      if (paymentStatus === "Paid" || paymentStatus === "Refunded") {
         return {
           success: false,
-          message: `Booking status is ${booking.bookingStatus}. Payment may have already been processed.`,
+          message: `Payment already processed. Current status: ${paymentStatus}`,
         };
       }
 
-      if (
-        typeof booking.paymentId === "object" &&
-        booking.paymentId.paymentStatus === "Paid"
-      ) {
+      if (paymentStatus !== "Partial Paid") {
         return {
-          success: true,
-          message: "Payment already verified",
-          data: {
-            booking: booking,
-            paymentMethod: "Online",
-            paymentCompleted: true,
-          },
+          success: false,
+          message: `Unexpected payment status: ${paymentStatus}`,
         };
       }
 

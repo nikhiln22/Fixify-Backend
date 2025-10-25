@@ -61,7 +61,7 @@ export interface IBookingDetails {
   paymentId: {
     _id: string;
     paymentMethod: string;
-    paymentStatus: string;
+    paymentStatus: "Partial Paid" | "Paid" | "Refunded";
     amountPaid: number;
     refundStatus: string;
     refundDate: Date;
