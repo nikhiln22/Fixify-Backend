@@ -71,6 +71,14 @@ export class PaymentRepository
         mongoPaymentData.creditReleaseDate = paymentData.creditReleaseDate;
       }
 
+      if (paymentData.offerDiscount !== undefined) {
+        mongoPaymentData.offerDiscount = paymentData.offerDiscount;
+      }
+
+      if (paymentData.couponDiscount !== undefined) {
+        mongoPaymentData.couponDiscount = paymentData.couponDiscount;
+      }
+
       const newPayment = await this.create(mongoPaymentData);
       return newPayment;
     } catch (error) {
