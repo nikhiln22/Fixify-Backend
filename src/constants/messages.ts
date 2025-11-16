@@ -12,4 +12,6 @@ export const MESSAGES = {
   PASSWORD_RESET_FAILED: "Password reset failed",
   PROFILE_UPDATE_SUCCESS: "Profile updated successfully",
   PROFILE_UPDATE_FAILED: "Failed to update profile",
+  BOOKING_SUCCESS: "Booked a service successfully",
+  BOOKING_FAILED: "Service booking failed",
 };
