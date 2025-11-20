@@ -19,7 +19,6 @@ class Server {
         console.log(
           `Fixify Server is running at http://localhost:${config.PORT}`
         );
-        console.log("Fixify backend redeployed at:", new Date());
       });
 
       const cronService = container.resolve<ICronService>("ICronService");
