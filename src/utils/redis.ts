@@ -6,37 +6,25 @@ export class RedisService implements IRedisService {
   private client: Redis;
 
   constructor() {
-    const isRedisCloud = config.REDIS_HOST.includes("redis-cloud.com");
-
-    if (isRedisCloud) {
-      this.client = new Redis({
-        host: config.REDIS_HOST,
-        port: Number(config.REDIS_PORT),
-        username: config.REDIS_USERNAME || undefined,
-        password: config.REDIS_PASSWORD || undefined,
-        family: 4,
-        connectTimeout: 10000,
-      });
-    } else {
-      this.client = new Redis({
-        host: config.REDIS_HOST,
-        port: Number(config.REDIS_PORT),
-        password: config.REDIS_PASSWORD || undefined,
-      });
-    }
+    this.client = new Redis({
+      host: config.REDIS_HOST,
+      port: Number(config.REDIS_PORT),
+      password: config.REDIS_PASSWORD || undefined,
+      connectTimeout: 10000,
+    });
 
     this.client.on("error", (err) => {
       console.error("Redis connection error:", err);
     });
 
     this.client.on("connect", () => {
-      const redisType = isRedisCloud ? "Redis Cloud" : "Local Redis";
-      console.log(`Connecting to ${redisType}...`);
+      console.log(
+        `Connecting to Redis at ${config.REDIS_HOST}:${config.REDIS_PORT}`
+      );
     });
 
     this.client.on("ready", () => {
-      const redisType = isRedisCloud ? "Redis Cloud" : "Local Redis";
-      console.log(`Connected to ${redisType} successfully`);
+      console.log(`Redis connected successfully.`);
     });
   }
 
@@ -77,7 +65,7 @@ export class RedisService implements IRedisService {
       await this.client.set(key, jsonString, "EX", expireSeconds);
     } catch (error) {
       console.error("Redis setObject error:", error);
-      throw new Error("Failed to store the object in the reddis");
+      throw new Error("Failed to store the object in Redis");
     }
   }
 

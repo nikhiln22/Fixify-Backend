@@ -10,35 +10,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
-          cache: "npm"
+          node-version: 18
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run linter
+      - name: Lint
         run: npm run lint
 
-      - name: Clean previous build
-        run: npm run clean
-
-      - name: Build TypeScript
+      - name: Build
         run: npm run build
 
   deploy:
-    name: Deploy to EC2
+    name: Deploy to EC2 (Docker)
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Deploy to EC2
+      - name: SSH into EC2 and deploy
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -47,11 +43,13 @@ jobs:
           port: 22
           script: |
             cd /home/ubuntu/Fixify-Backend
+
+            echo "Pull latest code..."
             git pull origin main
-            npm install
-            npm run build
 
-            # Restart your PM2 app
-            pm2 restart fixify
+            echo "Build docker images..."
+            docker compose down
+            docker compose build --no-cache
+            docker compose up -d
 
-            echo "Deployment completed successfully!"
+            echo "Deployment completed!"
